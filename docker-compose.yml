@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ximchistka-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ximchistka
+      POSTGRES_PASSWORD: ximchistka
+      POSTGRES_DB: ximchistka
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

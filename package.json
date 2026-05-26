@@ -1,0 +1,30 @@
+{
+  "name": "ximchistka-platform",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "scripts": {
+    "dev": "turbo dev --filter=@ximchistka/api --filter=@ximchistka/crm --filter=@ximchistka/client-web --filter=@ximchistka/merchant",
+    "dev:merchant": "npm run dev -w @ximchistka/merchant",
+    "dev:mobile": "npm run dev -w @ximchistka/mobile",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "npm run generate -w @ximchistka/database",
+    "db:migrate": "npm run migrate -w @ximchistka/database",
+    "db:seed": "npm run seed -w @ximchistka/database",
+    "db:push": "npm run push -w @ximchistka/database",
+    "dev:api": "npm run dev -w @ximchistka/api",
+    "dev:crm": "npm run dev -w @ximchistka/crm",
+    "dev:client": "npm run dev -w @ximchistka/client-web"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

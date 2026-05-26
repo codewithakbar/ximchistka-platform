@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Ximchistka",
+    "slug": "ximchistka",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "ximchistka",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0d9488"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.ximchistka.app"
+    },
+    "android": {
+      "package": "uz.ximchistka.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d9488"
+      }
+    },
+    "plugins": ["expo-router"],
+    "extra": {
+      "apiUrl": "http://localhost:3001/api/v1"
+    }
+  }
+}

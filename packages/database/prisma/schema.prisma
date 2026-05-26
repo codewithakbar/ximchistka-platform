@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  platform_admin
+  super_admin
+  branch_manager
+  operator
+  courier
+  customer
+}
+
+enum OrganizationPlan {
+  demo
+  active
+  expired
+  suspended
+}
+
+enum OrderStatus {
+  draft
+  submitted
+  received_at_branch
+  in_processing
+  ready
+  out_for_delivery
+  completed
+  cancelled
+}
+
+enum DeliveryType {
+  pickup
+  delivery
+  in_store
+}
+
+enum PaymentProvider {
+  cash
+  click
+  payme
+  uzum
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+model Organization {
+  id            String           @id @default(cuid())
+  name          String
+  slug          String           @unique
+  plan          OrganizationPlan @default(demo)
+  demoStartedAt DateTime?
+  demoEndsAt    DateTime?
+  isActive      Boolean          @default(true)
+  contactPhone  String?
+  contactEmail  String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  branches      Branch[]
+  users         User[]
+}
+
+model Branch {
+  id             String           @id @default(cuid())
+  organizationId String
+  name           String
+  address        String
+  phone          String
+  latitude       Float?
+  longitude      Float?
+  openTime       String           @default("09:00")
+  closeTime      String           @default("20:00")
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  priceRules     PriceRule[]
+  orders         Order[]
+  userBranches   UserBranch[]
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  organizationId     String?
+  email              String?              @unique
+  phone              String               @unique
+  passwordHash       String?
+  fullName           String
+  role               UserRole
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  organization       Organization?        @relation(fields: [organizationId], references: [id])
+  customerProfile    CustomerProfile?
+  userBranches       UserBranch[]
+  statusChanges      OrderStatusHistory[]
+  courierDeliveries  PickupDelivery[]     @relation("CourierDeliveries")
+  otpCodes           OtpCode[]
+  refreshTokens      RefreshToken[]
+}
+
+model UserBranch {
+  id       String @id @default(cuid())
+  userId   String
+  branchId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
+}
+
+model CustomerProfile {
+  id        String            @id @default(cuid())
+  userId    String            @unique
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addresses CustomerAddress[]
+  orders    Order[]
+}
+
+model CustomerAddress {
+  id         String          @id @default(cuid())
+  profileId  String
+  label      String          @default("Uy")
+  address    String
+  latitude   Float?
+  longitude  Float?
+  isDefault  Boolean         @default(false)
+  createdAt  DateTime        @default(now())
+  profile    CustomerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model ServiceCategory {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  sortOrder    Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  services     Service[]
+}
+
+model Service {
+  id          String          @id @default(cuid())
+  categoryId  String
+  name        String
+  description String?
+  unit        String          @default("dona")
+  basePrice   Int
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  priceRules  PriceRule[]
+  orderItems  OrderItem[]
+}
+
+model PriceRule {
+  id        String   @id @default(cuid())
+  branchId  String
+  serviceId String
+  itemType  String   @default("standart")
+  price     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, serviceId, itemType])
+}
+
+model Order {
+  id              String               @id @default(cuid())
+  orderNumber     String               @unique
+  branchId        String
+  customerId      String
+  status          OrderStatus          @default(submitted)
+  totalAmount     Int                  @default(0)
+  notes           String?
+  estimatedReady  DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  branch          Branch               @relation(fields: [branchId], references: [id])
+  customer        CustomerProfile      @relation(fields: [customerId], references: [id])
+  items           OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  pickupDelivery  PickupDelivery?
+  payments        Payment[]
+  promoCode       String?
+  discountAmount  Int                  @default(0)
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  serviceId String
+  itemType  String   @default("standart")
+  quantity  Int      @default(1)
+  unitPrice Int
+  notes     String?
+  photoUrl  String?
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service   Service  @relation(fields: [serviceId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  changedBy String?
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user      User?       @relation(fields: [changedBy], references: [id])
+}
+
+model PickupDelivery {
+  id              String       @id @default(cuid())
+  orderId         String       @unique
+  type            DeliveryType
+  scheduledAt     DateTime?
+  address         String?
+  courierId       String?
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  courier         User?        @relation("CourierDeliveries", fields: [courierId], references: [id])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  userId    String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  orderId       String
+  provider      PaymentProvider
+  status        PaymentStatus   @default(pending)
+  amount        Int
+  externalId    String?
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    @default("percent")
+  discountValue Int
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  validFrom     DateTime  @default(now())
+  validUntil    DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model SmsLog {
+  id        String   @id @default(cuid())
+  phone     String
+  message   String
+  status    String   @default("sent")
+  provider  String   @default("mock")
+  createdAt DateTime @default(now())
+}

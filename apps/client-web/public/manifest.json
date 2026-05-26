@@ -1,0 +1,17 @@
+{
+  "name": "Ximchistka",
+  "short_name": "Ximchistka",
+  "description": "Ximchistka onlayn buyurtma",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#f0fdfa",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
