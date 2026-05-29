@@ -33,7 +33,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     const result = super.canActivate(context);
-    if (isObservable(result)) return firstValueFrom(result);
+    if (isObservable(result)) return firstValueFrom(result) as Promise<boolean>;
     return result as boolean | Promise<boolean>;
   }
 
