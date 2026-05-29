@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { getUser } from '@/lib/api';
-import { canAddStaff, canCreateOrders, canManageBranches, StaffRole } from '@/lib/roles';
+import {
+  canAddStaff,
+  canCreateOrders,
+  canEditBranchPrices,
+  canEditBranch,
+  canManageBranches,
+  canManageServicesCatalog,
+  StaffRole,
+} from '@/lib/roles';
 
 /** Role from localStorage — only after mount, to avoid SSR hydration mismatch. */
 export function useClientRole() {
@@ -34,4 +42,19 @@ export function useCanAddStaff() {
 export function useCanManageBranches() {
   const role = useClientRole();
   return role !== null && canManageBranches(role);
+}
+
+export function useCanEditBranch() {
+  const role = useClientRole();
+  return role !== null && canEditBranch(role);
+}
+
+export function useCanManageServicesCatalog() {
+  const role = useClientRole();
+  return role !== null && canManageServicesCatalog(role);
+}
+
+export function useCanEditBranchPrices() {
+  const role = useClientRole();
+  return role !== null && canEditBranchPrices(role);
 }

@@ -73,3 +73,59 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in { animation: fade-in 0.3s ease-out; }
+
+@keyframes not-found-float {
+  0%, 100% { transform: translateY(0) rotate(-12deg); }
+  50% { transform: translateY(-14px) rotate(-8deg); }
+}
+@keyframes not-found-float-delayed {
+  0%, 100% { transform: translateY(0) rotate(12deg); }
+  50% { transform: translateY(-10px) rotate(16deg); }
+}
+@keyframes not-found-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes not-found-bubble {
+  0% { transform: translateY(0) scale(1); opacity: 0.5; }
+  100% { transform: translateY(-100px) scale(1.15); opacity: 0; }
+}
+.not-found-float { animation: not-found-float 5s ease-in-out infinite; }
+.not-found-float-delayed { animation: not-found-float-delayed 6s ease-in-out infinite; }
+.not-found-spin-slow { animation: not-found-spin-slow 12s linear infinite; }
+.not-found-bubble { animation: not-found-bubble 4s ease-in-out infinite; }
+
+/* Termal chek printer (58mm / 80mm) */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 2mm;
+  }
+
+  html,
+  body {
+    width: 80mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .receipt-print-area {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .receipt-root {
+    width: 76mm !important;
+    max-width: 76mm !important;
+    padding: 0 !important;
+  }
+}

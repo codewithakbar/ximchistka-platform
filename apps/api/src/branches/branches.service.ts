@@ -53,7 +53,7 @@ export class BranchesService {
     return branch;
   }
 
-  create(data: {
+  async create(data: {
     organizationId: string;
     name: string;
     address: string;
@@ -63,7 +63,31 @@ export class BranchesService {
     openTime?: string;
     closeTime?: string;
   }) {
-    return this.prisma.branch.create({ data });
+    const branch = await this.prisma.branch.create({
+      data: {
+        ...data,
+        openTime: data.openTime ?? '09:00',
+        closeTime: data.closeTime ?? '20:00',
+      },
+    });
+
+    const services = await this.prisma.service.findMany({
+      where: { isActive: true },
+      select: { id: true, basePrice: true },
+    });
+    if (services.length > 0) {
+      await this.prisma.priceRule.createMany({
+        data: services.map((s) => ({
+          branchId: branch.id,
+          serviceId: s.id,
+          itemType: 'standart',
+          price: s.basePrice,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    return branch;
   }
 
   async update(id: string, data: Partial<{
@@ -95,7 +119,11 @@ export class BranchesService {
     }>,
   ) {
     await this.assertBranchAccess(user, id);
-    return this.update(id, data);
+    const patch = { ...data };
+    if (user.role !== UserRole.super_admin) {
+      delete patch.isActive;
+    }
+    return this.update(id, patch);
   }
 
   private async ensureExists(id: string) {

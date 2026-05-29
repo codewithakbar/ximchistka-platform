@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, UserRole } from '@prisma/client';
 import { ORDER_STATUS_LABELS } from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +10,44 @@ export class ReportsService {
     private prisma: PrismaService,
     private branches: BranchesService,
   ) {}
+
+  /** Sana oralig'i — UTC kun chegaralari (CRM date input bilan mos) */
+  private parseDateRange(from: string, to: string) {
+    const fromDate = new Date(`${from}T00:00:00.000Z`);
+    const toDate = new Date(`${to}T23:59:59.999Z`);
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+      throw new BadRequestException('Sana formati noto\'g\'ri');
+    }
+    return { fromDate, toDate };
+  }
+
+  /** Hisobotda: yaratilgan yoki shu davrda yakunlangan buyurtmalar */
+  private ordersInReportPeriod(
+    orgScope: object,
+    fromDate: Date,
+    toDate: Date,
+    branchId?: string,
+  ) {
+    return {
+      ...orgScope,
+      ...(branchId ? { branchId } : {}),
+      status: { not: OrderStatus.cancelled },
+      OR: [
+        { createdAt: { gte: fromDate, lte: toDate } },
+        {
+          status: OrderStatus.completed,
+          updatedAt: { gte: fromDate, lte: toDate },
+        },
+      ],
+    };
+  }
+
+  private reportDayKey(order: { status: OrderStatus; createdAt: Date; updatedAt: Date }) {
+    if (order.status === OrderStatus.completed) {
+      return order.updatedAt.toISOString().slice(0, 10);
+    }
+    return order.createdAt.toISOString().slice(0, 10);
+  }
 
   async dashboard(user: { role: UserRole; organizationId?: string; branchIds: string[] }) {
     const orgScope = this.branches.orderScopeForUser(user);
@@ -51,9 +89,7 @@ export class ReportsService {
     user: { role: UserRole; organizationId?: string; branchIds: string[] },
     branchId?: string,
   ) {
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
+    const { fromDate, toDate } = this.parseDateRange(from, to);
 
     const orgScope = this.branches.orderScopeForUser(user);
     if (branchId) {
@@ -61,12 +97,7 @@ export class ReportsService {
     }
 
     const orders = await this.prisma.order.findMany({
-      where: {
-        ...orgScope,
-        createdAt: { gte: fromDate, lte: toDate },
-        ...(branchId ? { branchId } : {}),
-        status: { not: OrderStatus.cancelled },
-      },
+      where: this.ordersInReportPeriod(orgScope, fromDate, toDate, branchId),
       include: { branch: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -82,7 +113,7 @@ export class ReportsService {
     });
 
     const byDay = orders.reduce<Record<string, { count: number; revenue: number }>>((acc, o) => {
-      const day = o.createdAt.toISOString().slice(0, 10);
+      const day = this.reportDayKey(o);
       if (!acc[day]) acc[day] = { count: 0, revenue: 0 };
       acc[day].count += 1;
       acc[day].revenue += o.totalAmount;
@@ -142,16 +173,10 @@ export class ReportsService {
     const branch = await this.prisma.branch.findUnique({ where: { id: branchId } });
     if (!branch) throw new NotFoundException('Filial topilmadi');
 
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
+    const { fromDate, toDate } = this.parseDateRange(from, to);
 
     const orders = await this.prisma.order.findMany({
-      where: {
-        branchId,
-        createdAt: { gte: fromDate, lte: toDate },
-        status: { not: OrderStatus.cancelled },
-      },
+      where: this.ordersInReportPeriod({}, fromDate, toDate, branchId),
       include: {
         customer: { include: { user: { select: { fullName: true, phone: true } } } },
         payments: { orderBy: { createdAt: 'asc' } },
@@ -159,10 +184,11 @@ export class ReportsService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const orderIds = orders.map((o) => o.id);
+
     const payments = await this.prisma.payment.findMany({
       where: {
-        order: { branchId },
-        createdAt: { gte: fromDate, lte: toDate },
+        orderId: { in: orderIds },
       },
       include: {
         order: {
@@ -184,7 +210,7 @@ export class ReportsService {
       .reduce((s, p) => s + p.amount, 0);
 
     const revenueByDay = orders.reduce<Record<string, { count: number; revenue: number }>>((acc, o) => {
-      const day = o.createdAt.toISOString().slice(0, 10);
+      const day = this.reportDayKey(o);
       if (!acc[day]) acc[day] = { count: 0, revenue: 0 };
       acc[day].count += 1;
       acc[day].revenue += o.totalAmount;

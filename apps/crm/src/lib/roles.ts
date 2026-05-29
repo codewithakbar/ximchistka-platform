@@ -57,6 +57,12 @@ export function canAccessRoute(role: string, path: string): boolean {
   if (path.startsWith('/branches/') && path !== '/branches') {
     return NAV_ITEMS.some((n) => n.href === '/branches' && n.roles.includes(role as StaffRole));
   }
+  if (path.startsWith('/customers/') && path !== '/customers') {
+    return NAV_ITEMS.some((n) => n.href === '/customers' && n.roles.includes(role as StaffRole));
+  }
+  if (/^\/orders\/[^/]+\/receipt$/.test(path)) {
+    return NAV_ITEMS.some((n) => n.href === '/orders' && n.roles.includes(role as StaffRole));
+  }
   const item = NAV_ITEMS.find((n) => path.startsWith(n.href));
   if (!item) return path === '/' || path.startsWith('/login');
   return item.roles.includes(role as StaffRole);
@@ -78,4 +84,16 @@ export function canAddStaff(role: string) {
 
 export function canManageBranches(role: string) {
   return role === 'super_admin';
+}
+
+export function canEditBranch(role: string) {
+  return role === 'super_admin' || role === 'branch_manager';
+}
+
+export function canManageServicesCatalog(role: string) {
+  return role === 'super_admin';
+}
+
+export function canEditBranchPrices(role: string) {
+  return role === 'super_admin' || role === 'branch_manager';
 }

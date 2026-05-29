@@ -14,6 +14,7 @@ import {
   History,
   TrendingUp,
   Trash2,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -35,7 +36,8 @@ import { StatusBadge } from '@/components/ui/badge';
 import { api, formatPrice } from '@/lib/api';
 import { formatRelative } from '@/lib/utils';
 import { useRealtimeOrders } from '@/hooks/use-realtime-orders';
-import { useCanManageBranches } from '@/hooks/use-client-auth';
+import { EditBranchForm } from '@/components/branches/edit-branch-form';
+import { useCanEditBranch, useCanManageBranches } from '@/hooks/use-client-auth';
 import type { OrderStatus } from '@ximchistka/shared';
 
 type BranchFinance = {
@@ -93,19 +95,21 @@ type BranchFinance = {
   }[];
 };
 
-type Tab = 'overview' | 'revenue' | 'payments' | 'ledger';
+type Tab = 'overview' | 'revenue' | 'payments' | 'ledger' | 'settings';
 
 const tabs: { id: Tab; label: string; icon: typeof Wallet }[] = [
   { id: 'overview', label: 'Umumiy', icon: TrendingUp },
   { id: 'revenue', label: 'Tushumlar tarixi', icon: ClipboardList },
   { id: 'payments', label: 'To\'lovlar', icon: Wallet },
   { id: 'ledger', label: 'Foliyat tarixi', icon: History },
+  { id: 'settings', label: 'Sozlamalar', icon: Settings },
 ];
 
 export default function BranchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const canManage = useCanManageBranches();
+  const canEdit = useCanEditBranch();
   const [tab, setTab] = useState<Tab>('overview');
   const [data, setData] = useState<BranchFinance | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -114,9 +118,13 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
 
   const load = useCallback(async () => {
     setData(null);
-    const q = new URLSearchParams({ from, to });
-    const res = await api<BranchFinance>(`/reports/branch/${id}/finance?${q}`);
-    setData(res);
+    try {
+      const q = new URLSearchParams({ from, to });
+      const res = await api<BranchFinance>(`/reports/branch/${id}/finance?${q}`);
+      setData(res);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Filial ma\'lumotlarini yuklab bo\'lmadi');
+    }
   }, [id, from, to]);
 
   useEffect(() => {
@@ -144,6 +152,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
   }
 
   const title = data?.branch.name ?? 'Filial';
+  const visibleTabs = tabs.filter((t) => t.id !== 'settings' || canEdit);
 
   return (
     <AppShell title={title}>
@@ -234,7 +243,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4 border-b border-border pb-2">
-            {tabs.map((t) => {
+            {visibleTabs.map((t) => {
               const Icon = t.icon;
               return (
                 <button
@@ -360,6 +369,27 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                 </tr>
               ))}
             />
+          )}
+
+          {tab === 'settings' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Filial ma&apos;lumotlari</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {canEdit ? (
+                  <EditBranchForm
+                    branch={data.branch}
+                    canManage={canManage}
+                    onSaved={load}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Tahrirlash uchun ruxsat yo&apos;q
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           )}
         </>
       )}

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { IsArray, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { UsersService } from './users.service';
@@ -13,6 +13,16 @@ class CreateStaffDto {
   @IsEnum(UserRole) role!: UserRole;
   @IsString() @MinLength(6) password!: string;
   @IsOptional() @IsArray() branchIds?: string[];
+  @IsOptional() @IsString() avatarUrl?: string;
+}
+
+class UpdateStaffBranchesDto {
+  @IsArray() @IsString({ each: true }) branchIds!: string[];
+}
+
+class UpdateStaffProfileDto {
+  @IsOptional() @IsString() fullName?: string;
+  @IsOptional() @IsString() avatarUrl?: string | null;
 }
 
 @Controller('users')
@@ -43,5 +53,31 @@ export class UsersController {
       organizationId: user.organizationId,
       branchIds: dto.branchIds,
     });
+  }
+
+  @Roles(UserRole.super_admin)
+  @Patch('staff/:id/branches')
+  updateStaffBranches(
+    @CurrentUser() user: { organizationId?: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateStaffBranchesDto,
+  ) {
+    if (!user.organizationId) {
+      throw new BadRequestException('Tashkilot topilmadi');
+    }
+    return this.users.updateStaffBranches(user.organizationId, id, dto.branchIds);
+  }
+
+  @Roles(UserRole.super_admin)
+  @Patch('staff/:id')
+  updateStaffProfile(
+    @CurrentUser() user: { organizationId?: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateStaffProfileDto,
+  ) {
+    if (!user.organizationId) {
+      throw new BadRequestException('Tashkilot topilmadi');
+    }
+    return this.users.updateStaffProfile(user.organizationId, id, dto);
   }
 }

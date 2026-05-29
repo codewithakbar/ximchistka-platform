@@ -26,8 +26,14 @@ type Branch = { id: string; name: string; address: string };
 type PriceRule = {
   serviceId: string;
   price: number;
+  listPrice?: number;
+  effectivePrice?: number;
   service: { name: string; unit: string; category: { name: string } };
 };
+
+function unitPrice(p: PriceRule) {
+  return p.effectivePrice ?? p.listPrice ?? p.price;
+}
 
 const steps = [
   { id: 1, label: 'Filial' },
@@ -57,7 +63,7 @@ export default function NewOrderPage() {
     if (branchId) api<PriceRule[]>(`/services/prices/${branchId}`).then(setPrices);
   }, [branchId]);
 
-  const total = prices.reduce((sum, p) => sum + p.price * (selected[p.serviceId] ?? 0), 0);
+  const total = prices.reduce((sum, p) => sum + unitPrice(p) * (selected[p.serviceId] ?? 0), 0);
   const itemCount = Object.values(selected).reduce((s, q) => s + q, 0);
 
   function inc(id: string) { setSelected((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 })); }
@@ -179,7 +185,14 @@ export default function NewOrderPage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm">{p.service.name}</div>
                     <div className="text-xs text-muted-foreground">{p.service.category.name}</div>
-                    <div className="text-sm font-bold text-primary mt-0.5">{formatPrice(p.price)}</div>
+                    <div className="text-sm font-bold text-primary mt-0.5">
+                      {formatPrice(unitPrice(p))}
+                      {unitPrice(p) < (p.listPrice ?? p.price) && (
+                        <span className="text-xs text-muted-foreground font-normal line-through ml-1">
+                          {formatPrice(p.listPrice ?? p.price)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {qty > 0 ? (
                     <div className="flex items-center gap-2">

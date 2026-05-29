@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import {
   ArrowLeft,
   User,
@@ -12,14 +13,16 @@ import {
   Package,
   Calendar,
   CheckCircle2,
+  Printer,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { api, formatPrice } from '@/lib/api';
+import { api, formatPrice, getUser } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
+import { OrderReceipt } from '@/components/orders/order-receipt';
 import {
   ORDER_STATUS_LABELS,
   OrderStatus,
@@ -31,15 +34,21 @@ type OrderDetail = {
   orderNumber: string;
   status: OrderStatus;
   totalAmount: number;
+  discountAmount: number;
   notes: string | null;
   createdAt: string;
   estimatedReady: string | null;
-  branch: { name: string; address: string };
+  branch: { name: string; address: string; phone: string };
   customer: {
     user: { fullName: string; phone: string };
     addresses: { address: string; isDefault: boolean }[];
   };
-  items: { id: string; quantity: number; unitPrice: number; service: { name: string } }[];
+  items: {
+    id: string;
+    quantity: number;
+    unitPrice: number;
+    service: { name: string; unit?: string };
+  }[];
   pickupDelivery: { type: string; address: string | null; scheduledAt: string | null } | null;
   statusHistory: { status: OrderStatus; createdAt: string; user?: { fullName: string } | null }[];
 };
@@ -72,6 +81,11 @@ export default function OrderDetailPage() {
   }
 
   const allowedNext = order ? VALID_STATUS_TRANSITIONS[order.status] : [];
+  const orgName = getUser<{ organizationName?: string }>()?.organizationName;
+
+  function printReceipt() {
+    window.open(`/orders/${params.id}/receipt?print=1`, '_blank');
+  }
 
   return (
     <AppShell title={order ? order.orderNumber : 'Buyurtma'}>
@@ -97,7 +111,13 @@ export default function OrderDetailPage() {
                       Yaratilgan: {formatDate(order.createdAt, true)}
                     </p>
                   </div>
-                  <StatusBadge status={order.status} label={ORDER_STATUS_LABELS[order.status]} />
+                  <div className="flex flex-col items-end gap-2">
+                    <StatusBadge status={order.status} label={ORDER_STATUS_LABELS[order.status]} />
+                    <Button size="sm" variant="outline" onClick={printReceipt}>
+                      <Printer className="h-4 w-4" />
+                      Chek chop etish
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -215,6 +235,36 @@ export default function OrderDetailPage() {
                     {order.pickupDelivery.address}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle>Chek</CardTitle>
+                <Button size="sm" variant="outline" onClick={printReceipt}>
+                  <Printer className="h-4 w-4" />
+                  Chop etish
+                </Button>
+              </CardHeader>
+              <CardContent className="flex justify-center p-4 bg-secondary/50">
+                <div className="receipt-print-area rounded-sm border border-border shadow-sm overflow-hidden">
+                  <OrderReceipt
+                    order={{
+                      orderNumber: order.orderNumber,
+                      status: order.status,
+                      totalAmount: order.totalAmount,
+                      discountAmount: order.discountAmount ?? 0,
+                      notes: order.notes,
+                      createdAt: order.createdAt,
+                      estimatedReady: order.estimatedReady,
+                      branch: order.branch,
+                      customer: order.customer,
+                      items: order.items,
+                      pickupDelivery: order.pickupDelivery,
+                    }}
+                    organizationName={orgName}
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>

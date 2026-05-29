@@ -27,6 +27,7 @@ export class SettingsService {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      avatarUrl: user.avatarUrl,
       organizationId: user.organizationId,
       organization: user.organization
         ? {
@@ -47,9 +48,13 @@ export class SettingsService {
 
   async updateProfile(
     userId: string,
-    data: { fullName?: string; email?: string },
+    data: { fullName?: string; email?: string; avatarUrl?: string | null },
   ) {
-    if (!data.fullName?.trim() && data.email === undefined) {
+    if (
+      !data.fullName?.trim() &&
+      data.email === undefined &&
+      data.avatarUrl === undefined
+    ) {
       throw new BadRequestException('Yangilash uchun ma\'lumot kiriting');
     }
     if (data.email) {
@@ -63,6 +68,7 @@ export class SettingsService {
       data: {
         ...(data.fullName ? { fullName: data.fullName.trim() } : {}),
         ...(data.email !== undefined ? { email: data.email || null } : {}),
+        ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
       },
       include: { organization: true },
     });

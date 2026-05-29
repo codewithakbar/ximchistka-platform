@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Download, TrendingUp, ClipboardList, Wallet, Building2, BarChart3 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   ResponsiveContainer,
   LineChart,
@@ -48,15 +49,29 @@ export default function ReportsPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState('');
-  const [from, setFrom] = useState(new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10));
+  const [from, setFrom] = useState(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
+
+  const emptyReport: Report = {
+    totalOrders: 0,
+    totalRevenue: 0,
+    avgOrderAmount: 0,
+    branchCount: 0,
+    byDay: [],
+    byBranch: [],
+  };
 
   const load = useCallback(async () => {
     setReport(null);
-    const q = new URLSearchParams({ from, to });
-    if (branchId) q.set('branchId', branchId);
-    const data = await api<Report>(`/reports/daily?${q}`);
-    setReport(data);
+    try {
+      const q = new URLSearchParams({ from, to });
+      if (branchId) q.set('branchId', branchId);
+      const data = await api<Report>(`/reports/daily?${q}`);
+      setReport(data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Hisobotni yuklab bo\'lmadi');
+      setReport(emptyReport);
+    }
   }, [from, to, branchId]);
 
   useEffect(() => {
@@ -172,7 +187,7 @@ export default function ReportsPage() {
               Filiallar bo&apos;yicha
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Har bir filial uchun buyurtmalar, tushum va ulush
+              Yaratilgan va tanlangan davrda yakunlangan buyurtmalar (tushum va ulush)
             </p>
           </CardHeader>
           <CardContent>

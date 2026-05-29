@@ -1,23 +1,43 @@
 'use client';
 
-import { Search, Building2 } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Building2, ChevronRight } from 'lucide-react';
 import { NotificationBell } from './notification-bell';
 import { useEffect, useState } from 'react';
-import { api, getUser } from '@/lib/api';
+import { api, getUser, updateStoredUser } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import { StaffAvatar } from '@/components/staff/staff-avatar';
+import { ROLE_LABELS, StaffRole } from '@/lib/roles';
+
+type TopbarUser = {
+  role?: string;
+  fullName?: string;
+  avatarUrl?: string | null;
+};
 
 export function Topbar({ title }: { title: string }) {
-  const [user, setUser] = useState<{ role?: string; fullName?: string } | null>(null);
+  const [user, setUser] = useState<TopbarUser | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [demoRemainingDays, setDemoRemainingDays] = useState<number | null>(null);
   const [demoPlan, setDemoPlan] = useState<string | null>(null);
 
   useEffect(() => {
-    setUser(getUser<{ role?: string; fullName?: string; organizationId?: string }>());
+    setUser(getUser<TopbarUser>());
     api<{
+      fullName?: string;
+      role?: string;
+      avatarUrl?: string | null;
       organization?: { name: string; plan?: string; demoEndsAt?: string | null };
     }>('/settings/profile')
       .then((p) => {
+        setUser((prev) => ({
+          ...prev,
+          fullName: p.fullName ?? prev?.fullName,
+          role: p.role ?? prev?.role,
+          avatarUrl: p.avatarUrl ?? null,
+        }));
+        updateStoredUser({ avatarUrl: p.avatarUrl ?? null });
+
         const org = p.organization;
         setOrgName(org?.name ?? null);
         setDemoPlan(org?.plan ?? null);
@@ -34,7 +54,20 @@ export function Topbar({ title }: { title: string }) {
         const stored = getUser<{ organizationName?: string }>();
         if (stored?.organizationName) setOrgName(stored.organizationName);
       });
+
+    function syncFromStore() {
+      const stored = getUser<TopbarUser>();
+      if (stored) {
+        setUser((prev) => ({ ...prev, ...stored }));
+      }
+    }
+    window.addEventListener('profile-updated', syncFromStore);
+    return () => window.removeEventListener('profile-updated', syncFromStore);
   }, []);
+
+  const roleLabel = user?.role
+    ? ROLE_LABELS[user.role as StaffRole] ?? user.role.replace(/_/g, ' ')
+    : 'Super admin';
 
   return (
     <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-6 py-2">
@@ -65,17 +98,25 @@ export function Topbar({ title }: { title: string }) {
           />
         </div>
         <NotificationBell />
-        <div className="flex items-center gap-2 pl-3 border-l border-border">
-          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-            {(user?.fullName ?? 'A').charAt(0).toUpperCase()}
-          </div>
-          <div className="hidden md:block">
-            <div className="text-sm font-medium">{user?.fullName ?? 'Admin'}</div>
-            <div className="text-xs text-muted-foreground">
-              {user?.role ? user.role.replace(/_/g, ' ') : 'super admin'}
+        <Link
+          href="/settings"
+          title="Profilni ko'rish"
+          className="group flex items-center gap-2 pl-3 border-l border-border rounded-lg py-1 pr-1 transition-colors hover:bg-secondary"
+        >
+          <StaffAvatar
+            name={user?.fullName ?? 'Admin'}
+            src={user?.avatarUrl}
+            role={user?.role}
+            size="sm"
+          />
+          <div className="hidden md:block text-left">
+            <div className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">
+              {user?.fullName ?? 'Admin'}
             </div>
+            <div className="text-xs text-muted-foreground">{roleLabel}</div>
           </div>
-        </div>
+          <ChevronRight className="hidden md:block h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </Link>
       </div>
     </header>
   );

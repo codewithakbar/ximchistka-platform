@@ -16,6 +16,12 @@ export function orderScopeForUser(user: TenantUser): Prisma.OrderWhereInput {
     return { branchId: { in: [] } };
   }
   if (user.organizationId) {
+    if (user.role === UserRole.super_admin) {
+      return { branch: { organizationId: user.organizationId } };
+    }
+    if (user.branchIds?.length) {
+      return { branchId: { in: user.branchIds } };
+    }
     return { branch: { organizationId: user.organizationId } };
   }
   if (user.branchIds?.length) {
@@ -25,19 +31,33 @@ export function orderScopeForUser(user: TenantUser): Prisma.OrderWhereInput {
 }
 
 /** Filiallar ro'yxati — tashkilot bo'yicha */
-export function branchScopeForUser(user: TenantUser): Prisma.BranchWhereInput {
-  const base: Prisma.BranchWhereInput = { isActive: true };
+export function branchScopeForUser(
+  user: TenantUser,
+  opts?: { includeInactive?: boolean },
+): Prisma.BranchWhereInput {
+  const inactiveFilter: Prisma.BranchWhereInput =
+    opts?.includeInactive || user.role === UserRole.super_admin ? {} : { isActive: true };
 
   if (user.role === UserRole.platform_admin) {
-    return base;
+    return inactiveFilter;
   }
   if (user.organizationId) {
-    return { ...base, organizationId: user.organizationId };
+    const orgScope: Prisma.BranchWhereInput = {
+      ...inactiveFilter,
+      organizationId: user.organizationId,
+    };
+    if (user.role !== UserRole.super_admin) {
+      if (user.branchIds?.length) {
+        return { ...orgScope, id: { in: user.branchIds } };
+      }
+      return { ...orgScope, id: { in: [] } };
+    }
+    return orgScope;
   }
   if (user.branchIds?.length) {
-    return { ...base, id: { in: user.branchIds } };
+    return { ...inactiveFilter, id: { in: user.branchIds } };
   }
-  return { ...base, id: { in: [] } };
+  return { ...inactiveFilter, id: { in: [] } };
 }
 
 export async function assertBranchAccessible(
@@ -52,23 +72,26 @@ export async function assertBranchAccessible(
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) throw new NotFoundException('Filial topilmadi');
 
-  if (user.organizationId) {
-    if (branch.organizationId !== user.organizationId) {
-      throw new ForbiddenException('Bu filial sizning tashkilotingizga tegishli emas');
-    }
-    if (
-      user.role !== UserRole.super_admin &&
-      user.branchIds?.length &&
-      !user.branchIds.includes(branchId)
-    ) {
+  if (user.organizationId && branch.organizationId !== user.organizationId) {
+    throw new ForbiddenException('Bu filial sizning tashkilotingizga tegishli emas');
+  }
+
+  if (user.role === UserRole.super_admin) {
+    return;
+  }
+
+  if (user.branchIds?.length) {
+    if (!user.branchIds.includes(branchId)) {
       throw new ForbiddenException('Bu filial uchun ruxsat yo\'q');
     }
     return;
   }
 
-  if (!user.branchIds?.includes(branchId)) {
-    throw new ForbiddenException('Bu filial uchun ruxsat yo\'q');
+  if (user.organizationId) {
+    return;
   }
+
+  throw new ForbiddenException('Bu filial uchun ruxsat yo\'q');
 }
 
 export function staffScopeForUser(user: TenantUser): Prisma.UserWhereInput {

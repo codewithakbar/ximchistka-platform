@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Building2, MapPin, Phone, Clock, Plus, ArrowRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Empty } from '@/components/ui/empty';
+import { AddBranchDialog } from '@/components/branches/add-branch-dialog';
 import { api } from '@/lib/api';
 import { useCanManageBranches } from '@/hooks/use-client-auth';
 
@@ -27,16 +28,21 @@ type Branch = {
 export default function BranchesPage() {
   const canManage = useCanManageBranches();
   const [branches, setBranches] = useState<Branch[] | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  async function load() {
+  const load = useCallback(() => {
     setBranches(null);
-    const list = await api<Branch[]>('/branches');
-    setBranches(list);
-  }
+    api<Branch[]>('/branches')
+      .then(setBranches)
+      .catch(() => {
+        setBranches([]);
+        toast.error('Filiallarni yuklab bo\'lmadi');
+      });
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   async function deleteBranch(b: Branch, e: React.MouseEvent) {
     e.preventDefault();
@@ -52,16 +58,21 @@ export default function BranchesPage() {
     }
   }
 
+  const activeCount = branches?.filter((b) => b.isActive).length ?? 0;
+
   return (
     <AppShell title="Filiallar">
       <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-muted-foreground">
-          Jami {branches?.length ?? 0} ta faol filial
+          Jami {branches?.length ?? 0} ta filial
+          {branches && branches.length !== activeCount && ` · ${activeCount} ta faol`}
         </p>
-        <Button>
-          <Plus className="h-4 w-4" />
-          Yangi filial
-        </Button>
+        {canManage && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Yangi filial
+          </Button>
+        )}
       </div>
 
       {branches === null ? (
@@ -75,7 +86,14 @@ export default function BranchesPage() {
           icon={Building2}
           title="Filiallar yo'q"
           description="Birinchi filialingizni qo'shing"
-          action={<Button><Plus className="h-4 w-4" />Yangi filial</Button>}
+          action={
+            canManage ? (
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Yangi filial
+              </Button>
+            ) : undefined
+          }
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -86,7 +104,11 @@ export default function BranchesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <Card className="hover:shadow-md transition-shadow group">
+              <Card
+                className={`hover:shadow-md transition-shadow group ${
+                  !b.isActive ? 'opacity-75 border-dashed' : ''
+                }`}
+              >
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -131,7 +153,10 @@ export default function BranchesPage() {
                   </div>
 
                   <Link href={`/branches/${b.id}`} className="mt-4 block">
-                    <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
+                    <Button
+                      variant="outline"
+                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
+                    >
                       Filial ichiga kirish
                       <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -142,6 +167,12 @@ export default function BranchesPage() {
           ))}
         </div>
       )}
+
+      <AddBranchDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onCreated={load}
+      />
     </AppShell>
   );
 }

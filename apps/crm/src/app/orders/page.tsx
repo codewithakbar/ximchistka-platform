@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Search, Filter, ClipboardList, ArrowRight, Eye, Plus } from 'lucide-react';
+import { Search, Filter, ClipboardList, ArrowRight, Eye, Plus, Printer } from 'lucide-react';
 import { CreateOrderDialog } from '@/components/orders/create-order-dialog';
 import { useCanCreateOrders } from '@/hooks/use-client-auth';
 import { AppShell } from '@/components/layout/shell';
@@ -187,7 +187,12 @@ export default function OrdersPage() {
                               <ArrowRight className="h-3 w-3" />
                             </Button>
                           )}
-                          <Link href={`/orders/${o.id}`}>
+                          <Link href={`/orders/${o.id}/receipt`} title="Chek">
+                            <Button size="icon" variant="ghost">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/orders/${o.id}`} title="Ko'rish">
                             <Button size="icon" variant="ghost">
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -206,7 +211,12 @@ export default function OrdersPage() {
       <CreateOrderDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreated={load}
+        onCreated={(order) => {
+          load();
+          if (order?.id) {
+            window.open(`/orders/${order.id}/receipt?print=1`, '_blank');
+          }
+        }}
       />
     </AppShell>
   );

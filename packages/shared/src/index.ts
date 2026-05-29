@@ -82,3 +82,41 @@ export const PROMO_CODES = {
   WELCOME10: { discountType: 'percent' as const, discountValue: 10 },
   SUMMER5000: { discountType: 'fixed' as const, discountValue: 5000 },
 };
+
+export const DISCOUNT_TYPES = ['percent', 'fixed'] as const;
+export type DiscountType = (typeof DISCOUNT_TYPES)[number];
+
+export type ServiceDiscountFields = {
+  discountType: string | null;
+  discountValue: number | null;
+  discountValidUntil?: string | Date | null;
+};
+
+export function isServiceDiscountActive(service: ServiceDiscountFields): boolean {
+  if (!service.discountType || service.discountValue == null || service.discountValue <= 0) {
+    return false;
+  }
+  if (!DISCOUNT_TYPES.includes(service.discountType as DiscountType)) return false;
+  if (service.discountValidUntil) {
+    return new Date(service.discountValidUntil) > new Date();
+  }
+  return true;
+}
+
+export function applyServiceDiscount(price: number, service: ServiceDiscountFields): number {
+  if (!isServiceDiscountActive(service)) return price;
+  if (service.discountType === 'percent') {
+    return Math.max(0, Math.round(price * (1 - service.discountValue! / 100)));
+  }
+  if (service.discountType === 'fixed') {
+    return Math.max(0, price - service.discountValue!);
+  }
+  return price;
+}
+
+export function discountLabel(service: ServiceDiscountFields): string | null {
+  if (!isServiceDiscountActive(service)) return null;
+  if (service.discountType === 'percent') return `-${service.discountValue}%`;
+  if (service.discountType === 'fixed') return `-${service.discountValue} so'm`;
+  return null;
+}

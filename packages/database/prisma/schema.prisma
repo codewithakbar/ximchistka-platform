@@ -96,6 +96,7 @@ model User {
   phone              String               @unique
   passwordHash       String?
   fullName           String
+  avatarUrl          String?
   role               UserRole
   isActive           Boolean              @default(true)
   createdAt          DateTime             @default(now())
@@ -154,18 +155,21 @@ model ServiceCategory {
 }
 
 model Service {
-  id          String          @id @default(cuid())
-  categoryId  String
-  name        String
-  description String?
-  unit        String          @default("dona")
-  basePrice   Int
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  priceRules  PriceRule[]
-  orderItems  OrderItem[]
+  id                 String          @id @default(cuid())
+  categoryId         String
+  name               String
+  description        String?
+  unit               String          @default("dona")
+  basePrice          Int
+  discountType       String?
+  discountValue      Int?
+  discountValidUntil DateTime?
+  isActive           Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  category           ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  priceRules         PriceRule[]
+  orderItems         OrderItem[]
 }
 
 model PriceRule {

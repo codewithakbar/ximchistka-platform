@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { CustomersService } from './customers.service';
@@ -17,12 +17,24 @@ export class CustomersController {
   constructor(private customers: CustomersService) {}
 
   @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Get('lookup')
+  lookupByPhone(@Query('phone') phone: string) {
+    return this.customers.lookupByPhone(phone);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
   @Get()
   search(
     @Query('q') q?: string,
     @CurrentUser() user?: TenantUser,
   ) {
     return this.customers.search(q, user!);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Get(':id')
+  getById(@Param('id') id: string, @CurrentUser() user: TenantUser) {
+    return this.customers.getById(id, user);
   }
 
   @Roles(UserRole.customer)

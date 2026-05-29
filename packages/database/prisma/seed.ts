@@ -151,12 +151,17 @@ async function main() {
   const services = await Promise.all([
     prisma.service.upsert({
       where: { id: 'seed-service-koylak' },
-      update: {},
+      update: {
+        discountType: 'percent',
+        discountValue: 10,
+      },
       create: {
         id: 'seed-service-koylak',
         categoryId: category.id,
         name: "Ko'ylak tozalash",
         basePrice: 25000,
+        discountType: 'percent',
+        discountValue: 10,
       },
     }),
     prisma.service.upsert({

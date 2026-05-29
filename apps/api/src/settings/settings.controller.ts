@@ -8,6 +8,7 @@ import { Roles } from '../auth/guards';
 class UpdateProfileDto {
   @IsOptional() @IsString() fullName?: string;
   @IsOptional() @IsEmail() email?: string;
+  @IsOptional() @IsString() avatarUrl?: string | null;
 }
 
 class ChangePasswordDto {

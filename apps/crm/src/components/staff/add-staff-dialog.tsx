@@ -1,11 +1,13 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { X, Copy, Check } from 'lucide-react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { X, Copy, Check, Camera, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select } from '@/components/ui/input';
+import { StaffAvatar } from '@/components/staff/staff-avatar';
 import { api } from '@/lib/api';
+import { fileToAvatarDataUrl } from '@/lib/image';
 import { CREATABLE_ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, StaffRole } from '@/lib/roles';
 
 type Branch = { id: string; name: string };
@@ -39,6 +41,8 @@ export function AddStaffDialog({
   const [role, setRole] = useState<StaffRole>('operator');
   const [password, setPassword] = useState('');
   const [branchIds, setBranchIds] = useState<string[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -50,8 +54,21 @@ export function AddStaffDialog({
       setRole('operator');
       setPassword('');
       setBranchIds([]);
+      setAvatarUrl(null);
     }
   }, [open]);
+
+  async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file);
+      setAvatarUrl(dataUrl);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Rasmni yuklab bo\'lmadi');
+    }
+  }
 
   function toggleBranch(id: string) {
     setBranchIds((prev) =>
@@ -77,6 +94,7 @@ export function AddStaffDialog({
           role,
           password,
           branchIds,
+          avatarUrl: avatarUrl || undefined,
         }),
       });
       setCreated({ fullName, phone, role, password });
@@ -134,6 +152,38 @@ export function AddStaffDialog({
           </div>
         ) : (
           <form onSubmit={onSubmit} className="p-6 space-y-4">
+            <div className="flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="group relative"
+                title="Surat yuklash"
+              >
+                <StaffAvatar name={fullName || '?'} src={avatarUrl} role={role} size="xl" />
+                <span className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md ring-2 ring-card">
+                  <Camera className="h-3.5 w-3.5" />
+                </span>
+              </button>
+              {avatarUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl(null)}
+                  className="text-xs text-destructive inline-flex items-center gap-1 hover:underline"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Suratni olib tashlash
+                </button>
+              ) : (
+                <span className="text-xs text-muted-foreground">Surat (ixtiyoriy)</span>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onPickAvatar}
+              />
+            </div>
             <div>
               <Label>To&apos;liq ism</Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Ali Valiyev" />

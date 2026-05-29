@@ -9,7 +9,11 @@ import {
   OrderStatus,
   UserRole,
 } from '@prisma/client';
-import { ORDER_STATUS_LABELS, VALID_STATUS_TRANSITIONS } from '@ximchistka/shared';
+import {
+  applyServiceDiscount,
+  ORDER_STATUS_LABELS,
+  VALID_STATUS_TRANSITIONS,
+} from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { BranchesService } from '../branches/branches.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -183,18 +187,35 @@ export class OrdersService {
   ) {
     const prices = await this.prisma.priceRule.findMany({
       where: { branchId: data.branchId },
+      include: { service: true },
     });
-    const priceMap = new Map(prices.map((p) => [`${p.serviceId}:${p.itemType}`, p.price]));
+    const priceMap = new Map(
+      prices.map((p) => [`${p.serviceId}:${p.itemType}`, { listPrice: p.price, service: p.service }]),
+    );
 
+    const serviceIds = [...new Set(data.items.map((i) => i.serviceId))];
+    const services = await this.prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+    });
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+    let subtotal = 0;
     let totalAmount = 0;
     const itemsData = data.items.map((item) => {
       const itemType = item.itemType ?? 'standart';
-      const unitPrice = priceMap.get(`${item.serviceId}:${itemType}`);
-      if (!unitPrice) throw new BadRequestException(`Narx topilmadi: ${item.serviceId}`);
+      const entry = priceMap.get(`${item.serviceId}:${itemType}`);
+      const service = entry?.service ?? serviceMap.get(item.serviceId);
+      if (!entry || !service) {
+        throw new BadRequestException(`Narx topilmadi: ${item.serviceId}`);
+      }
+      const listPrice = entry.listPrice;
+      const unitPrice = applyServiceDiscount(listPrice, service);
+      subtotal += listPrice * item.quantity;
       totalAmount += unitPrice * item.quantity;
       return { ...item, itemType, unitPrice };
     });
 
+    const discountAmount = Math.max(0, subtotal - totalAmount);
     const orderNumber = await this.generateOrderNumber();
 
     const order = await this.prisma.order.create({
@@ -204,6 +225,8 @@ export class OrdersService {
         customerId,
         status: OrderStatus.submitted,
         totalAmount,
+        discountAmount,
+        promoCode: data.promoCode,
         notes: data.notes,
         estimatedReady: new Date(Date.now() + 48 * 3600000),
         items: { create: itemsData },

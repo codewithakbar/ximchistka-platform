@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -13,6 +13,8 @@ import {
   Mail,
   Phone,
   Shield,
+  Camera,
+  Trash2,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +22,9 @@ import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StaffAvatar } from '@/components/staff/staff-avatar';
 import { api, clearAuth, updateStoredUser } from '@/lib/api';
+import { fileToAvatarDataUrl } from '@/lib/image';
 import { cn } from '@/lib/utils';
 
 type Profile = {
@@ -29,6 +33,7 @@ type Profile = {
   email: string | null;
   phone: string;
   role: string;
+  avatarUrl?: string | null;
   organization: { id: string; name: string; slug: string } | null;
   branches: { id: string; name: string }[];
   createdAt: string;
@@ -93,8 +98,40 @@ export default function SettingsPage() {
   const [orgName, setOrgName] = useState('');
   const [orgSlug, setOrgSlug] = useState('');
   const [notif, setNotif] = useState<NotifPrefs>(defaultNotif);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin';
+
+  async function saveAvatar(avatarUrl: string | null) {
+    setAvatarSaving(true);
+    try {
+      const updated = await api<Profile>('/settings/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({ avatarUrl }),
+      });
+      setProfile(updated);
+      updateStoredUser({ avatarUrl: updated.avatarUrl ?? null });
+      window.dispatchEvent(new Event('profile-updated'));
+      toast.success(avatarUrl ? 'Surat yangilandi' : 'Surat olib tashlandi');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Xatolik');
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
+
+  async function onAvatarPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file);
+      await saveAvatar(dataUrl);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Rasmni yuklab bo\'lmadi');
+    }
+  }
 
   useEffect(() => {
     const stored = localStorage.getItem(NOTIF_KEY);
@@ -229,6 +266,66 @@ export default function SettingsPage() {
                       <CardDescription>Ism va email manzilingizni yangilang</CardDescription>
                     </CardHeader>
                     <CardContent>
+                      <div className="flex items-center gap-4 mb-6">
+                        <button
+                          type="button"
+                          onClick={() => avatarInputRef.current?.click()}
+                          className="group relative"
+                          title="Suratni o'zgartirish"
+                        >
+                          <StaffAvatar
+                            name={profile.fullName}
+                            src={profile.avatarUrl}
+                            role={profile.role}
+                            size="xl"
+                          />
+                          <span
+                            className={cn(
+                              'absolute inset-0 rounded-full bg-black/45 flex items-center justify-center text-white transition-opacity',
+                              avatarSaving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                            )}
+                          >
+                            <Camera className={cn('h-5 w-5', avatarSaving && 'animate-pulse')} />
+                          </span>
+                        </button>
+                        <div>
+                          <div className="font-medium">{profile.fullName}</div>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            JPG yoki PNG — kvadrat surat tavsiya etiladi
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => avatarInputRef.current?.click()}
+                              loading={avatarSaving}
+                            >
+                              <Camera className="h-3.5 w-3.5" />
+                              Surat yuklash
+                            </Button>
+                            {profile.avatarUrl && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => saveAvatar(null)}
+                                disabled={avatarSaving}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Olib tashlash
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={onAvatarPicked}
+                        />
+                      </div>
                       <form onSubmit={saveProfile} className="space-y-4 max-w-md">
                         <div>
                           <Label>To&apos;liq ism</Label>
