@@ -5,6 +5,7 @@ import { X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { api } from '@/lib/api';
 
 type CreateResult = {
@@ -109,7 +110,7 @@ export function CreateOrganizationDialog({
           </div>
           <div>
             <Label>Filial telefoni</Label>
-            <Input value={branchPhone} onChange={(e) => setBranchPhone(e.target.value)} required placeholder="+998..." />
+            <PhoneInput value={branchPhone} onChange={setBranchPhone} required placeholder="+998..." />
           </div>
           <hr className="border-border" />
           <div>
@@ -118,7 +119,7 @@ export function CreateOrganizationDialog({
           </div>
           <div>
             <Label>Admin telefoni (CRM login)</Label>
-            <Input value={adminPhone} onChange={(e) => setAdminPhone(e.target.value)} required />
+            <PhoneInput value={adminPhone} onChange={setAdminPhone} required />
           </div>
           <div>
             <Label>Admin paroli</Label>

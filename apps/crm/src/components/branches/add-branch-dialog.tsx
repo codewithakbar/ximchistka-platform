@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { api } from '@/lib/api';
 
 export function AddBranchDialog({
@@ -93,9 +94,9 @@ export function AddBranchDialog({
           </div>
           <div>
             <Label>Telefon</Label>
-            <Input
+            <PhoneInput
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
               required
               placeholder="+998901234567"
             />

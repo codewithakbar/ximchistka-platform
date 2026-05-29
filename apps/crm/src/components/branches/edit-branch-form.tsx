@@ -5,6 +5,7 @@ import { Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { api } from '@/lib/api';
 
 export type BranchFormData = {
@@ -79,7 +80,7 @@ export function EditBranchForm({
       </div>
       <div>
         <Label>Telefon</Label>
-        <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <PhoneInput value={phone} onChange={setPhone} required />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>

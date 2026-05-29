@@ -7,12 +7,13 @@ import { toast } from 'sonner';
 import { api, saveAuth, getUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState('+998900000001');
-  const [password, setPassword] = useState('admin123');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
@@ -61,14 +62,14 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
             <div>
               <Label className="text-slate-300">Telefon</Label>
               <div className="relative mt-1">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                <Input
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={setPhone}
                   className="pl-10 bg-slate-800 border-slate-600 text-white"
                   required
                 />
@@ -84,6 +85,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 bg-slate-800 border-slate-600 text-white"
                   required
+                  autoComplete="new-password"
                 />
               </div>
             </div>

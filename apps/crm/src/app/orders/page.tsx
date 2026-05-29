@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input, Select } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badge';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Empty } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
@@ -44,6 +45,8 @@ export default function OrdersPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [pending, setPending] = useState<{ id: string; next: OrderStatus } | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const canCreate = useCanCreateOrders();
 
   async function load() {
@@ -65,19 +68,29 @@ export default function OrdersPage() {
     load();
   }, [status]);
 
-  async function advanceStatus(id: string, current: OrderStatus) {
-    const allowed = VALID_STATUS_TRANSITIONS[current];
-    const next = allowed?.[0];
+  function requestAdvance(id: string, current: OrderStatus) {
+    const next = VALID_STATUS_TRANSITIONS[current]?.[0];
     if (!next) return;
+    setPending({ id, next });
+  }
+
+  async function confirmAdvance() {
+    if (!pending) return;
+    setConfirming(true);
     try {
-      await api(`/orders/${id}/status`, {
+      await api(`/orders/${pending.id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: next }),
+        body: JSON.stringify({ status: pending.next }),
       });
-      toast.success(`Status: ${ORDER_STATUS_LABELS[next]}`);
-      setOrders((prev) => prev?.map((o) => (o.id === id ? { ...o, status: next } : o)) ?? null);
+      toast.success(`Status: ${ORDER_STATUS_LABELS[pending.next]}`);
+      setOrders(
+        (prev) => prev?.map((o) => (o.id === pending.id ? { ...o, status: pending.next } : o)) ?? null,
+      );
+      setPending(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -181,7 +194,7 @@ export default function OrdersPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => advanceStatus(o.id, o.status)}
+                              onClick={() => requestAdvance(o.id, o.status)}
                             >
                               {nextActionLabel[o.status]}
                               <ArrowRight className="h-3 w-3" />
@@ -217,6 +230,24 @@ export default function OrdersPage() {
             window.open(`/orders/${order.id}/receipt?print=1`, '_blank');
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={pending !== null}
+        title="Statusni o'zgartirish"
+        description={
+          pending ? (
+            <>
+              Buyurtma statusini{' '}
+              <strong className="text-foreground">{ORDER_STATUS_LABELS[pending.next]}</strong> ga
+              o&apos;zgartirishni tasdiqlaysizmi?
+            </>
+          ) : null
+        }
+        confirmLabel="Ha, o'zgartirish"
+        loading={confirming}
+        onConfirm={confirmAdvance}
+        onCancel={() => setPending(null)}
       />
     </AppShell>
   );

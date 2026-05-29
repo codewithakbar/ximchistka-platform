@@ -19,6 +19,7 @@ import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badge';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice, getUser } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
@@ -57,6 +58,8 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [pending, setPending] = useState<OrderStatus | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   async function load() {
     const data = await api<OrderDetail>(`/orders/${params.id}`);
@@ -67,16 +70,21 @@ export default function OrderDetailPage() {
     load();
   }, [params.id]);
 
-  async function advance(next: OrderStatus) {
+  async function confirmAdvance() {
+    if (!pending) return;
+    setConfirming(true);
     try {
       await api(`/orders/${params.id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: next }),
+        body: JSON.stringify({ status: pending }),
       });
-      toast.success(`Yangilandi: ${ORDER_STATUS_LABELS[next]}`);
+      toast.success(`Yangilandi: ${ORDER_STATUS_LABELS[pending]}`);
+      setPending(null);
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -207,7 +215,7 @@ export default function OrderDetailPage() {
                       key={s}
                       variant={s === 'cancelled' ? 'destructive' : 'primary'}
                       className="w-full"
-                      onClick={() => advance(s)}
+                      onClick={() => setPending(s)}
                     >
                       {ORDER_STATUS_LABELS[s]}
                     </Button>
@@ -270,6 +278,25 @@ export default function OrderDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pending !== null}
+        title="Statusni o'zgartirish"
+        variant={pending === 'cancelled' ? 'destructive' : 'primary'}
+        description={
+          pending ? (
+            <>
+              Buyurtma statusini{' '}
+              <strong className="text-foreground">{ORDER_STATUS_LABELS[pending]}</strong> ga
+              o&apos;zgartirishni tasdiqlaysizmi?
+            </>
+          ) : null
+        }
+        confirmLabel="Ha, o'zgartirish"
+        loading={confirming}
+        onConfirm={confirmAdvance}
+        onCancel={() => setPending(null)}
+      />
     </AppShell>
   );
 }

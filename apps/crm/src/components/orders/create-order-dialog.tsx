@@ -5,6 +5,7 @@ import { X, Plus, Minus, Search, UserCheck, UserPlus, Phone } from 'lucide-react
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Badge } from '@/components/ui/badge';
 import { api, formatPrice } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -237,11 +238,11 @@ export function CreateOrderDialog({
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
+                <PhoneInput
                   className="pl-10"
                   value={customerPhone}
-                  onChange={(e) => {
-                    setCustomerPhone(e.target.value);
+                  onChange={(v) => {
+                    setCustomerPhone(v);
                     if (customerReady) changePhone();
                   }}
                   onKeyDown={(e) => {

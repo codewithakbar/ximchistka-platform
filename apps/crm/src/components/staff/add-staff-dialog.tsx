@@ -5,6 +5,7 @@ import { X, Copy, Check, Camera, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
 import { api } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
@@ -190,7 +191,7 @@ export function AddStaffDialog({
             </div>
             <div>
               <Label>Telefon (login)</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+998901234567" />
+              <PhoneInput value={phone} onChange={setPhone} required placeholder="+998901234567" />
             </div>
             <div>
               <Label>Email (ixtiyoriy)</Label>

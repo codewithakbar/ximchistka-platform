@@ -7,11 +7,12 @@ import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState('+998901111111');
-  const [password, setPassword] = useState('admin123');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
@@ -109,15 +110,15 @@ export default function LoginPage() {
             Akkauntingiz orqali boshqaruv panelga kiring
           </p>
 
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
             <div>
               <Label>Telefon raqami</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
+                <PhoneInput
                   className="pl-10"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={setPhone}
                   placeholder="+998 90 123 45 67"
                 />
               </div>
@@ -131,6 +132,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
               </div>
             </div>
@@ -140,11 +142,6 @@ export default function LoginPage() {
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </form>
-
-          <div className="mt-8 rounded-lg border border-dashed border-border bg-secondary/50 p-4">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Demo akkaunt</div>
-            <div className="text-sm font-mono">+998 90 111 11 11 / admin123</div>
-          </div>
         </div>
       </div>
     </div>

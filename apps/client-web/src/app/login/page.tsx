@@ -8,10 +8,11 @@ import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState('+998904444444');
+  const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [devCode, setDevCode] = useState('');
@@ -89,16 +90,16 @@ export default function LoginPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 onSubmit={requestOtp}
+                autoComplete="off"
               >
                 <Label>Telefon raqami</Label>
                 <div className="relative mb-4">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
+                  <PhoneInput
                     className="pl-12"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={setPhone}
                     placeholder="+998 90 123 45 67"
-                    type="tel"
                   />
                 </div>
                 <Button type="submit" loading={loading} size="lg" className="w-full">
@@ -118,6 +119,7 @@ export default function LoginPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 onSubmit={verifyOtp}
+                autoComplete="off"
               >
                 <button
                   type="button"
@@ -139,6 +141,7 @@ export default function LoginPage() {
                   placeholder="••••••"
                   inputMode="numeric"
                   maxLength={6}
+                  autoComplete="one-time-code"
                 />
 
                 {devCode && (
