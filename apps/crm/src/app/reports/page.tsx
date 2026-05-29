@@ -115,16 +115,16 @@ export default function ReportsPage() {
         </span>
       </div>
       <Card className="mb-4">
-        <CardContent className="pt-6 flex flex-col md:flex-row gap-3 items-end">
-          <div className="flex-1">
+        <CardContent className="pt-6 flex flex-col md:flex-row gap-3 md:items-end">
+          <div className="flex-1 min-w-0">
             <Label>Boshlanish sanasi</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Label>Tugash sanasi</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Label>Filial</Label>
             <Select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
               <option value="">Barcha filiallar (umumiy)</option>
@@ -133,11 +133,13 @@ export default function ReportsPage() {
               ))}
             </Select>
           </div>
-          <Button onClick={load}>Yangilash</Button>
-          <Button variant="outline" onClick={exportCsv}>
-            <Download className="h-4 w-4" />
-            CSV
-          </Button>
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button onClick={load} className="flex-1 md:flex-none">Yangilash</Button>
+            <Button variant="outline" onClick={exportCsv} className="flex-1 md:flex-none">
+              <Download className="h-4 w-4" />
+              CSV
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

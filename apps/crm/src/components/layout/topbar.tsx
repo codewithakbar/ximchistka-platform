@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Building2, ChevronRight } from 'lucide-react';
+import { Search, Building2, ChevronRight, Menu } from 'lucide-react';
 import { NotificationBell } from './notification-bell';
 import { useEffect, useState } from 'react';
 import { api, getUser, updateStoredUser } from '@/lib/api';
@@ -15,7 +15,7 @@ type TopbarUser = {
   avatarUrl?: string | null;
 };
 
-export function Topbar({ title }: { title: string }) {
+export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: () => void }) {
   const [user, setUser] = useState<TopbarUser | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [demoRemainingDays, setDemoRemainingDays] = useState<number | null>(null);
@@ -70,31 +70,41 @@ export function Topbar({ title }: { title: string }) {
     : 'Super admin';
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-6 py-2">
-      <div className="min-w-0">
-        <h1 className="truncate text-lg font-semibold">{title}</h1>
-        {orgName && (
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
-              <Building2 className="h-3 w-3" />
-              <span className="truncate max-w-[220px] md:max-w-[320px]">{orgName}</span>
-            </span>
-            {demoPlan === 'demo' && demoRemainingDays !== null && (
-              <Badge variant="warning" className="px-2.5 py-1 text-[11px] font-semibold">
-                Demo: {demoRemainingDays} kun qoldi
-              </Badge>
-            )}
-          </div>
-        )}
+    <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6 py-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="md:hidden h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-card hover:bg-secondary"
+          aria-label="Menyu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="truncate text-base sm:text-lg font-semibold">{title}</h1>
+          {orgName && (
+            <div className="mt-0.5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+                <Building2 className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[140px] sm:max-w-[220px] md:max-w-[320px]">{orgName}</span>
+              </span>
+              {demoPlan === 'demo' && demoRemainingDays !== null && (
+                <Badge variant="warning" className="px-2 py-0.5 text-[11px] font-semibold">
+                  Demo: {demoRemainingDays} kun
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative hidden md:block">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="relative hidden lg:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="search"
             placeholder="Qidirish..."
-            className="h-9 w-64 rounded-lg border border-input bg-card pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9 w-56 xl:w-64 rounded-lg border border-input bg-card pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
         <NotificationBell />
