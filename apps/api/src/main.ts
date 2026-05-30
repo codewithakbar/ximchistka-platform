@@ -15,8 +15,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  const corsOrigins = process.env.CORS_ORIGINS;
   app.enableCors({
-    origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:3002').split(','),
+    // CORS_ORIGINS bo'sh yoki "*" bo'lsa — barcha domenlarga ruxsat (origin aks ettiriladi)
+    origin: !corsOrigins || corsOrigins === '*' ? true : corsOrigins.split(','),
     credentials: true,
   });
   const port = process.env.API_PORT ?? 3001;
