@@ -9,7 +9,7 @@
     "migrate": "prisma migrate dev",
     "push": "dotenv -e ../../.env -- prisma db push",
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
-    "build": "tsc"
+    "build": "prisma generate && tsc"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

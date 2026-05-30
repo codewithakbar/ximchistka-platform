@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "npm@11.6.2",
   "scripts": {
+    "postinstall": "npm run db:generate",
     "dev": "turbo dev --filter=@ximchistka/api --filter=@ximchistka/crm --filter=@ximchistka/client-web --filter=@ximchistka/merchant",
     "dev:merchant": "npm run dev -w @ximchistka/merchant",
     "dev:mobile": "npm run dev -w @ximchistka/mobile",
