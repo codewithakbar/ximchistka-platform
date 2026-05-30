@@ -21,7 +21,11 @@ export class ReportsService {
     return { fromDate, toDate };
   }
 
-  /** Hisobotda: yaratilgan yoki shu davrda yakunlangan buyurtmalar */
+  /**
+   * Hisobotda: yaratilgan yoki shu davrda yakunlangan buyurtmalar.
+   * Bekor qilinganlar ham qaytadi (ro'yxatda ko'rsatish uchun) — lekin
+   * tushum hisobida ishtirok etmaydi (revenueOf orqali 0 deb hisoblanadi).
+   */
   private ordersInReportPeriod(
     orgScope: object,
     fromDate: Date,
@@ -31,7 +35,6 @@ export class ReportsService {
     return {
       ...orgScope,
       ...(branchId ? { branchId } : {}),
-      status: { not: OrderStatus.cancelled },
       OR: [
         { createdAt: { gte: fromDate, lte: toDate } },
         {
@@ -40,6 +43,11 @@ export class ReportsService {
         },
       ],
     };
+  }
+
+  /** Bekor qilingan buyurtma tushumga kirmaydi */
+  private revenueOf(order: { status: OrderStatus; totalAmount: number }) {
+    return order.status === OrderStatus.cancelled ? 0 : order.totalAmount;
   }
 
   private reportDayKey(order: { status: OrderStatus; createdAt: Date; updatedAt: Date }) {
@@ -96,11 +104,15 @@ export class ReportsService {
       await this.branches.assertBranchAccess(user, branchId);
     }
 
-    const orders = await this.prisma.order.findMany({
+    const allOrders = await this.prisma.order.findMany({
       where: this.ordersInReportPeriod(orgScope, fromDate, toDate, branchId),
       include: { branch: true },
       orderBy: { createdAt: 'asc' },
     });
+
+    // Metrikalar faqat to'lovli (bekor qilinmagan) buyurtmalardan hisoblanadi
+    const orders = allOrders.filter((o) => o.status !== OrderStatus.cancelled);
+    const cancelled = allOrders.filter((o) => o.status === OrderStatus.cancelled);
 
     const branchWhere = {
       ...this.branches.branchScopeForUser(user),
@@ -148,6 +160,7 @@ export class ReportsService {
     return {
       totalOrders,
       totalRevenue,
+      cancelledOrders: cancelled.length,
       avgOrderAmount: totalOrders ? Math.round(totalRevenue / totalOrders) : 0,
       branchCount: branches.length,
       byDay: Object.entries(byDay)
@@ -158,7 +171,8 @@ export class ReportsService {
         }))
         .sort((a, b) => a.date.localeCompare(b.date)),
       byBranch,
-      orders,
+      // CSV/ro'yxat uchun barcha buyurtmalar (bekor qilinganlar ham, status bilan)
+      orders: allOrders,
     };
   }
 
@@ -202,14 +216,16 @@ export class ReportsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
+    const billableOrders = orders.filter((o) => o.status !== OrderStatus.cancelled);
+    const cancelledOrders = orders.filter((o) => o.status === OrderStatus.cancelled);
+    const totalRevenue = billableOrders.reduce((s, o) => s + o.totalAmount, 0);
     const paidPayments = payments.filter((p) => p.status === PaymentStatus.paid);
     const totalPaid = paidPayments.reduce((s, p) => s + p.amount, 0);
     const totalPending = payments
       .filter((p) => p.status === PaymentStatus.pending)
       .reduce((s, p) => s + p.amount, 0);
 
-    const revenueByDay = orders.reduce<Record<string, { count: number; revenue: number }>>((acc, o) => {
+    const revenueByDay = billableOrders.reduce<Record<string, { count: number; revenue: number }>>((acc, o) => {
       const day = this.reportDayKey(o);
       if (!acc[day]) acc[day] = { count: 0, revenue: 0 };
       acc[day].count += 1;
@@ -243,7 +259,7 @@ export class ReportsService {
     }));
 
     const ledgerEvents = [
-      ...orders.map((o) => ({
+      ...billableOrders.map((o) => ({
         id: `order-${o.id}`,
         kind: 'order' as const,
         date: o.createdAt.toISOString(),
@@ -292,12 +308,13 @@ export class ReportsService {
       },
       period: { from, to },
       summary: {
-        totalOrders: orders.length,
+        totalOrders: billableOrders.length,
+        cancelledOrders: cancelledOrders.length,
         completedOrders: orders.filter((o) => o.status === OrderStatus.completed).length,
         totalRevenue,
         totalPaid,
         totalPending,
-        avgOrder: orders.length ? Math.round(totalRevenue / orders.length) : 0,
+        avgOrder: billableOrders.length ? Math.round(totalRevenue / billableOrders.length) : 0,
         collectionRate: totalRevenue
           ? Math.round((totalPaid / totalRevenue) * 1000) / 10
           : 0,

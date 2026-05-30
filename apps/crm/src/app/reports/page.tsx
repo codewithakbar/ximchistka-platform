@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { Download, TrendingUp, ClipboardList, Wallet, Building2, BarChart3 } from 'lucide-react';
+import { Download, TrendingUp, ClipboardList, Wallet, Building2, BarChart3, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ResponsiveContainer,
@@ -37,6 +37,7 @@ type BranchStat = {
 type Report = {
   totalOrders: number;
   totalRevenue: number;
+  cancelledOrders: number;
   avgOrderAmount: number;
   branchCount: number;
   byDay: { date: string; count: number; revenue: number }[];
@@ -55,6 +56,7 @@ export default function ReportsPage() {
   const emptyReport: Report = {
     totalOrders: 0,
     totalRevenue: 0,
+    cancelledOrders: 0,
     avgOrderAmount: 0,
     branchCount: 0,
     byDay: [],
@@ -148,7 +150,7 @@ export default function ReportsPage() {
         {branchId ? 'Tanlangan filial' : 'Umumiy ko\'rsatkichlar (barcha filiallar)'}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <SummaryCard
           icon={ClipboardList}
           label="Jami buyurtmalar"
@@ -178,6 +180,12 @@ export default function ReportsPage() {
           label="Filiallar"
           value={report ? String(report.branchCount) : undefined}
           color="bg-amber-500/10 text-amber-600"
+        />
+        <SummaryCard
+          icon={XCircle}
+          label="Bekor qilingan"
+          value={report ? String(report.cancelledOrders) : undefined}
+          color="bg-rose-500/10 text-rose-600"
         />
       </div>
 
