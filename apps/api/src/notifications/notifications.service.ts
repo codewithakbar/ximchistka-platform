@@ -22,7 +22,7 @@ export class NotificationsService {
   async notifyOrderStatus(phone: string, orderNumber: string, statusLabel: string) {
     return this.sendSms(
       phone,
-      `Buyurtma ${orderNumber}: ${statusLabel}. Ximchistka`,
+      `Buyurtma ${orderNumber}: ${statusLabel}. CleanWay`,
     );
   }
 }

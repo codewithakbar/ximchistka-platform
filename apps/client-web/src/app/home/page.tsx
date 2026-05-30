@@ -68,7 +68,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <div className="text-sm text-teal-100">Xush kelibsiz</div>
-              <div className="text-xl font-semibold">Ximchistka</div>
+              <div className="text-xl font-semibold">CleanWay</div>
             </div>
             <Link href="/track" className="h-10 w-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
               <Search className="h-5 w-5" />

@@ -7,10 +7,10 @@ import { PwaRegister } from '@/components/pwa-register';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Ximchistka — Onlayn kimyo tozalash',
+  title: 'CleanWay — Onlayn kimyo tozalash',
   description: 'Telefoningizdan ximchistka buyurtma bering',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, title: 'Ximchistka', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'CleanWay', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

@@ -1,6 +1,6 @@
-# Ximchistka Platform
+# CleanWay Platform
 
-Ko‘p filialli ximchistka uchun to‘liq platforma: CRM dashboard, mijoz veb/PWA va Expo mobil ilova.
+CleanWay — ko‘p filialli ximchistka uchun to‘liq platforma: CRM dashboard, mijoz veb/PWA va Expo mobil ilova.
 
 ## Tuzilma
 

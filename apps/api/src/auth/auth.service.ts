@@ -41,7 +41,7 @@ export class AuthService {
 
     await this.notifications.sendSms(
       normalized,
-      `Ximchistka tasdiqlash kodi: ${code}`,
+      `CleanWay tasdiqlash kodi: ${code}`,
     );
 
     return {

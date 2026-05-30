@@ -29,7 +29,7 @@ async function main() {
       isActive: true,
     },
     create: {
-      name: 'Ximchistka Demo',
+      name: 'CleanWay Demo',
       slug: 'ximchistka-demo',
       plan: OrganizationPlan.active,
       isActive: true,

@@ -69,12 +69,12 @@ export default function LoginPage() {
             <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
               <Sparkles className="h-5 w-5" />
             </div>
-            <span className="font-semibold text-lg">Ximchistka CRM</span>
+            <span className="font-semibold text-lg">CleanWay CRM</span>
           </div>
         </div>
         <div className="relative">
           <h2 className="text-4xl font-bold mb-4 leading-tight">
-            Ximchistka biznesingizni
+            CleanWay biznesingizni
             <br />
             <span className="text-blue-200">aqlli boshqaring</span>
           </h2>
@@ -102,7 +102,7 @@ export default function LoginPage() {
             <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
               <Sparkles className="h-5 w-5" />
             </div>
-            <span className="font-semibold text-lg">Ximchistka CRM</span>
+            <span className="font-semibold text-lg">CleanWay CRM</span>
           </div>
 
           <h1 className="text-2xl font-bold mb-2">Tizimga kirish</h1>

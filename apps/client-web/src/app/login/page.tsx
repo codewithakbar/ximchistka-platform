@@ -68,7 +68,7 @@ export default function LoginPage() {
             <div className="h-9 w-9 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
               <Sparkles className="h-5 w-5" />
             </div>
-            <span className="font-semibold">Ximchistka</span>
+            <span className="font-semibold">CleanWay</span>
           </div>
 
           <h1 className="text-3xl font-bold leading-tight mb-2">

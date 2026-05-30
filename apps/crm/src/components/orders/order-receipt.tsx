@@ -39,7 +39,7 @@ export function OrderReceipt({
     <article className="receipt-root mx-auto bg-white text-black font-mono text-[11px] leading-snug w-[80mm] max-w-full px-3 py-4">
       <header className="text-center border-b border-dashed border-black pb-2 mb-2">
         <div className="text-sm font-bold uppercase tracking-wide">
-          {organizationName ?? 'Ximchistka'}
+          {organizationName ?? 'CleanWay'}
         </div>
         <div className="font-semibold mt-1">{order.branch.name}</div>
         <div className="text-[10px] mt-0.5">{order.branch.address}</div>

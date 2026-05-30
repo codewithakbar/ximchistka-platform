@@ -24,7 +24,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Ximchistka</Text>
+      <Text style={styles.title}>CleanWay</Text>
       <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Telefon" />
       <TextInput style={styles.input} value={code} onChangeText={setCode} placeholder="OTP kod" />
       <Button title="Kirish" onPress={login} color="#0d9488" />

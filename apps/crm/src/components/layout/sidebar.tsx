@@ -27,7 +27,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           X
         </div>
         <div>
-          <div className="font-semibold text-sm">Ximchistka</div>
+          <div className="font-semibold text-sm">CleanWay</div>
           <div className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</div>
         </div>
       </div>

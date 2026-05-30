@@ -6,7 +6,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Merchant Panel — Ximchistka Platform',
+  title: 'Merchant Panel — CleanWay Platform',
   description: 'Platforma boshqaruvi: barcha ximchistka firmalari',
 };
 

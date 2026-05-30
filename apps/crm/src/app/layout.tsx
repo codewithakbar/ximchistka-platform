@@ -6,8 +6,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Ximchistka CRM',
-  description: 'Ximchistka boshqaruv paneli',
+  title: 'CleanWay CRM',
+  description: 'CleanWay boshqaruv paneli',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

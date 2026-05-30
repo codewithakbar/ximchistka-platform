@@ -6,7 +6,7 @@ export default function RootLayout() {
     <>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerStyle: { backgroundColor: '#0d9488' }, headerTintColor: '#fff' }}>
-        <Stack.Screen name="index" options={{ title: 'Ximchistka' }} />
+        <Stack.Screen name="index" options={{ title: 'CleanWay' }} />
         <Stack.Screen name="login" options={{ title: 'Kirish' }} />
         <Stack.Screen name="home" options={{ title: 'Bosh sahifa' }} />
         <Stack.Screen name="order" options={{ title: 'Buyurtma' }} />

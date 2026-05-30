@@ -110,7 +110,7 @@ export function AddStaffDialog({
 
   function copyCredentials() {
     if (!created) return;
-    const text = `Ximchistka CRM\nURL: http://localhost:3000/login\nTelefon: ${created.phone}\nParol: ${created.password}\nRol: ${ROLE_LABELS[created.role as StaffRole] ?? created.role}`;
+    const text = `CleanWay CRM\nURL: http://localhost:3000/login\nTelefon: ${created.phone}\nParol: ${created.password}\nRol: ${ROLE_LABELS[created.role as StaffRole] ?? created.role}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

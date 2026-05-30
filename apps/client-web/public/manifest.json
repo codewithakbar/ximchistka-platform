@@ -1,7 +1,7 @@
 {
-  "name": "Ximchistka",
-  "short_name": "Ximchistka",
-  "description": "Ximchistka onlayn buyurtma",
+  "name": "CleanWay",
+  "short_name": "CleanWay",
+  "description": "CleanWay onlayn buyurtma",
   "start_url": "/home",
   "display": "standalone",
   "background_color": "#f0fdfa",
