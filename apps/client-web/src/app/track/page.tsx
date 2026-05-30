@@ -105,21 +105,44 @@ function TrackContent() {
       </div>
 
       <div className="px-5 pt-4">
-        {order && order.status !== 'cancelled' && (
+        {order && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="text-center mb-4 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+            <Card
+              className={cn(
+                'text-center mb-4 bg-gradient-to-br to-transparent',
+                order.status === 'cancelled'
+                  ? 'from-destructive/5 border-destructive/20'
+                  : 'from-primary/5 border-primary/20',
+              )}
+            >
               <div className="text-3xl font-bold mb-1">{order.orderNumber}</div>
               <div className="text-sm text-muted-foreground mb-3">{order.branch.name}</div>
-              <div className="inline-block px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+              <div
+                className={cn(
+                  'inline-block px-4 py-1.5 rounded-full text-sm font-semibold',
+                  order.status === 'cancelled'
+                    ? 'bg-destructive text-destructive-foreground'
+                    : 'bg-primary text-primary-foreground',
+                )}
+              >
                 {ORDER_STATUS_LABELS[order.status]}
               </div>
-              {order.estimatedReady && order.status !== 'completed' && (
+              {order.estimatedReady && order.status !== 'completed' && order.status !== 'cancelled' && (
                 <div className="text-xs text-muted-foreground mt-3">
                   Tayyor bo&apos;ladi: {formatDate(order.estimatedReady, true)}
                 </div>
               )}
             </Card>
 
+            {order.status === 'cancelled' ? (
+              <Card className="text-center py-8">
+                <Clock className="h-10 w-10 mx-auto text-destructive mb-3" />
+                <h3 className="font-semibold mb-1">Buyurtma bekor qilingan</h3>
+                <p className="text-sm text-muted-foreground">
+                  Savol bo&apos;lsa filial bilan bog&apos;laning
+                </p>
+              </Card>
+            ) : (
             <Card>
               <h3 className="font-semibold mb-4">Buyurtma jarayoni</h3>
               <div className="relative">
@@ -172,6 +195,7 @@ function TrackContent() {
                 })}
               </div>
             </Card>
+            )}
           </motion.div>
         )}
 
