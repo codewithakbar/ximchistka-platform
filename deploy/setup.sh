@@ -74,6 +74,7 @@ npm run db:seed
 
 echo "==> Build all apps"
 set -a && source "$APP_DIR/.env" && set +a
+export MERCHANT_BASE_PATH=/platform
 npm run build
 
 echo "==> PM2"
