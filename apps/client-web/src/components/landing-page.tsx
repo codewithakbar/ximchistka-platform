@@ -525,8 +525,121 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ======= Pricing / Trial trigger ======= */}
+      {/* ======= Pricing ======= */}
       <section id="narx" className="max-w-5xl mx-auto px-5 py-20 scroll-mt-20">
+        <motion.div {...fadeUp} className="text-center max-w-2xl mx-auto mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-fuchsia-300 mb-4">
+            <Wallet className="h-3.5 w-3.5" />
+            Tariflar
+          </div>
+          <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-4">
+            Oddiy va{' '}
+            <span className="bg-gradient-to-r from-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
+              shaffof narxlar
+            </span>
+          </h2>
+          <p className="text-slate-400">
+            Yashirin to&apos;lovlar yo&apos;q — barcha imkoniyatlar har ikkala tarifda ham to&apos;liq ochiq
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch">
+          {/* Monthly */}
+          <motion.div
+            {...fadeUp}
+            transition={{ duration: 0.55 }}
+            className="relative rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-8 flex flex-col hover:border-white/25 transition-colors"
+          >
+            <div className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Oylik</div>
+            <div className="flex items-end gap-2 mb-1.5">
+              <span className="text-4xl lg:text-5xl font-black text-white">450 000</span>
+              <span className="text-slate-400 font-semibold mb-1.5">so&apos;m / oy</span>
+            </div>
+            <p className="text-sm text-slate-500 mb-7">Majburiyatsiz — istalgan vaqtda to&apos;xtatishingiz mumkin</p>
+
+            <ul className="space-y-3 mb-8 flex-1">
+              {[
+                "Barcha CRM modullari to'liq",
+                'Cheksiz filiallar va xodimlar',
+                'Onlayn mijoz portali',
+                'SMS xabarnomalar',
+                'Moliyaviy hisobotlar',
+                'Texnik yordam',
+              ].map((f) => (
+                <li key={f} className="flex items-center gap-2.5 text-sm text-slate-300">
+                  <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href={SIGNUP_URL}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 text-white font-bold px-6 py-4 hover:bg-white/10 hover:border-white/35 active:scale-[0.98] transition-all"
+            >
+              14 kun bepul boshlash
+            </a>
+          </motion.div>
+
+          {/* Yearly */}
+          <motion.div
+            {...fadeUp}
+            transition={{ duration: 0.55, delay: 0.1 }}
+            className="relative rounded-[2rem] p-[1.5px] bg-gradient-to-b from-indigo-400 via-violet-500 to-fuchsia-500 shadow-[0_0_60px_-15px_rgba(139,92,246,0.6)]"
+          >
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white text-xs font-black px-4 py-1.5 shadow-lg shadow-fuchsia-500/40 whitespace-nowrap">
+                <Gift className="h-3.5 w-3.5" />
+                +2 OY SOVG&apos;A
+              </span>
+            </div>
+
+            <div className="relative h-full rounded-[calc(2rem-1.5px)] bg-[#0b0d1f] p-8 flex flex-col">
+              <div className="text-sm font-bold uppercase tracking-widest text-indigo-300 mb-4">Yillik</div>
+              <div className="flex items-end gap-2 mb-1.5">
+                <span className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-indigo-300 to-fuchsia-300 bg-clip-text text-transparent">
+                  5 400 000
+                </span>
+                <span className="text-slate-400 font-semibold mb-1.5">so&apos;m / yil</span>
+              </div>
+              <p className="text-sm text-slate-400 mb-7">
+                12 oy narxiga <span className="font-bold text-white">14 oy foydalaning</span> — oyiga{' '}
+                <span className="font-bold text-emerald-400">~386 000 so&apos;mga</span> tushadi
+              </p>
+
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  "Oylik tarifdagi hamma narsa",
+                  "2 oy qo'shimcha — mutlaqo bepul",
+                  "Yil davomida narx o'zgarmaydi",
+                  'Ustuvor texnik yordam',
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-slate-200">
+                    <CheckCircle2 className="h-4 w-4 text-fuchsia-400 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href={SIGNUP_URL}
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-fuchsia-600 text-white font-bold px-6 py-4 shadow-lg shadow-fuchsia-500/30 hover:shadow-fuchsia-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                14 kun bepul boshlash
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </a>
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.p {...fadeUp} className="text-center text-sm text-slate-500 mt-8 flex items-center justify-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-emerald-400" />
+          Avval 14 kun bepul sinab ko&apos;rasiz — tarif faqat sinov tugagach tanlanadi
+        </motion.p>
+      </section>
+
+      {/* ======= Trial trigger ======= */}
+      <section className="max-w-5xl mx-auto px-5 py-8 pb-20 scroll-mt-20">
         <motion.div
           {...fadeUp}
           className="relative rounded-[2.5rem] overflow-hidden border border-indigo-400/25"

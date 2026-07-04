@@ -20,6 +20,7 @@ import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+const LANDING_URL = process.env.NEXT_PUBLIC_CLIENT_WEB_URL ?? 'https://cleanway.4mi.uz';
 
 type SignupResult = {
   organization: { name: string; slug: string; demoEndsAt: string | null; demoDaysLeft?: number };
@@ -161,12 +162,12 @@ export default function SignupPage() {
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary to-blue-700 text-white p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_50%)]" />
         <div className="relative">
-          <div className="flex items-center gap-3 mb-2">
+          <a href={LANDING_URL} className="inline-flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity">
             <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
               <Sparkles className="h-5 w-5" />
             </div>
             <span className="font-semibold text-lg">CleanWay</span>
-          </div>
+          </a>
         </div>
         <div className="relative">
           <h2 className="text-4xl font-bold mb-4 leading-tight">
