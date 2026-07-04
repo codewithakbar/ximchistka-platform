@@ -74,10 +74,36 @@
   0%, 100% { box-shadow: 0 0 24px -6px rgba(99, 102, 241, 0.45); }
   50% { box-shadow: 0 0 44px -4px rgba(139, 92, 246, 0.65); }
 }
-.landing-float { animation: landing-float 9s ease-in-out infinite; }
-.landing-float-delayed { animation: landing-float-delayed 11s ease-in-out infinite; }
-.landing-marquee { animation: landing-marquee 28s linear infinite; }
+.landing-float { animation: landing-float 9s ease-in-out infinite; will-change: transform; }
+.landing-float-delayed { animation: landing-float-delayed 11s ease-in-out infinite; will-change: transform; }
+.landing-marquee { animation: landing-marquee 28s linear infinite; will-change: transform; }
 .landing-glow-pulse { animation: landing-glow-pulse 2.8s ease-in-out infinite; }
+.landing-orb { transform: translateZ(0); pointer-events: none; }
+
+/* Mobile: heavy blur + infinite animations cause jank, keep orbs static and lighter */
+@media (max-width: 767px) {
+  .landing-float,
+  .landing-float-delayed {
+    animation: none;
+    will-change: auto;
+  }
+  .landing-glow-pulse {
+    animation: none;
+    box-shadow: 0 0 24px -6px rgba(99, 102, 241, 0.45);
+  }
+  .landing-orb {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-float,
+  .landing-float-delayed,
+  .landing-marquee,
+  .landing-glow-pulse {
+    animation: none;
+  }
+}
 
 @keyframes not-found-float {
   0%, 100% { transform: translateY(0) rotate(-12deg); }

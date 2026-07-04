@@ -252,9 +252,9 @@ export function LandingPage() {
       <section className="relative pt-32 pb-24 lg:pt-44 lg:pb-32">
         {/* Background effects */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 h-[42rem] w-[42rem] rounded-full bg-indigo-600/25 blur-[140px] landing-float" />
-          <div className="absolute top-[30%] left-[-10%] h-[28rem] w-[28rem] rounded-full bg-violet-600/20 blur-[120px] landing-float-delayed" />
-          <div className="absolute top-[10%] right-[-12%] h-[30rem] w-[30rem] rounded-full bg-fuchsia-600/15 blur-[130px] landing-float" />
+          <div className="landing-orb absolute top-[-20%] left-1/2 -translate-x-1/2 h-72 w-72 sm:h-[42rem] sm:w-[42rem] rounded-full bg-indigo-600/25 blur-[70px] sm:blur-[140px] landing-float" />
+          <div className="landing-orb absolute top-[30%] left-[-10%] h-56 w-56 sm:h-[28rem] sm:w-[28rem] rounded-full bg-violet-600/20 blur-[60px] sm:blur-[120px] landing-float-delayed" />
+          <div className="landing-orb absolute top-[10%] right-[-12%] h-56 w-56 sm:h-[30rem] sm:w-[30rem] rounded-full bg-fuchsia-600/15 blur-[60px] sm:blur-[130px] landing-float" />
           <div
             className="absolute inset-0 opacity-[0.25]"
             style={{
@@ -273,10 +273,10 @@ export function LandingPage() {
             initial={{ opacity: 0, y: -14, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.55 }}
-            className="inline-flex items-center gap-2.5 rounded-full border border-indigo-400/30 bg-indigo-500/10 backdrop-blur px-5 py-2 mb-8 landing-glow-pulse"
+            className="inline-flex items-center gap-2 sm:gap-2.5 max-w-[92vw] rounded-full border border-indigo-400/30 bg-indigo-500/10 backdrop-blur px-4 sm:px-5 py-2 mb-8 landing-glow-pulse"
           >
-            <Gift className="h-4 w-4 text-indigo-300" />
-            <span className="text-sm font-semibold text-indigo-200">14 kun bepul sinov — karta talab qilinmaydi</span>
+            <Gift className="h-4 w-4 text-indigo-300 shrink-0" />
+            <span className="text-xs sm:text-sm font-semibold text-indigo-200">14 kun bepul sinov — karta talab qilinmaydi</span>
           </motion.div>
 
           <motion.h1
@@ -310,14 +310,14 @@ export function LandingPage() {
           >
             <a
               href={SIGNUP_URL}
-              className="group relative inline-flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-lg px-9 py-4 shadow-[0_0_50px_-10px_rgba(99,102,241,0.7)] hover:shadow-[0_0_70px_-8px_rgba(99,102,241,0.9)] hover:scale-[1.04] active:scale-[0.98] transition-all"
+              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-base sm:text-lg px-7 sm:px-9 py-4 shadow-[0_0_50px_-10px_rgba(99,102,241,0.7)] hover:shadow-[0_0_70px_-8px_rgba(99,102,241,0.9)] hover:scale-[1.04] active:scale-[0.98] transition-all"
             >
               Bepul boshlash
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
               href="#afzalliklar"
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 backdrop-blur text-white font-semibold text-lg px-9 py-4 hover:bg-white/10 hover:border-white/25 active:scale-[0.98] transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 backdrop-blur text-white font-semibold text-base sm:text-lg px-7 sm:px-9 py-4 hover:bg-white/10 hover:border-white/25 active:scale-[0.98] transition-all"
             >
               Imkoniyatlar bilan tanishish
             </a>
@@ -551,7 +551,7 @@ export function LandingPage() {
             className="relative rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-8 flex flex-col hover:border-white/25 transition-colors"
           >
             <div className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Oylik</div>
-            <div className="flex items-end gap-2 mb-1.5">
+            <div className="flex flex-wrap items-end gap-2 mb-1.5">
               <span className="text-4xl lg:text-5xl font-black text-white">450 000</span>
               <span className="text-slate-400 font-semibold mb-1.5">so&apos;m / oy</span>
             </div>
@@ -585,7 +585,7 @@ export function LandingPage() {
           <motion.div
             {...fadeUp}
             transition={{ duration: 0.55, delay: 0.1 }}
-            className="relative rounded-[2rem] p-[1.5px] bg-gradient-to-b from-indigo-400 via-violet-500 to-fuchsia-500 shadow-[0_0_60px_-15px_rgba(139,92,246,0.6)]"
+            className="relative mt-4 md:mt-0 rounded-[2rem] p-[1.5px] bg-gradient-to-b from-indigo-400 via-violet-500 to-fuchsia-500 shadow-[0_0_60px_-15px_rgba(139,92,246,0.6)]"
           >
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white text-xs font-black px-4 py-1.5 shadow-lg shadow-fuchsia-500/40 whitespace-nowrap">
@@ -596,7 +596,7 @@ export function LandingPage() {
 
             <div className="relative h-full rounded-[calc(2rem-1.5px)] bg-[#0b0d1f] p-8 flex flex-col">
               <div className="text-sm font-bold uppercase tracking-widest text-indigo-300 mb-4">Yillik</div>
-              <div className="flex items-end gap-2 mb-1.5">
+              <div className="flex flex-wrap items-end gap-2 mb-1.5">
                 <span className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-indigo-300 to-fuchsia-300 bg-clip-text text-transparent">
                   5 400 000
                 </span>
@@ -645,8 +645,8 @@ export function LandingPage() {
           className="relative rounded-[2.5rem] overflow-hidden border border-indigo-400/25"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/30 via-violet-600/20 to-fuchsia-600/25" aria-hidden />
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-indigo-500/30 blur-[100px] landing-float" aria-hidden />
-          <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-[100px] landing-float-delayed" aria-hidden />
+          <div className="landing-orb absolute -top-24 -right-24 h-48 w-48 sm:h-72 sm:w-72 rounded-full bg-indigo-500/30 blur-[60px] sm:blur-[100px] landing-float" aria-hidden />
+          <div className="landing-orb absolute -bottom-24 -left-24 h-48 w-48 sm:h-72 sm:w-72 rounded-full bg-fuchsia-500/25 blur-[60px] sm:blur-[100px] landing-float-delayed" aria-hidden />
 
           <div className="relative p-8 lg:p-14 text-center">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur border border-white/20 px-5 py-2 mb-6">
@@ -682,7 +682,7 @@ export function LandingPage() {
 
             <a
               href={SIGNUP_URL}
-              className="group inline-flex items-center gap-3 rounded-2xl bg-white text-[#1a1b3a] font-black text-lg px-10 py-5 shadow-[0_0_60px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_0_80px_-8px_rgba(255,255,255,0.7)] hover:scale-[1.04] active:scale-[0.98] transition-all"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-white text-[#1a1b3a] font-black text-base sm:text-lg px-8 sm:px-10 py-5 shadow-[0_0_60px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_0_80px_-8px_rgba(255,255,255,0.7)] hover:scale-[1.04] active:scale-[0.98] transition-all"
             >
               Hoziroq bepul boshlash
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform" />
