@@ -6,6 +6,7 @@ import {
 import { OrganizationPlan, Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const DEMO_DAYS = 14;
 const PUBLIC_TRIAL_DAYS = 14;
@@ -27,7 +28,10 @@ function slugify(name: string) {
 
 @Injectable()
 export class PlatformService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async listOrganizations() {
     const orgs = await this.prisma.organization.findMany({
@@ -156,11 +160,27 @@ export class PlatformService {
     adminPassword: string;
     demoDays?: number;
   }) {
-    return this.createOrganization({
+    const demoDays = data.demoDays ?? PUBLIC_TRIAL_DAYS;
+    const result = await this.createOrganization({
       ...data,
-      demoDays: data.demoDays ?? PUBLIC_TRIAL_DAYS,
+      demoDays,
       branchPhone: data.branchPhone || data.adminPhone,
     });
+
+    void this.notifications.notifyTrialSignup({
+      organizationName: result.organization.name,
+      slug: result.organization.slug,
+      branchName: data.branchName,
+      branchAddress: data.branchAddress,
+      branchPhone: this.normalizePhone(data.branchPhone || data.adminPhone),
+      adminFullName: result.admin.fullName,
+      adminPhone: result.admin.phone,
+      contactEmail: data.contactEmail,
+      demoDays,
+      crmUrl: result.crmUrl,
+    });
+
+    return result;
   }
 
   async updateOrganization(
