@@ -36,7 +36,7 @@ module.exports = {
       args: 'start -p 3003',
       instances: 1,
       exec_mode: 'fork',
-      env: { NODE_ENV: 'production' },
+      env: { NODE_ENV: 'production', MERCHANT_BASE_PATH: '/platform' },
       max_memory_restart: '500M',
     },
   ],
