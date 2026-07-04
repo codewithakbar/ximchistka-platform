@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Plus, Minus, Search, UserCheck, UserPlus, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,8 @@ export function CreateOrderDialog({
   const [loading, setLoading] = useState(false);
 
   const [lookupState, setLookupState] = useState<LookupState>('idle');
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const lookupBusyRef = useRef(false);
   const [customerReady, setCustomerReady] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -114,12 +116,16 @@ export function CreateOrderDialog({
     });
   }
 
-  async function lookupCustomer() {
-    const phone = customerPhone.trim();
-    if (!phone) {
-      toast.error('Telefon raqamini kiriting');
+  async function lookupCustomer(phoneArg?: string) {
+    if (lookupBusyRef.current) return;
+    // Read the live input value too: state can lag behind on autofill/fast clicks
+    const phone = (phoneArg ?? phoneInputRef.current?.value ?? customerPhone).trim();
+    if (!phone || phone.replace(/\D/g, '').length < 12) {
+      toast.error("Telefon raqamini to'liq kiriting");
       return;
     }
+    lookupBusyRef.current = true;
+    setCustomerPhone(phone);
     setLookupState('loading');
     setCustomerReady(false);
     try {
@@ -153,6 +159,8 @@ export function CreateOrderDialog({
     } catch (err) {
       setLookupState('idle');
       toast.error(err instanceof Error ? err.message : 'Qidiruv xatosi');
+    } finally {
+      lookupBusyRef.current = false;
     }
   }
 
@@ -174,7 +182,8 @@ export function CreateOrderDialog({
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!customerReady) {
-      toast.error('Avval mijoz telefonini qidiring');
+      // Phone entered but not looked up yet — run the lookup instead of blocking
+      await lookupCustomer();
       return;
     }
     if (!customerName.trim()) {
@@ -239,11 +248,16 @@ export function CreateOrderDialog({
               <div className="relative flex-1">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <PhoneInput
+                  ref={phoneInputRef}
                   className="pl-10"
                   value={customerPhone}
                   onChange={(v) => {
                     setCustomerPhone(v);
                     if (customerReady) changePhone();
+                    // Full number typed — look it up automatically
+                    if (v.replace(/\D/g, '').length >= 12) {
+                      lookupCustomer(v);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -259,7 +273,7 @@ export function CreateOrderDialog({
               <Button
                 type="button"
                 variant="secondary"
-                onClick={lookupCustomer}
+                onClick={() => lookupCustomer()}
                 loading={lookupState === 'loading'}
               >
                 <Search className="h-4 w-4" />
@@ -443,10 +457,10 @@ export function CreateOrderDialog({
             <Button
               type="submit"
               className="flex-1"
-              loading={loading}
-              disabled={!customerReady || !branchId || !itemCount}
+              loading={loading || lookupState === 'loading'}
+              disabled={customerReady && (!branchId || !itemCount)}
             >
-              Buyurtma yaratish
+              {customerReady ? 'Buyurtma yaratish' : 'Davom etish'}
             </Button>
           </div>
         </form>
