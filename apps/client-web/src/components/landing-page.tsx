@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getToken } from '@/lib/api';
 import {
   Sparkles,
   ArrowRight,
@@ -111,6 +112,11 @@ const stats = [
 
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(Boolean(getToken()));
+  }, []);
 
   const nav = [
     { href: '#xizmatlar', label: 'Xizmatlar' },
@@ -141,10 +147,10 @@ export function LandingPage() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link
-              href="/login"
+              href={loggedIn ? '/home' : '/login'}
               className="text-sm font-semibold text-foreground hover:text-primary transition-colors px-3 py-2"
             >
-              Kirish
+              {loggedIn ? 'Kabinet' : 'Kirish'}
             </Link>
             <Link
               href="/order/new"
@@ -177,8 +183,11 @@ export function LandingPage() {
               </a>
             ))}
             <div className="pt-3 flex gap-3">
-              <Link href="/login" className="flex-1 text-center rounded-xl border-2 border-primary text-primary text-sm font-semibold py-2.5">
-                Kirish
+              <Link
+                href={loggedIn ? '/home' : '/login'}
+                className="flex-1 text-center rounded-xl border-2 border-primary text-primary text-sm font-semibold py-2.5"
+              >
+                {loggedIn ? 'Kabinet' : 'Kirish'}
               </Link>
               <Link href="/order/new" className="flex-1 text-center rounded-xl bg-primary text-white text-sm font-semibold py-2.5">
                 Buyurtma
