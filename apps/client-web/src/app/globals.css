@@ -57,6 +57,28 @@
   padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
 }
 
+/* Landing page effects */
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-24px) scale(1.04); }
+}
+@keyframes landing-float-delayed {
+  0%, 100% { transform: translateY(0) scale(1.03); }
+  50% { transform: translateY(20px) scale(1); }
+}
+@keyframes landing-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+@keyframes landing-glow-pulse {
+  0%, 100% { box-shadow: 0 0 24px -6px rgba(99, 102, 241, 0.45); }
+  50% { box-shadow: 0 0 44px -4px rgba(139, 92, 246, 0.65); }
+}
+.landing-float { animation: landing-float 9s ease-in-out infinite; }
+.landing-float-delayed { animation: landing-float-delayed 11s ease-in-out infinite; }
+.landing-marquee { animation: landing-marquee 28s linear infinite; }
+.landing-glow-pulse { animation: landing-glow-pulse 2.8s ease-in-out infinite; }
+
 @keyframes not-found-float {
   0%, 100% { transform: translateY(0) rotate(-12deg); }
   50% { transform: translateY(-12px) rotate(-8deg); }
