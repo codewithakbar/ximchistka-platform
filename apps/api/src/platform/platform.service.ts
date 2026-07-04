@@ -3,11 +3,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrganizationPlan, UserRole } from '@prisma/client';
+import { OrganizationPlan, Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEMO_DAYS = 14;
+const PUBLIC_TRIAL_DAYS = 14;
+
+const DEFAULT_SERVICES = [
+  { name: "Ko'ylak tozalash", basePrice: 25000, discountType: 'percent' as const, discountValue: 10 },
+  { name: 'Palto tozalash', basePrice: 80000 },
+  { name: 'Press (dazmol)', basePrice: 15000 },
+];
 
 function slugify(name: string) {
   return name
@@ -70,11 +77,12 @@ export class PlatformService {
     adminPhone: string;
     adminPassword: string;
   }) {
-    const slug = data.slug?.trim() || slugify(data.name);
-    const existing = await this.prisma.organization.findUnique({ where: { slug } });
-    if (existing) throw new BadRequestException('Bu slug band');
+    const adminPhone = this.normalizePhone(data.adminPhone);
+    const slug = data.slug?.trim()
+      ? await this.assertSlugAvailable(data.slug.trim())
+      : await this.resolveSlug(data.name);
 
-    const phoneTaken = await this.prisma.user.findUnique({ where: { phone: data.adminPhone } });
+    const phoneTaken = await this.prisma.user.findUnique({ where: { phone: adminPhone } });
     if (phoneTaken) throw new BadRequestException('Admin telefoni band');
 
     const demoDays = data.demoDays ?? DEMO_DAYS;
@@ -90,7 +98,7 @@ export class PlatformService {
           plan: OrganizationPlan.demo,
           demoStartedAt,
           demoEndsAt,
-          contactPhone: data.contactPhone,
+          contactPhone: data.contactPhone ? this.normalizePhone(data.contactPhone) : undefined,
           contactEmail: data.contactEmail,
         },
       });
@@ -100,20 +108,22 @@ export class PlatformService {
           organizationId: org.id,
           name: data.branchName,
           address: data.branchAddress,
-          phone: data.branchPhone,
+          phone: this.normalizePhone(data.branchPhone),
         },
       });
 
       const admin = await tx.user.create({
         data: {
           organizationId: org.id,
-          phone: data.adminPhone,
+          phone: adminPhone,
           fullName: data.adminFullName,
           role: UserRole.super_admin,
           passwordHash,
           userBranches: { create: { branchId: branch.id } },
         },
       });
+
+      await this.seedDefaultCatalog(tx, branch.id);
 
       return { org, branch, admin };
     });
@@ -131,6 +141,26 @@ export class PlatformService {
       },
       crmUrl: process.env.CRM_URL ?? 'http://localhost:3000',
     };
+  }
+
+  async publicTrialSignup(data: {
+    name: string;
+    slug?: string;
+    contactPhone?: string;
+    contactEmail?: string;
+    branchName: string;
+    branchAddress: string;
+    branchPhone: string;
+    adminFullName: string;
+    adminPhone: string;
+    adminPassword: string;
+    demoDays?: number;
+  }) {
+    return this.createOrganization({
+      ...data,
+      demoDays: data.demoDays ?? PUBLIC_TRIAL_DAYS,
+      branchPhone: data.branchPhone || data.adminPhone,
+    });
   }
 
   async updateOrganization(
@@ -222,6 +252,64 @@ export class PlatformService {
       totalBranches: branches,
       totalOrders: orders,
     };
+  }
+
+  private async assertSlugAvailable(raw: string) {
+    const slug = slugify(raw);
+    if (!slug) throw new BadRequestException('Slug noto\'g\'ri');
+    const existing = await this.prisma.organization.findUnique({ where: { slug } });
+    if (existing) throw new BadRequestException('Bu slug band');
+    return slug;
+  }
+
+  private async resolveSlug(base: string) {
+    let candidate = slugify(base);
+    if (!candidate) candidate = 'firma';
+    let slug = candidate;
+    let n = 1;
+    while (await this.prisma.organization.findUnique({ where: { slug } })) {
+      slug = `${candidate}-${++n}`;
+    }
+    return slug;
+  }
+
+  private async seedDefaultCatalog(tx: Prisma.TransactionClient, branchId: string) {
+    const category = await tx.serviceCategory.create({
+      data: {
+        name: 'Kimyo tozalash',
+        description: 'Professional ximchistka xizmatlari',
+        sortOrder: 1,
+      },
+    });
+
+    for (const svc of DEFAULT_SERVICES) {
+      const service = await tx.service.create({
+        data: {
+          categoryId: category.id,
+          name: svc.name,
+          basePrice: svc.basePrice,
+          ...(svc.discountType
+            ? { discountType: svc.discountType, discountValue: svc.discountValue }
+            : {}),
+        },
+      });
+
+      await tx.priceRule.create({
+        data: {
+          branchId,
+          serviceId: service.id,
+          itemType: 'standart',
+          price: svc.basePrice,
+        },
+      });
+    }
+  }
+
+  private normalizePhone(phone: string) {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.startsWith('998')) return `+${digits}`;
+    if (digits.length === 9) return `+998${digits}`;
+    return phone.startsWith('+') ? phone : `+${digits}`;
   }
 
   private resolvePlanStatus(

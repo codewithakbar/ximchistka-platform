@@ -1,9 +1,10 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Phone, ArrowLeft, Shield } from 'lucide-react';
+import { Sparkles, ArrowRight, Phone, ArrowLeft, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,11 @@ import { PhoneInput } from '@/components/ui/phone-input';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isRegister = searchParams.get('mode') === 'register';
+
   const [phone, setPhone] = useState('');
+  const [fullName, setFullName] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [devCode, setDevCode] = useState('');
@@ -45,7 +50,14 @@ export default function LoginPage() {
     try {
       const data = await api<{ accessToken: string; refreshToken: string; user: unknown }>(
         '/auth/otp/verify',
-        { method: 'POST', body: JSON.stringify({ phone, code }) },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            phone,
+            code,
+            ...(fullName.trim() ? { fullName: fullName.trim() } : {}),
+          }),
+        },
       );
       saveAuth(data);
       toast.success('Xush kelibsiz!');
@@ -72,11 +84,23 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-3xl font-bold leading-tight mb-2">
-            Sof kiyim,
-            <br />
-            <span className="text-teal-100">oson buyurtma</span>
+            {isRegister ? (
+              <>
+                Ro&apos;yxatdan o&apos;ting,
+                <br />
+                <span className="text-teal-100">buyurtma bering</span>
+              </>
+            ) : (
+              <>
+                Sof kiyim,
+                <br />
+                <span className="text-teal-100">oson buyurtma</span>
+              </>
+            )}
           </h1>
-          <p className="text-teal-100">Telefon raqamingiz bilan tezda kiring</p>
+          <p className="text-teal-100">
+            {isRegister ? 'Ism va telefon raqamingiz bilan tez ro\'yxatdan o\'ting' : 'Telefon raqamingiz bilan tezda kiring'}
+          </p>
         </div>
       </div>
 
@@ -92,6 +116,21 @@ export default function LoginPage() {
                 onSubmit={requestOtp}
                 autoComplete="off"
               >
+                {isRegister && (
+                  <>
+                    <Label>Ismingiz</Label>
+                    <div className="relative mb-4">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        className="pl-12"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Ism familiya"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
                 <Label>Telefon raqami</Label>
                 <div className="relative mb-4">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -103,9 +142,27 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button type="submit" loading={loading} size="lg" className="w-full">
-                  Kod olish
+                  {isRegister ? 'Ro\'yxatdan o\'tish' : 'Kod olish'}
                   {!loading && <ArrowRight className="h-5 w-5" />}
                 </Button>
+
+                <p className="text-sm text-center text-muted-foreground mt-4">
+                  {isRegister ? (
+                    <>
+                      Akkauntingiz bormi?{' '}
+                      <Link href="/login" className="text-primary font-medium">
+                        Kirish
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      Yangi mijozmisiz?{' '}
+                      <Link href="/login?mode=register" className="text-primary font-medium">
+                        Ro&apos;yxatdan o&apos;tish
+                      </Link>
+                    </>
+                  )}
+                </p>
 
                 <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
                   <Shield className="h-4 w-4 mt-0.5 shrink-0" />

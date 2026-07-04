@@ -13,6 +13,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { PlatformModule } from './platform/platform.module';
+import { PublicModule } from './public/public.module';
 import { OrdersGateway } from './orders/orders.gateway';
 
 @Module({
@@ -34,6 +35,7 @@ import { OrdersGateway } from './orders/orders.gateway';
     NotificationsModule,
     SettingsModule,
     PlatformModule,
+    PublicModule,
   ],
   providers: [OrdersGateway],
 })

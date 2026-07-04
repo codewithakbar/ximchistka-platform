@@ -142,6 +142,13 @@ export default function LoginPage() {
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </form>
+
+          <p className="text-sm text-center text-muted-foreground mt-6">
+            Hali akkauntingiz yo&apos;qmi?{' '}
+            <a href="/signup" className="text-primary font-medium hover:underline">
+              14 kunlik demo olish
+            </a>
+          </p>
         </div>
       </div>
     </div>

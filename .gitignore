@@ -10,3 +10,4 @@ coverage
 .expo
 apps/mobile/.expo
 apps/mobile/dist
+/.data

@@ -1,0 +1,43 @@
+module.exports = {
+  apps: [
+    {
+      name: 'cleanway-api',
+      cwd: '/home/ubuntu/ximchistka-platform/apps/api',
+      script: 'dist/main.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      max_memory_restart: '400M',
+    },
+    {
+      name: 'cleanway-crm',
+      cwd: '/home/ubuntu/ximchistka-platform/apps/crm',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3000',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      max_memory_restart: '500M',
+    },
+    {
+      name: 'cleanway-client',
+      cwd: '/home/ubuntu/ximchistka-platform/apps/client-web',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3002',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      max_memory_restart: '500M',
+    },
+    {
+      name: 'cleanway-merchant',
+      cwd: '/home/ubuntu/ximchistka-platform/apps/merchant',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3003',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      max_memory_restart: '500M',
+    },
+  ],
+};
