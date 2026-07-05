@@ -17,6 +17,26 @@ const DEFAULT_SERVICES = [
   { name: 'Press (dazmol)', basePrice: 15000 },
 ];
 
+type BranchWithCount = {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  isActive: boolean;
+  _count?: { orders: number; userBranches: number };
+};
+
+type StaffUser = {
+  id: string;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  role: UserRole;
+  isActive: boolean;
+  createdAt?: Date;
+  userBranches?: { branch: { id: string; name: string } }[];
+};
+
 function slugify(name: string) {
   return name
     .toLowerCase()
@@ -51,21 +71,63 @@ export class PlatformService {
       where: { id },
       include: {
         _count: { select: { branches: true, users: true } },
-        branches: { orderBy: { name: 'asc' } },
+        branches: {
+          orderBy: { name: 'asc' },
+          include: { _count: { select: { orders: true, userBranches: true } } },
+        },
         users: {
-          where: { role: { in: [UserRole.super_admin, UserRole.branch_manager] } },
+          where: { role: { not: UserRole.customer } },
+          orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
           select: {
             id: true,
             fullName: true,
             phone: true,
+            email: true,
             role: true,
             isActive: true,
+            createdAt: true,
+            userBranches: {
+              select: { branch: { select: { id: true, name: true } } },
+            },
           },
         },
       },
     });
     if (!org) throw new NotFoundException('Tashkilot topilmadi');
-    return this.mapOrganization(org, new Date(), true);
+
+    const branchIds = org.branches.map((b) => b.id);
+    const [statusGroups, orderStats, customerCount] = await Promise.all([
+      this.prisma.order.groupBy({
+        by: ['status'],
+        where: { branchId: { in: branchIds } },
+        _count: { _all: true },
+      }),
+      this.prisma.order.aggregate({
+        where: { branchId: { in: branchIds } },
+        _sum: { totalAmount: true },
+        _count: { _all: true },
+      }),
+      this.prisma.user.count({
+        where: { organizationId: id, role: UserRole.customer },
+      }),
+    ]);
+
+    const ordersByStatus = statusGroups.reduce<Record<string, number>>((acc, g) => {
+      acc[g.status] = g._count._all;
+      return acc;
+    }, {});
+
+    const mapped = this.mapOrganization(org, new Date(), true);
+    return {
+      ...mapped,
+      stats: {
+        totalOrders: orderStats._count._all,
+        totalRevenue: orderStats._sum.totalAmount ?? 0,
+        customerCount,
+        staffCount: org.users.length,
+        ordersByStatus,
+      },
+    };
   }
 
   async createOrganization(data: {
@@ -388,8 +450,25 @@ export class PlatformService {
       userCount: org._count?.users ?? 0,
       ...(detailed
         ? {
-            branches: org.branches,
-            admins: org.users,
+            branches: (org.branches as BranchWithCount[] | undefined)?.map((b) => ({
+              id: b.id,
+              name: b.name,
+              address: b.address,
+              phone: b.phone,
+              isActive: b.isActive,
+              orderCount: b._count?.orders ?? 0,
+              staffCount: b._count?.userBranches ?? 0,
+            })),
+            staff: (org.users as StaffUser[] | undefined)?.map((u) => ({
+              id: u.id,
+              fullName: u.fullName,
+              phone: u.phone,
+              email: u.email ?? null,
+              role: u.role,
+              isActive: u.isActive,
+              createdAt: u.createdAt?.toISOString?.() ?? null,
+              branches: (u.userBranches ?? []).map((ub) => ub.branch.name),
+            })),
           }
         : {}),
     };
