@@ -8,11 +8,14 @@ import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { useI18n } from '@/lib/i18n';
+import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls';
 
 const LANDING_URL = process.env.NEXT_PUBLIC_CLIENT_WEB_URL ?? 'https://cleanway.4mi.uz';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,10 +56,10 @@ export default function LoginPage() {
       } catch {
         /* profile optional on login */
       }
-      toast.success(`Xush kelibsiz${data.user.fullName ? `, ${data.user.fullName}` : ''}!`);
+      toast.success(`${t('login.welcome')}${data.user.fullName ? `, ${data.user.fullName}` : ''}!`);
       router.push('/dashboard');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -76,19 +79,17 @@ export default function LoginPage() {
         </div>
         <div className="relative">
           <h2 className="text-4xl font-bold mb-4 leading-tight">
-            CleanWay biznesingizni
+            {t('login.brandTitle1')}
             <br />
-            <span className="text-blue-200">aqlli boshqaring</span>
+            <span className="text-blue-200">{t('login.brandTitle2')}</span>
           </h2>
-          <p className="text-blue-100 text-lg max-w-md">
-            Filiallar, buyurtmalar, mijozlar va xodimlar — barchasi bitta zamonaviy panelda.
-          </p>
+          <p className="text-blue-100 text-lg max-w-md">{t('login.brandSub')}</p>
         </div>
         <div className="relative grid grid-cols-3 gap-4 max-w-md">
           {[
-            { v: '24/7', l: 'Buyurtma qabul' },
-            { v: '∞', l: 'Filiallar' },
-            { v: '5 daq', l: "O'rnatish" },
+            { v: '24/7', l: t('login.stat.orders') },
+            { v: '∞', l: t('login.stat.branches') },
+            { v: t('login.stat.setupVal'), l: t('login.stat.setup') },
           ].map((s) => (
             <div key={s.l} className="rounded-xl bg-white/10 backdrop-blur p-4 border border-white/10">
               <div className="text-2xl font-bold">{s.v}</div>
@@ -98,7 +99,11 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div className="relative flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md">
           <a href={LANDING_URL} className="lg:hidden flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
             <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
@@ -107,14 +112,12 @@ export default function LoginPage() {
             <span className="font-semibold text-lg">CleanWay CRM</span>
           </a>
 
-          <h1 className="text-2xl font-bold mb-2">Tizimga kirish</h1>
-          <p className="text-muted-foreground mb-8">
-            Akkauntingiz orqali boshqaruv panelga kiring
-          </p>
+          <h1 className="text-2xl font-bold mb-2">{t('login.title')}</h1>
+          <p className="text-muted-foreground mb-8">{t('login.subtitle')}</p>
 
           <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
             <div>
-              <Label>Telefon raqami</Label>
+              <Label>{t('login.phone')}</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <PhoneInput
@@ -126,7 +129,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div>
-              <Label>Parol</Label>
+              <Label>{t('login.password')}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -140,15 +143,15 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" loading={loading} size="lg" className="w-full">
-              Kirish
+              {t('login.submit')}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </form>
 
           <p className="text-sm text-center text-muted-foreground mt-6">
-            Hali akkauntingiz yo&apos;qmi?{' '}
+            {t('login.noAccount')}{' '}
             <a href="/signup" className="text-primary font-medium hover:underline">
-              14 kunlik demo olish
+              {t('login.getDemo')}
             </a>
           </p>
         </div>

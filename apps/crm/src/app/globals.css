@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-background: #fafafa;
   --color-foreground: #0a0a0a;
@@ -31,6 +33,39 @@
   --radius: 0.75rem;
 
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dark {
+  --color-background: #0b0f1a;
+  --color-foreground: #e6eaf2;
+  --color-card: #101724;
+  --color-card-foreground: #e6eaf2;
+  --color-border: #1e293b;
+  --color-input: #24324a;
+  --color-ring: #3b82f6;
+
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #1a2333;
+  --color-secondary-foreground: #dbe4f0;
+
+  --color-muted: #16202e;
+  --color-muted-foreground: #8fa0b8;
+
+  --color-accent: #1a2333;
+  --color-accent-foreground: #dbe4f0;
+}
+
+.dark ::selection {
+  background-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
 }
 
 @layer base {

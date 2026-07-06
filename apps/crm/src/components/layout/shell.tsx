@@ -7,10 +7,12 @@ import { Topbar } from './topbar';
 import { ensureValidSession, getToken, getUser } from '@/lib/api';
 import { canAccessRoute } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useI18n } from '@/lib/i18n';
 
 export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
   const [ready, setReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -65,7 +67,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
         <div className="space-y-3 w-64">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
-          <p className="text-sm text-muted-foreground text-center">Yuklanmoqda...</p>
+          <p className="text-sm text-muted-foreground text-center">{t('common.loading')}</p>
         </div>
       </div>
     );

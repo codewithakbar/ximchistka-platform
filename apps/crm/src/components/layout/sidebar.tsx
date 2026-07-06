@@ -6,11 +6,13 @@ import { useEffect, useState } from 'react';
 import { LogOut, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { clearAuth, getUser } from '@/lib/api';
-import { getNavForRole, ROLE_LABELS, StaffRole } from '@/lib/roles';
+import { getNavForRole, StaffRole } from '@/lib/roles';
+import { useI18n } from '@/lib/i18n';
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
   const [role, setRole] = useState<StaffRole>('operator');
 
   useEffect(() => {
@@ -28,7 +30,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div>
           <div className="font-semibold text-sm">CleanWay</div>
-          <div className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</div>
+          <div className="text-xs text-muted-foreground">{t(`role.${role}`)}</div>
         </div>
       </div>
 
@@ -52,7 +54,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              {t(`nav.${item.href}`, item.label)}
             </Link>
           );
         })}
@@ -70,7 +72,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           )}
         >
           <Settings className="h-4 w-4 shrink-0" />
-          Sozlamalar
+          {t('nav.settings')}
         </Link>
         <button
           onClick={() => {
@@ -80,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          Chiqish
+          {t('nav.logout')}
         </button>
       </div>
     </div>
@@ -94,6 +96,8 @@ export function Sidebar({
   mobileOpen?: boolean;
   onClose?: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <>
       {/* Desktop sidebar */}
@@ -120,7 +124,7 @@ export function Sidebar({
             type="button"
             onClick={onClose}
             className="absolute right-3 top-4 z-10 h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
-            aria-label="Yopish"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>

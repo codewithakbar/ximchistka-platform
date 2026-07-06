@@ -15,6 +15,7 @@ import {
   Shield,
   Camera,
   Trash2,
+  Palette,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,9 +24,12 @@ import { Input, Label } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
+import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls';
 import { api, clearAuth, updateStoredUser } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
+import { useTheme } from '@/lib/theme';
 
 type Profile = {
   id: string;
@@ -75,17 +79,20 @@ const roleLabels: Record<string, string> = {
 };
 
 const tabs = [
-  { id: 'profile', label: 'Profil', icon: User },
-  { id: 'organization', label: 'Tashkilot', icon: Building2 },
-  { id: 'notifications', label: 'Bildirishnomalar', icon: Bell },
-  { id: 'system', label: 'Tizim', icon: Server },
+  { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
+  { id: 'profile', labelKey: 'settings.profile', icon: User },
+  { id: 'organization', labelKey: 'settings.organization', icon: Building2 },
+  { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
+  { id: 'system', labelKey: 'settings.system', icon: Server },
 ] as const;
 
 type TabId = (typeof tabs)[number]['id'];
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<TabId>('profile');
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const [tab, setTab] = useState<TabId>('appearance');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [org, setOrg] = useState<Organization | null>(null);
   const [system, setSystem] = useState<SystemInfo | null>(null);
@@ -227,24 +234,24 @@ export default function SettingsPage() {
   });
 
   return (
-    <AppShell title="Sozlamalar">
+    <AppShell title={t('settings.title')}>
       <div className="flex flex-col lg:flex-row gap-6">
         <nav className="lg:w-56 shrink-0 flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0">
-          {visibleTabs.map((t) => {
-            const Icon = t.icon;
+          {visibleTabs.map((tabItem) => {
+            const Icon = tabItem.icon;
             return (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={tabItem.id}
+                onClick={() => setTab(tabItem.id)}
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
-                  tab === t.id
+                  tab === tabItem.id
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-secondary',
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {t.label}
+                {t(tabItem.labelKey, tabItem.id)}
               </button>
             );
           })}
@@ -258,6 +265,33 @@ export default function SettingsPage() {
             </div>
           ) : (
             <>
+              {tab === 'appearance' && (
+                <Card className="animate-fade-in">
+                  <CardHeader>
+                    <CardTitle>{t('settings.appearance')}</CardTitle>
+                    <CardDescription>{t('settings.appearanceDesc')}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-lg border border-border bg-secondary/30">
+                      <div>
+                        <div className="font-medium text-sm">{t('settings.theme')}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {t('settings.currentTheme')}: {theme === 'dark' ? t('theme.dark') : t('theme.light')}
+                        </div>
+                      </div>
+                      <ThemeToggle />
+                    </div>
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-lg border border-border bg-secondary/30">
+                      <div>
+                        <div className="font-medium text-sm">{t('settings.language')}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">O‘zbek / Русский</div>
+                      </div>
+                      <LanguageToggle />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {tab === 'profile' && profile && (
                 <div className="space-y-4 animate-fade-in">
                   <Card>

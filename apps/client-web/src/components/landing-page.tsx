@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useInView } from 'framer-motion';
 import {
   Sparkles,
@@ -32,12 +32,354 @@ import {
 const CRM_URL = process.env.NEXT_PUBLIC_CRM_URL ?? 'http://localhost:3000';
 const SIGNUP_URL = `${CRM_URL}/signup`;
 const LOGIN_URL = `${CRM_URL}/login`;
+const LOCALE_KEY = 'landing-locale';
+
+type Locale = 'uz' | 'ru';
 
 const fadeUp = {
   initial: { opacity: 0, y: 28 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-60px' },
   transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+};
+
+const advantageIcons = [
+  ClipboardList,
+  Users,
+  Building2,
+  BarChart3,
+  Globe,
+  Bell,
+  CreditCard,
+  ShieldCheck,
+];
+const advantageAccents = [
+  'from-indigo-500/20 to-indigo-500/0 text-indigo-300',
+  'from-violet-500/20 to-violet-500/0 text-violet-300',
+  'from-fuchsia-500/20 to-fuchsia-500/0 text-fuchsia-300',
+  'from-sky-500/20 to-sky-500/0 text-sky-300',
+  'from-cyan-500/20 to-cyan-500/0 text-cyan-300',
+  'from-amber-500/20 to-amber-500/0 text-amber-300',
+  'from-emerald-500/20 to-emerald-500/0 text-emerald-300',
+  'from-rose-500/20 to-rose-500/0 text-rose-300',
+];
+const stepIcons = [Rocket, Settings, Zap];
+
+/* ------------------------------------------------------------------ */
+/* Content                                                             */
+/* ------------------------------------------------------------------ */
+
+type Content = {
+  nav: { href: string; label: string }[];
+  login: string;
+  freeTrial: string;
+  menu: string;
+  heroBadge: string;
+  heroTitle1: string;
+  heroTitle2: string;
+  heroSub: string;
+  ctaStart: string;
+  ctaLearn: string;
+  heroNote: string;
+  mockStats: { label: string; value: string; delta: string }[];
+  mockWeekly: string;
+  mockOrders: string;
+  marquee: string[];
+  stats: { end: number; suffix: string; label: string }[];
+  advTag: string;
+  advTitle1: string;
+  advTitle2: string;
+  advSub: string;
+  advantages: { title: string; desc: string }[];
+  stepTag: string;
+  stepTitle1: string;
+  stepTitle2: string;
+  stepSub: string;
+  steps: { step: string; title: string; desc: string }[];
+  priceTag: string;
+  priceTitle1: string;
+  priceTitle2: string;
+  priceSub: string;
+  monthly: string;
+  monthlyPrice: string;
+  perMonth: string;
+  monthlyNote: string;
+  monthlyFeatures: string[];
+  yearly: string;
+  yearlyPrice: string;
+  perYear: string;
+  yearlyBadge: string;
+  yearlyNote: ReactNode;
+  yearlyFeatures: string[];
+  priceCta: string;
+  priceFootnote: string;
+  offerBadge: string;
+  offerTitle: string;
+  offerSub: string;
+  offerFeatures: string[];
+  offerCta: string;
+  offerNote: string;
+  footerAbout: string;
+  footerPlatform: string;
+  footerContact: string;
+  footerTrial: string;
+  footerCrm: string;
+  footerAdvantages: string;
+  footerPrice: string;
+  contactAddress: string;
+  contactNote: string;
+  rights: string;
+};
+
+const CONTENT: Record<Locale, Content> = {
+  uz: {
+    nav: [
+      { href: '#afzalliklar', label: 'Afzalliklar' },
+      { href: '#qanday', label: 'Qanday boshlash' },
+      { href: '#narx', label: 'Narx' },
+      { href: '#aloqa', label: 'Aloqa' },
+    ],
+    login: 'Kirish',
+    freeTrial: '14 kun bepul',
+    menu: 'Menyu',
+    heroBadge: '14 kun bepul sinov — karta talab qilinmaydi',
+    heroTitle1: 'Ximchistka biznesingizni',
+    heroTitle2: 'raqamli boshqaring',
+    heroSub:
+      'CleanWay — kimyoviy tozalash korxonalari uchun tayyor CRM platforma. Buyurtmalar, mijozlar, filiallar va moliya — barchasi bitta zamonaviy panelda.',
+    ctaStart: 'Bepul boshlash',
+    ctaLearn: 'Imkoniyatlar bilan tanishish',
+    heroNote: "Ro'yxatdan o'tish 1 daqiqa · Hech qanday majburiyatsiz",
+    mockStats: [
+      { label: 'Bugungi buyurtmalar', value: '47 ta', delta: '+12%' },
+      { label: 'Kunlik tushum', value: "4.2 mln so'm", delta: '+8%' },
+      { label: 'Faol mijozlar', value: '1 284', delta: '+31' },
+    ],
+    mockWeekly: 'Haftalik dinamika',
+    mockOrders: 'Buyurtmalar',
+    marquee: [
+      'CRM Dashboard',
+      "Ko'p filial",
+      'SMS xabarnoma',
+      'Onlayn buyurtma',
+      'Moliyaviy hisobot',
+      'Mijozlar bazasi',
+      'Click / Payme',
+      'Xodimlar rollari',
+    ],
+    stats: [
+      { end: 14, suffix: ' kun', label: 'bepul sinov muddati' },
+      { end: 1, suffix: ' daqiqa', label: "ro'yxatdan o'tish vaqti" },
+      { end: 8, suffix: '+', label: 'tayyor CRM moduli' },
+      { end: 24, suffix: '/7', label: 'onlayn buyurtma qabuli' },
+    ],
+    advTag: 'Afzalliklarimiz',
+    advTitle1: 'Biznesingiz uchun',
+    advTitle2: 'kuchli qurollar',
+    advSub: 'Daftardagi hisob-kitob va Excel jadvallarini unuting — hammasi avtomatlashtirilgan',
+    advantages: [
+      { title: 'Buyurtmalar nazorati', desc: "Qabuldan topshirishgacha har bir bosqich real vaqtda kuzatiladi. Hech bir buyurtma yo'qolmaydi." },
+      { title: 'Mijozlar bazasi', desc: "Har bir mijozning tarixi, buyurtmalari va aloqa ma'lumotlari — bitta joyda, qidiruv bilan." },
+      { title: "Ko'p filial boshqaruvi", desc: 'Cheksiz filiallar oching. Har biriga alohida narxlar, xodimlar va hisobotlar.' },
+      { title: 'Moliyaviy hisobotlar', desc: 'Kunlik kassa, daromad dinamikasi va xizmatlar kesimida tahlil — bir qarashda.' },
+      { title: 'Onlayn mijoz portali', desc: "Mijozlaringiz o'zlari onlayn buyurtma beradi va holatini kuzatadi — sizga qo'ng'iroq kamayadi." },
+      { title: 'SMS xabarnomalar', desc: "Buyurtma tayyor bo'lganda mijozga avtomatik SMS ketadi. Qo'lda yozish shart emas." },
+      { title: "Click va Payme to'lovlar", desc: "Onlayn to'lovlarni qabul qiling — naqd pulga bog'lanib qolmaysiz." },
+      { title: 'Xodimlar rollari', desc: "Operator, menejer, administrator — har kimga o'z huquqlari. Ma'lumotlaringiz xavfsiz." },
+    ],
+    stepTag: 'Boshlash oson',
+    stepTitle1: '3 qadamda',
+    stepTitle2: 'ishga tushiring',
+    stepSub: 'Texnik bilim talab qilinmaydi — hammasi tayyor',
+    steps: [
+      { step: '01', title: "Ro'yxatdan o'ting", desc: "1 daqiqada hisob yarating. Karta yoki to'lov talab qilinmaydi — faqat telefon raqam." },
+      { step: '02', title: 'Platformani sozlang', desc: 'Filial, xizmatlar va narxlaringizni kiriting. Tayyor xizmatlar katalogi bilan boshlaysiz.' },
+      { step: '03', title: 'Ishlashni boshlang', desc: 'Birinchi kundanoq buyurtmalarni qabul qiling. Barcha imkoniyatlar 14 kun bepul.' },
+    ],
+    priceTag: 'Tariflar',
+    priceTitle1: 'Oddiy va',
+    priceTitle2: 'shaffof narxlar',
+    priceSub: "Yashirin to'lovlar yo'q — barcha imkoniyatlar har ikkala tarifda ham to'liq ochiq",
+    monthly: 'Oylik',
+    monthlyPrice: '450 000',
+    perMonth: "so'm / oy",
+    monthlyNote: "Majburiyatsiz — istalgan vaqtda to'xtatishingiz mumkin",
+    monthlyFeatures: [
+      "Barcha CRM modullari to'liq",
+      'Cheksiz filiallar va xodimlar',
+      'Onlayn mijoz portali',
+      'SMS xabarnomalar',
+      'Moliyaviy hisobotlar',
+      'Texnik yordam',
+    ],
+    yearly: 'Yillik',
+    yearlyPrice: '5 400 000',
+    perYear: "so'm / yil",
+    yearlyBadge: "+2 OY SOVG'A",
+    yearlyNote: (
+      <>
+        12 oy narxiga <span className="font-bold text-white">14 oy foydalaning</span> — oyiga{' '}
+        <span className="font-bold text-emerald-400">~386 000 so&apos;mga</span> tushadi
+      </>
+    ),
+    yearlyFeatures: [
+      'Oylik tarifdagi hamma narsa',
+      "2 oy qo'shimcha — mutlaqo bepul",
+      "Yil davomida narx o'zgarmaydi",
+      'Ustuvor texnik yordam',
+    ],
+    priceCta: '14 kun bepul boshlash',
+    priceFootnote: "Avval 14 kun bepul sinab ko'rasiz — tarif faqat sinov tugagach tanlanadi",
+    offerBadge: 'Maxsus taklif',
+    offerTitle: '14 kun mutlaqo bepul',
+    offerSub:
+      "Barcha imkoniyatlar ochiq. Karta ma'lumotlari talab qilinmaydi, hech qanday yashirin to'lovlar yo'q. Yoqmasa — shunchaki ishlatmaysiz.",
+    offerFeatures: [
+      "To'liq CRM dashboard",
+      'Tayyor xizmatlar katalogi',
+      'Onlayn mijoz portali',
+      'SMS xabarnomalar',
+      'Moliyaviy hisobotlar',
+      'Texnik yordam',
+    ],
+    offerCta: 'Hoziroq bepul boshlash',
+    offerNote: "Ro'yxatdan o'tish atigi 1 daqiqa vaqt oladi",
+    footerAbout:
+      'Kimyoviy tozalash korxonalari uchun zamonaviy CRM platforma. Biznesingizni raqamlashtiring va daromadingizni oshiring.',
+    footerPlatform: 'Platforma',
+    footerContact: 'Aloqa',
+    footerTrial: '14 kun bepul sinov',
+    footerCrm: 'CRM panelga kirish',
+    footerAdvantages: 'Afzalliklar',
+    footerPrice: 'Narx',
+    contactAddress: 'Xorazm viloyati, Urganch shahri',
+    contactNote: "Savollaringiz bo'lsa qo'ng'iroq qiling",
+    rights: 'Barcha huquqlar himoyalangan.',
+  },
+  ru: {
+    nav: [
+      { href: '#afzalliklar', label: 'Преимущества' },
+      { href: '#qanday', label: 'Как начать' },
+      { href: '#narx', label: 'Цены' },
+      { href: '#aloqa', label: 'Контакты' },
+    ],
+    login: 'Войти',
+    freeTrial: '14 дней бесплатно',
+    menu: 'Меню',
+    heroBadge: '14 дней бесплатно — карта не требуется',
+    heroTitle1: 'Управляйте бизнесом',
+    heroTitle2: 'химчистки в цифре',
+    heroSub:
+      'CleanWay — готовая CRM-платформа для предприятий химчистки. Заказы, клиенты, филиалы и финансы — всё в одной современной панели.',
+    ctaStart: 'Начать бесплатно',
+    ctaLearn: 'Посмотреть возможности',
+    heroNote: 'Регистрация за 1 минуту · Без каких-либо обязательств',
+    mockStats: [
+      { label: 'Заказы сегодня', value: '47 шт', delta: '+12%' },
+      { label: 'Выручка за день', value: '4.2 млн сум', delta: '+8%' },
+      { label: 'Активные клиенты', value: '1 284', delta: '+31' },
+    ],
+    mockWeekly: 'Динамика за неделю',
+    mockOrders: 'Заказы',
+    marquee: [
+      'CRM Dashboard',
+      'Много филиалов',
+      'SMS-уведомления',
+      'Онлайн-заказы',
+      'Финансовые отчёты',
+      'База клиентов',
+      'Click / Payme',
+      'Роли сотрудников',
+    ],
+    stats: [
+      { end: 14, suffix: ' дн.', label: 'бесплатный период' },
+      { end: 1, suffix: ' мин', label: 'время регистрации' },
+      { end: 8, suffix: '+', label: 'готовых CRM-модулей' },
+      { end: 24, suffix: '/7', label: 'приём онлайн-заказов' },
+    ],
+    advTag: 'Наши преимущества',
+    advTitle1: 'Мощные инструменты',
+    advTitle2: 'для вашего бизнеса',
+    advSub: 'Забудьте про расчёты в тетради и таблицы Excel — всё автоматизировано',
+    advantages: [
+      { title: 'Контроль заказов', desc: 'Каждый этап от приёма до выдачи отслеживается в реальном времени. Ни один заказ не теряется.' },
+      { title: 'База клиентов', desc: 'История, заказы и контакты каждого клиента — в одном месте, с поиском.' },
+      { title: 'Управление филиалами', desc: 'Открывайте неограниченное число филиалов. Для каждого — свои цены, сотрудники и отчёты.' },
+      { title: 'Финансовые отчёты', desc: 'Дневная касса, динамика дохода и анализ по услугам — с одного взгляда.' },
+      { title: 'Онлайн-портал клиента', desc: 'Клиенты сами оформляют заказы онлайн и следят за статусом — меньше звонков вам.' },
+      { title: 'SMS-уведомления', desc: 'Когда заказ готов, клиенту автоматически уходит SMS. Писать вручную не нужно.' },
+      { title: 'Оплата Click и Payme', desc: 'Принимайте онлайн-платежи — не зависите только от наличных.' },
+      { title: 'Роли сотрудников', desc: 'Оператор, менеджер, администратор — у каждого свои права. Ваши данные под защитой.' },
+    ],
+    stepTag: 'Начать легко',
+    stepTitle1: 'Запуск за',
+    stepTitle2: '3 шага',
+    stepSub: 'Технические знания не нужны — всё готово',
+    steps: [
+      { step: '01', title: 'Зарегистрируйтесь', desc: 'Создайте аккаунт за 1 минуту. Карта или оплата не нужны — только номер телефона.' },
+      { step: '02', title: 'Настройте платформу', desc: 'Внесите филиал, услуги и цены. Начинаете с готовым каталогом услуг.' },
+      { step: '03', title: 'Начните работу', desc: 'Принимайте заказы с первого дня. Все возможности бесплатно 14 дней.' },
+    ],
+    priceTag: 'Тарифы',
+    priceTitle1: 'Простые и',
+    priceTitle2: 'прозрачные цены',
+    priceSub: 'Никаких скрытых платежей — все возможности полностью открыты в обоих тарифах',
+    monthly: 'Месячный',
+    monthlyPrice: '450 000',
+    perMonth: 'сум / мес',
+    monthlyNote: 'Без обязательств — можно отменить в любой момент',
+    monthlyFeatures: [
+      'Все модули CRM полностью',
+      'Неограниченно филиалов и сотрудников',
+      'Онлайн-портал клиента',
+      'SMS-уведомления',
+      'Финансовые отчёты',
+      'Техническая поддержка',
+    ],
+    yearly: 'Годовой',
+    yearlyPrice: '5 400 000',
+    perYear: 'сум / год',
+    yearlyBadge: '+2 МЕСЯЦА В ПОДАРОК',
+    yearlyNote: (
+      <>
+        За цену 12 месяцев <span className="font-bold text-white">пользуйтесь 14 месяцев</span> —
+        выходит <span className="font-bold text-emerald-400">~386 000 сум</span> в месяц
+      </>
+    ),
+    yearlyFeatures: [
+      'Всё из месячного тарифа',
+      '2 месяца дополнительно — бесплатно',
+      'Цена не меняется весь год',
+      'Приоритетная поддержка',
+    ],
+    priceCta: 'Начать бесплатно на 14 дней',
+    priceFootnote: 'Сначала 14 дней бесплатно — тариф выбирается только после пробного периода',
+    offerBadge: 'Специальное предложение',
+    offerTitle: '14 дней абсолютно бесплатно',
+    offerSub:
+      'Все возможности открыты. Данные карты не требуются, никаких скрытых платежей. Не понравится — просто не пользуетесь.',
+    offerFeatures: [
+      'Полный CRM Dashboard',
+      'Готовый каталог услуг',
+      'Онлайн-портал клиента',
+      'SMS-уведомления',
+      'Финансовые отчёты',
+      'Техническая поддержка',
+    ],
+    offerCta: 'Начать бесплатно сейчас',
+    offerNote: 'Регистрация занимает всего 1 минуту',
+    footerAbout:
+      'Современная CRM-платформа для предприятий химчистки. Оцифруйте бизнес и увеличьте доход.',
+    footerPlatform: 'Платформа',
+    footerContact: 'Контакты',
+    footerTrial: '14 дней бесплатно',
+    footerCrm: 'Вход в CRM-панель',
+    footerAdvantages: 'Преимущества',
+    footerPrice: 'Цены',
+    contactAddress: 'Хорезмская область, город Ургенч',
+    contactNote: 'Есть вопросы — позвоните нам',
+    rights: 'Все права защищены.',
+  },
 };
 
 /* ---------- Animated counter ---------- */
@@ -68,94 +410,16 @@ function CountUp({ end, suffix = '', duration = 1.6 }: { end: number; suffix?: s
   );
 }
 
-/* ---------- Data ---------- */
-const advantages = [
-  {
-    icon: ClipboardList,
-    title: "Buyurtmalar nazorati",
-    desc: "Qabuldan topshirishgacha har bir bosqich real vaqtda kuzatiladi. Hech bir buyurtma yo'qolmaydi.",
-    accent: 'from-indigo-500/20 to-indigo-500/0 text-indigo-300',
-  },
-  {
-    icon: Users,
-    title: 'Mijozlar bazasi',
-    desc: "Har bir mijozning tarixi, buyurtmalari va aloqa ma'lumotlari — bitta joyda, qidiruv bilan.",
-    accent: 'from-violet-500/20 to-violet-500/0 text-violet-300',
-  },
-  {
-    icon: Building2,
-    title: "Ko'p filial boshqaruvi",
-    desc: "Cheksiz filiallar oching. Har biriga alohida narxlar, xodimlar va hisobotlar.",
-    accent: 'from-fuchsia-500/20 to-fuchsia-500/0 text-fuchsia-300',
-  },
-  {
-    icon: BarChart3,
-    title: 'Moliyaviy hisobotlar',
-    desc: "Kunlik kassa, daromad dinamikasi va xizmatlar kesimida tahlil — bir qarashda.",
-    accent: 'from-sky-500/20 to-sky-500/0 text-sky-300',
-  },
-  {
-    icon: Globe,
-    title: 'Onlayn mijoz portali',
-    desc: "Mijozlaringiz o'zlari onlayn buyurtma beradi va holatini kuzatadi — sizga qo'ng'iroq kamayadi.",
-    accent: 'from-cyan-500/20 to-cyan-500/0 text-cyan-300',
-  },
-  {
-    icon: Bell,
-    title: 'SMS xabarnomalar',
-    desc: "Buyurtma tayyor bo'lganda mijozga avtomatik SMS ketadi. Qo'lda yozish shart emas.",
-    accent: 'from-amber-500/20 to-amber-500/0 text-amber-300',
-  },
-  {
-    icon: CreditCard,
-    title: "Click va Payme to'lovlar",
-    desc: "Onlayn to'lovlarni qabul qiling — naqd pulga bog'lanib qolmaysiz.",
-    accent: 'from-emerald-500/20 to-emerald-500/0 text-emerald-300',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Xodimlar rollari',
-    desc: "Operator, menejer, administrator — har kimga o'z huquqlari. Ma'lumotlaringiz xavfsiz.",
-    accent: 'from-rose-500/20 to-rose-500/0 text-rose-300',
-  },
-];
-
-const steps = [
-  {
-    icon: Rocket,
-    step: '01',
-    title: "Ro'yxatdan o'ting",
-    desc: "1 daqiqada hisob yarating. Karta yoki to'lov talab qilinmaydi — faqat telefon raqam.",
-  },
-  {
-    icon: Settings,
-    step: '02',
-    title: 'Platformani sozlang',
-    desc: "Filial, xizmatlar va narxlaringizni kiriting. Tayyor xizmatlar katalogi bilan boshlaysiz.",
-  },
-  {
-    icon: Zap,
-    step: '03',
-    title: 'Ishlashni boshlang',
-    desc: "Birinchi kundanoq buyurtmalarni qabul qiling. Barcha imkoniyatlar 14 kun bepul.",
-  },
-];
-
-const marqueeItems = [
-  'CRM Dashboard',
-  "Ko'p filial",
-  'SMS xabarnoma',
-  'Onlayn buyurtma',
-  'Moliyaviy hisobot',
-  'Mijozlar bazasi',
-  'Click / Payme',
-  'Xodimlar rollari',
-];
-
 /* ---------- Page ---------- */
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [locale, setLocale] = useState<Locale>('uz');
+
+  useEffect(() => {
+    const stored = localStorage.getItem(LOCALE_KEY) as Locale | null;
+    if (stored === 'uz' || stored === 'ru') setLocale(stored);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -164,12 +428,30 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const nav = [
-    { href: '#afzalliklar', label: 'Afzalliklar' },
-    { href: '#qanday', label: 'Qanday boshlash' },
-    { href: '#narx', label: 'Narx' },
-    { href: '#aloqa', label: 'Aloqa' },
-  ];
+  const changeLocale = (l: Locale) => {
+    setLocale(l);
+    localStorage.setItem(LOCALE_KEY, l);
+    document.documentElement.lang = l;
+  };
+
+  const c = CONTENT[locale];
+
+  const langSwitch = (
+    <div className="inline-flex items-center rounded-lg border border-white/15 bg-white/5 p-0.5">
+      {(['uz', 'ru'] as Locale[]).map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => changeLocale(l)}
+          className={`h-7 px-2.5 rounded-md text-xs font-bold uppercase transition-colors ${
+            locale === l ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          {l}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#060714] text-slate-100 antialiased overflow-x-clip selection:bg-indigo-500/40">
@@ -188,7 +470,7 @@ export function LandingPage() {
           </a>
 
           <nav className="hidden md:flex items-center gap-7">
-            {nav.map((n) => (
+            {c.nav.map((n) => (
               <a
                 key={n.href}
                 href={n.href}
@@ -200,30 +482,34 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <a href={LOGIN_URL} className="text-sm font-semibold text-slate-300 hover:text-white transition-colors px-3 py-2">
-              Kirish
+            {langSwitch}
+            <a href={LOGIN_URL} className="text-sm font-semibold text-slate-300 hover:text-white transition-colors px-2 py-2">
+              {c.login}
             </a>
             <a
               href={SIGNUP_URL}
               className="relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-bold px-5 py-2.5 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all"
             >
               <Gift className="h-4 w-4" />
-              14 kun bepul
+              {c.freeTrial}
             </a>
           </div>
 
-          <button
-            className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Menyu"
-          >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="md:hidden flex items-center gap-2">
+            {langSwitch}
+            <button
+              className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={c.menu}
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         {menuOpen && (
           <div className="md:hidden border-t border-white/10 bg-[#060714]/95 backdrop-blur-xl px-5 py-4 space-y-1">
-            {nav.map((n) => (
+            {c.nav.map((n) => (
               <a
                 key={n.href}
                 href={n.href}
@@ -235,13 +521,13 @@ export function LandingPage() {
             ))}
             <div className="pt-3 flex gap-3">
               <a href={LOGIN_URL} className="flex-1 text-center rounded-xl border border-white/20 text-white text-sm font-semibold py-3">
-                Kirish
+                {c.login}
               </a>
               <a
                 href={SIGNUP_URL}
                 className="flex-1 text-center rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-bold py-3"
               >
-                14 kun bepul
+                {c.freeTrial}
               </a>
             </div>
           </div>
@@ -250,7 +536,6 @@ export function LandingPage() {
 
       {/* ======= Hero ======= */}
       <section className="relative pt-32 pb-24 lg:pt-44 lg:pb-32">
-        {/* Background effects */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <div className="landing-orb absolute top-[-20%] left-1/2 -translate-x-1/2 h-72 w-72 sm:h-[42rem] sm:w-[42rem] rounded-full bg-indigo-600/25 blur-[70px] sm:blur-[140px] landing-float" />
           <div className="landing-orb absolute top-[30%] left-[-10%] h-56 w-56 sm:h-[28rem] sm:w-[28rem] rounded-full bg-violet-600/20 blur-[60px] sm:blur-[120px] landing-float-delayed" />
@@ -268,7 +553,6 @@ export function LandingPage() {
         </div>
 
         <div className="max-w-6xl mx-auto px-5 text-center">
-          {/* Trigger badge */}
           <motion.div
             initial={{ opacity: 0, y: -14, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -276,7 +560,7 @@ export function LandingPage() {
             className="inline-flex items-center gap-2 sm:gap-2.5 max-w-[92vw] rounded-full border border-indigo-400/30 bg-indigo-500/10 backdrop-blur px-4 sm:px-5 py-2 mb-8 landing-glow-pulse"
           >
             <Gift className="h-4 w-4 text-indigo-300 shrink-0" />
-            <span className="text-xs sm:text-sm font-semibold text-indigo-200">14 kun bepul sinov — karta talab qilinmaydi</span>
+            <span className="text-xs sm:text-sm font-semibold text-indigo-200">{c.heroBadge}</span>
           </motion.div>
 
           <motion.h1
@@ -285,10 +569,10 @@ export function LandingPage() {
             transition={{ duration: 0.65, delay: 0.1 }}
             className="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.06] tracking-tight mb-6"
           >
-            Ximchistka biznesingizni
+            {c.heroTitle1}
             <br />
             <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-              raqamli boshqaring
+              {c.heroTitle2}
             </span>
           </motion.h1>
 
@@ -298,8 +582,7 @@ export function LandingPage() {
             transition={{ duration: 0.65, delay: 0.2 }}
             className="max-w-2xl mx-auto text-lg lg:text-xl text-slate-400 mb-10"
           >
-            CleanWay — kimyoviy tozalash korxonalari uchun tayyor CRM platforma. Buyurtmalar, mijozlar,
-            filiallar va moliya — barchasi bitta zamonaviy panelda.
+            {c.heroSub}
           </motion.p>
 
           <motion.div
@@ -312,14 +595,14 @@ export function LandingPage() {
               href={SIGNUP_URL}
               className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-base sm:text-lg px-7 sm:px-9 py-4 shadow-[0_0_50px_-10px_rgba(99,102,241,0.7)] hover:shadow-[0_0_70px_-8px_rgba(99,102,241,0.9)] hover:scale-[1.04] active:scale-[0.98] transition-all"
             >
-              Bepul boshlash
+              {c.ctaStart}
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
               href="#afzalliklar"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 backdrop-blur text-white font-semibold text-base sm:text-lg px-7 sm:px-9 py-4 hover:bg-white/10 hover:border-white/25 active:scale-[0.98] transition-all"
             >
-              Imkoniyatlar bilan tanishish
+              {c.ctaLearn}
             </a>
           </motion.div>
 
@@ -330,7 +613,7 @@ export function LandingPage() {
             className="text-sm text-slate-500 mb-16 flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-            Ro&apos;yxatdan o&apos;tish 1 daqiqa · Hech qanday majburiyatsiz
+            {c.heroNote}
           </motion.p>
 
           {/* Dashboard mockup */}
@@ -342,7 +625,6 @@ export function LandingPage() {
           >
             <div className="absolute -inset-6 bg-gradient-to-r from-indigo-500/25 via-violet-500/25 to-fuchsia-500/25 blur-3xl rounded-[3rem]" aria-hidden />
             <div className="relative rounded-3xl border border-white/12 bg-[#0b0d1f]/90 backdrop-blur-xl shadow-2xl overflow-hidden">
-              {/* window bar */}
               <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/8">
                 <div className="h-3 w-3 rounded-full bg-rose-500/80" />
                 <div className="h-3 w-3 rounded-full bg-amber-500/80" />
@@ -353,33 +635,29 @@ export function LandingPage() {
               </div>
 
               <div className="p-5 sm:p-7 grid sm:grid-cols-3 gap-4 text-left">
-                {[
-                  { icon: TrendingUp, label: 'Bugungi buyurtmalar', value: '47 ta', delta: '+12%', color: 'text-indigo-300 bg-indigo-500/15' },
-                  { icon: Wallet, label: 'Kunlik tushum', value: "4.2 mln so'm", delta: '+8%', color: 'text-violet-300 bg-violet-500/15' },
-                  { icon: Users, label: 'Faol mijozlar', value: '1 284', delta: '+31', color: 'text-fuchsia-300 bg-fuchsia-500/15' },
-                ].map((c, i) => {
-                  const Icon = c.icon;
+                {c.mockStats.map((mc, i) => {
+                  const Icon = [TrendingUp, Wallet, Users][i];
+                  const color = ['text-indigo-300 bg-indigo-500/15', 'text-violet-300 bg-violet-500/15', 'text-fuchsia-300 bg-fuchsia-500/15'][i];
                   return (
                     <motion.div
-                      key={c.label}
+                      key={mc.label}
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 + i * 0.12 }}
                       className="rounded-2xl border border-white/8 bg-white/[0.04] p-4"
                     >
-                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-3 ${c.color}`}>
+                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-3 ${color}`}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      <div className="text-xs text-slate-500 mb-1">{c.label}</div>
+                      <div className="text-xs text-slate-500 mb-1">{mc.label}</div>
                       <div className="flex items-end justify-between">
-                        <span className="text-lg font-bold text-white">{c.value}</span>
-                        <span className="text-[11px] font-bold text-emerald-400">{c.delta}</span>
+                        <span className="text-lg font-bold text-white">{mc.value}</span>
+                        <span className="text-[11px] font-bold text-emerald-400">{mc.delta}</span>
                       </div>
                     </motion.div>
                   );
                 })}
 
-                {/* fake chart */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -387,8 +665,8 @@ export function LandingPage() {
                   className="sm:col-span-3 rounded-2xl border border-white/8 bg-white/[0.04] p-4"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs text-slate-500">Haftalik dinamika</span>
-                    <span className="text-[11px] font-semibold text-indigo-300">Buyurtmalar</span>
+                    <span className="text-xs text-slate-500">{c.mockWeekly}</span>
+                    <span className="text-[11px] font-semibold text-indigo-300">{c.mockOrders}</span>
                   </div>
                   <div className="flex items-end gap-2 h-20">
                     {[38, 52, 44, 66, 58, 82, 74, 90, 71, 95, 84, 100].map((h, i) => (
@@ -411,7 +689,7 @@ export function LandingPage() {
       {/* ======= Marquee ======= */}
       <div className="relative border-y border-white/8 bg-white/[0.02] py-4 overflow-hidden">
         <div className="landing-marquee flex gap-10 whitespace-nowrap w-max">
-          {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, i) => (
+          {[...c.marquee, ...c.marquee, ...c.marquee].map((item, i) => (
             <span key={i} className="flex items-center gap-2.5 text-sm font-semibold text-slate-500">
               <Sparkles className="h-3.5 w-3.5 text-indigo-400/70" />
               {item}
@@ -423,12 +701,7 @@ export function LandingPage() {
       {/* ======= Stats ======= */}
       <section className="max-w-6xl mx-auto px-5 py-20">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { end: 14, suffix: ' kun', label: 'bepul sinov muddati' },
-            { end: 1, suffix: ' daqiqa', label: "ro'yxatdan o'tish vaqti" },
-            { end: 8, suffix: '+', label: 'tayyor CRM moduli' },
-            { end: 24, suffix: '/7', label: 'onlayn buyurtma qabuli' },
-          ].map((s, i) => (
+          {c.stats.map((s, i) => (
             <motion.div
               key={s.label}
               {...fadeUp}
@@ -449,22 +722,21 @@ export function LandingPage() {
         <motion.div {...fadeUp} className="text-center max-w-2xl mx-auto mb-14">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-300 mb-4">
             <LayoutDashboard className="h-3.5 w-3.5" />
-            Afzalliklarimiz
+            {c.advTag}
           </div>
           <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-4">
-            Biznesingiz uchun{' '}
+            {c.advTitle1}{' '}
             <span className="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">
-              kuchli qurollar
+              {c.advTitle2}
             </span>
           </h2>
-          <p className="text-slate-400">
-            Daftardagi hisob-kitob va Excel jadvallarini unuting — hammasi avtomatlashtirilgan
-          </p>
+          <p className="text-slate-400">{c.advSub}</p>
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {advantages.map((a, i) => {
-            const Icon = a.icon;
+          {c.advantages.map((a, i) => {
+            const Icon = advantageIcons[i];
+            const accent = advantageAccents[i];
             return (
               <motion.div
                 key={a.title}
@@ -472,9 +744,9 @@ export function LandingPage() {
                 transition={{ duration: 0.55, delay: (i % 4) * 0.08 }}
                 className="group relative rounded-3xl border border-white/8 bg-white/[0.03] p-6 overflow-hidden hover:border-white/20 hover:-translate-y-1.5 hover:bg-white/[0.05] transition-all duration-300"
               >
-                <div className={`absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${a.accent.split(' ').slice(0, 2).join(' ')}`} aria-hidden />
+                <div className={`absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${accent.split(' ').slice(0, 2).join(' ')}`} aria-hidden />
                 <div className="relative">
-                  <div className={`h-12 w-12 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${a.accent.split(' ').pop()}`}>
+                  <div className={`h-12 w-12 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${accent.split(' ').pop()}`}>
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="font-bold mb-2">{a.title}</h3>
@@ -491,19 +763,19 @@ export function LandingPage() {
         <motion.div {...fadeUp} className="text-center max-w-2xl mx-auto mb-14">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-violet-300 mb-4">
             <Rocket className="h-3.5 w-3.5" />
-            Boshlash oson
+            {c.stepTag}
           </div>
           <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-4">
-            3 qadamda{' '}
-            <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">ishga tushiring</span>
+            {c.stepTitle1}{' '}
+            <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">{c.stepTitle2}</span>
           </h2>
-          <p className="text-slate-400">Texnik bilim talab qilinmaydi — hammasi tayyor</p>
+          <p className="text-slate-400">{c.stepSub}</p>
         </motion.div>
 
         <div className="relative grid lg:grid-cols-3 gap-5">
           <div className="hidden lg:block absolute top-14 left-[18%] right-[18%] h-px bg-gradient-to-r from-indigo-500/0 via-indigo-400/40 to-fuchsia-500/0" aria-hidden />
-          {steps.map((s, i) => {
-            const Icon = s.icon;
+          {c.steps.map((s, i) => {
+            const Icon = stepIcons[i];
             return (
               <motion.div
                 key={s.step}
@@ -530,17 +802,15 @@ export function LandingPage() {
         <motion.div {...fadeUp} className="text-center max-w-2xl mx-auto mb-14">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-fuchsia-300 mb-4">
             <Wallet className="h-3.5 w-3.5" />
-            Tariflar
+            {c.priceTag}
           </div>
           <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-4">
-            Oddiy va{' '}
+            {c.priceTitle1}{' '}
             <span className="bg-gradient-to-r from-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
-              shaffof narxlar
+              {c.priceTitle2}
             </span>
           </h2>
-          <p className="text-slate-400">
-            Yashirin to&apos;lovlar yo&apos;q — barcha imkoniyatlar har ikkala tarifda ham to&apos;liq ochiq
-          </p>
+          <p className="text-slate-400">{c.priceSub}</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch">
@@ -550,22 +820,15 @@ export function LandingPage() {
             transition={{ duration: 0.55 }}
             className="relative rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-8 flex flex-col hover:border-white/25 transition-colors"
           >
-            <div className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Oylik</div>
+            <div className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">{c.monthly}</div>
             <div className="flex flex-wrap items-end gap-2 mb-1.5">
-              <span className="text-4xl lg:text-5xl font-black text-white">450 000</span>
-              <span className="text-slate-400 font-semibold mb-1.5">so&apos;m / oy</span>
+              <span className="text-4xl lg:text-5xl font-black text-white">{c.monthlyPrice}</span>
+              <span className="text-slate-400 font-semibold mb-1.5">{c.perMonth}</span>
             </div>
-            <p className="text-sm text-slate-500 mb-7">Majburiyatsiz — istalgan vaqtda to&apos;xtatishingiz mumkin</p>
+            <p className="text-sm text-slate-500 mb-7">{c.monthlyNote}</p>
 
             <ul className="space-y-3 mb-8 flex-1">
-              {[
-                "Barcha CRM modullari to'liq",
-                'Cheksiz filiallar va xodimlar',
-                'Onlayn mijoz portali',
-                'SMS xabarnomalar',
-                'Moliyaviy hisobotlar',
-                'Texnik yordam',
-              ].map((f) => (
+              {c.monthlyFeatures.map((f) => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-slate-300">
                   <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0" />
                   {f}
@@ -577,7 +840,7 @@ export function LandingPage() {
               href={SIGNUP_URL}
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 text-white font-bold px-6 py-4 hover:bg-white/10 hover:border-white/35 active:scale-[0.98] transition-all"
             >
-              14 kun bepul boshlash
+              {c.priceCta}
             </a>
           </motion.div>
 
@@ -590,30 +853,22 @@ export function LandingPage() {
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white text-xs font-black px-4 py-1.5 shadow-lg shadow-fuchsia-500/40 whitespace-nowrap">
                 <Gift className="h-3.5 w-3.5" />
-                +2 OY SOVG&apos;A
+                {c.yearlyBadge}
               </span>
             </div>
 
             <div className="relative h-full rounded-[calc(2rem-1.5px)] bg-[#0b0d1f] p-8 flex flex-col">
-              <div className="text-sm font-bold uppercase tracking-widest text-indigo-300 mb-4">Yillik</div>
+              <div className="text-sm font-bold uppercase tracking-widest text-indigo-300 mb-4">{c.yearly}</div>
               <div className="flex flex-wrap items-end gap-2 mb-1.5">
                 <span className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-indigo-300 to-fuchsia-300 bg-clip-text text-transparent">
-                  5 400 000
+                  {c.yearlyPrice}
                 </span>
-                <span className="text-slate-400 font-semibold mb-1.5">so&apos;m / yil</span>
+                <span className="text-slate-400 font-semibold mb-1.5">{c.perYear}</span>
               </div>
-              <p className="text-sm text-slate-400 mb-7">
-                12 oy narxiga <span className="font-bold text-white">14 oy foydalaning</span> — oyiga{' '}
-                <span className="font-bold text-emerald-400">~386 000 so&apos;mga</span> tushadi
-              </p>
+              <p className="text-sm text-slate-400 mb-7">{c.yearlyNote}</p>
 
               <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  "Oylik tarifdagi hamma narsa",
-                  "2 oy qo'shimcha — mutlaqo bepul",
-                  "Yil davomida narx o'zgarmaydi",
-                  'Ustuvor texnik yordam',
-                ].map((f) => (
+                {c.yearlyFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-sm text-slate-200">
                     <CheckCircle2 className="h-4 w-4 text-fuchsia-400 shrink-0" />
                     {f}
@@ -625,7 +880,7 @@ export function LandingPage() {
                 href={SIGNUP_URL}
                 className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-fuchsia-600 text-white font-bold px-6 py-4 shadow-lg shadow-fuchsia-500/30 hover:shadow-fuchsia-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                14 kun bepul boshlash
+                {c.priceCta}
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
@@ -634,7 +889,7 @@ export function LandingPage() {
 
         <motion.p {...fadeUp} className="text-center text-sm text-slate-500 mt-8 flex items-center justify-center gap-2">
           <ShieldCheck className="h-4 w-4 text-emerald-400" />
-          Avval 14 kun bepul sinab ko&apos;rasiz — tarif faqat sinov tugagach tanlanadi
+          {c.priceFootnote}
         </motion.p>
       </section>
 
@@ -651,28 +906,18 @@ export function LandingPage() {
           <div className="relative p-8 lg:p-14 text-center">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur border border-white/20 px-5 py-2 mb-6">
               <Gift className="h-4 w-4 text-indigo-200" />
-              <span className="text-sm font-bold text-white">Maxsus taklif</span>
+              <span className="text-sm font-bold text-white">{c.offerBadge}</span>
             </div>
 
             <h2 className="text-4xl lg:text-6xl font-black tracking-tight mb-4">
               <span className="bg-gradient-to-r from-white via-indigo-100 to-white bg-clip-text text-transparent">
-                14 kun mutlaqo bepul
+                {c.offerTitle}
               </span>
             </h2>
-            <p className="text-lg text-slate-300 max-w-xl mx-auto mb-9">
-              Barcha imkoniyatlar ochiq. Karta ma&apos;lumotlari talab qilinmaydi, hech qanday yashirin
-              to&apos;lovlar yo&apos;q. Yoqmasa — shunchaki ishlatmaysiz.
-            </p>
+            <p className="text-lg text-slate-300 max-w-xl mx-auto mb-9">{c.offerSub}</p>
 
             <div className="grid sm:grid-cols-3 gap-3 max-w-2xl mx-auto mb-10 text-left">
-              {[
-                "To'liq CRM dashboard",
-                'Tayyor xizmatlar katalogi',
-                'Onlayn mijoz portali',
-                'SMS xabarnomalar',
-                'Moliyaviy hisobotlar',
-                'Texnik yordam',
-              ].map((f) => (
+              {c.offerFeatures.map((f) => (
                 <div key={f} className="flex items-center gap-2.5 text-sm text-slate-200">
                   <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                   {f}
@@ -684,13 +929,13 @@ export function LandingPage() {
               href={SIGNUP_URL}
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-white text-[#1a1b3a] font-black text-base sm:text-lg px-8 sm:px-10 py-5 shadow-[0_0_60px_-10px_rgba(255,255,255,0.5)] hover:shadow-[0_0_80px_-8px_rgba(255,255,255,0.7)] hover:scale-[1.04] active:scale-[0.98] transition-all"
             >
-              Hoziroq bepul boshlash
+              {c.offerCta}
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform" />
             </a>
 
             <p className="mt-5 text-sm text-slate-400 flex items-center justify-center gap-2">
               <Clock className="h-4 w-4" />
-              Ro&apos;yxatdan o&apos;tish atigi 1 daqiqa vaqt oladi
+              {c.offerNote}
             </p>
           </div>
         </motion.div>
@@ -707,29 +952,26 @@ export function LandingPage() {
                 </div>
                 <span className="font-bold text-lg">CleanWay</span>
               </div>
-              <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-                Kimyoviy tozalash korxonalari uchun zamonaviy CRM platforma. Biznesingizni raqamlashtiring
-                va daromadingizni oshiring.
-              </p>
+              <p className="text-sm text-slate-400 leading-relaxed max-w-xs">{c.footerAbout}</p>
             </div>
 
             <div>
-              <div className="font-bold text-sm mb-4 text-slate-200">Platforma</div>
+              <div className="font-bold text-sm mb-4 text-slate-200">{c.footerPlatform}</div>
               <ul className="space-y-2.5 text-sm text-slate-400">
                 <li>
                   <a href={SIGNUP_URL} className="hover:text-indigo-300 transition-colors inline-flex items-center gap-1.5">
                     <Gift className="h-3.5 w-3.5" />
-                    14 kun bepul sinov
+                    {c.footerTrial}
                   </a>
                 </li>
-                <li><a href={LOGIN_URL} className="hover:text-indigo-300 transition-colors">CRM panelga kirish</a></li>
-                <li><a href="#afzalliklar" className="hover:text-indigo-300 transition-colors">Afzalliklar</a></li>
-                <li><a href="#narx" className="hover:text-indigo-300 transition-colors">Narx</a></li>
+                <li><a href={LOGIN_URL} className="hover:text-indigo-300 transition-colors">{c.footerCrm}</a></li>
+                <li><a href="#afzalliklar" className="hover:text-indigo-300 transition-colors">{c.footerAdvantages}</a></li>
+                <li><a href="#narx" className="hover:text-indigo-300 transition-colors">{c.footerPrice}</a></li>
               </ul>
             </div>
 
             <div>
-              <div className="font-bold text-sm mb-4 text-slate-200">Aloqa</div>
+              <div className="font-bold text-sm mb-4 text-slate-200">{c.footerContact}</div>
               <ul className="space-y-3 text-sm text-slate-400">
                 <li>
                   <a href="tel:+998958500880" className="flex items-center gap-2.5 hover:text-indigo-300 transition-colors">
@@ -743,20 +985,20 @@ export function LandingPage() {
                   <span className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                     <MapPin className="h-4 w-4 text-indigo-300" />
                   </span>
-                  Xorazm viloyati, Urganch shahri
+                  {c.contactAddress}
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                     <MessageSquare className="h-4 w-4 text-indigo-300" />
                   </span>
-                  Savollaringiz bo&apos;lsa qo&apos;ng&apos;iroq qiling
+                  {c.contactNote}
                 </li>
               </ul>
             </div>
           </div>
 
           <div className="pt-6 border-t border-white/8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
-            <span>© {new Date().getFullYear()} CleanWay. Barcha huquqlar himoyalangan.</span>
+            <span>© {new Date().getFullYear()} CleanWay. {c.rights}</span>
             <span>cleanway.4mi.uz</span>
           </div>
         </div>

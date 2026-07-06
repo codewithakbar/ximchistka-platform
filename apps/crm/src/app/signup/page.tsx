@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { useI18n } from '@/lib/i18n';
+import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 const LANDING_URL = process.env.NEXT_PUBLIC_CLIENT_WEB_URL ?? 'https://cleanway.4mi.uz';
@@ -30,6 +32,7 @@ type SignupResult = {
 
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SignupResult | null>(null);
@@ -57,7 +60,7 @@ export default function SignupPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (adminPassword !== confirmPassword) {
-      toast.error('Parollar mos kelmadi');
+      toast.error(t('signup.passwordMismatch'));
       return;
     }
     if (adminPassword.length < 6) {
@@ -87,9 +90,9 @@ export default function SignupPage() {
       }
       setResult(data as SignupResult);
       setStep(3);
-      toast.success('Demo akkaunt yaratildi!');
+      toast.success(t('signup.successTitle'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('signup.error'));
     } finally {
       setLoading(false);
     }
@@ -99,7 +102,7 @@ export default function SignupPage() {
     if (!result) return;
     const text = `CleanWay CRM\nURL: ${result.crmUrl}/login\nTelefon: ${result.admin.phone}\nParol: ${result.admin.password}`;
     navigator.clipboard.writeText(text);
-    toast.success('Nusxa olindi');
+    toast.success(t('signup.copied'));
   }
 
   if (step === 3 && result) {
@@ -114,10 +117,8 @@ export default function SignupPage() {
             <div className="h-16 w-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-4">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Tabriklaymiz!</h1>
-            <p className="text-muted-foreground">
-              <strong>{result.organization.name}</strong> uchun 14 kunlik demo tayyor
-            </p>
+            <h1 className="text-2xl font-bold mb-2">{t('signup.successTitle')}</h1>
+            <p className="text-muted-foreground">{t('signup.successSub')}</p>
             {demoEnd && (
               <p className="text-sm text-muted-foreground mt-1">Demo muddati: {demoEnd} gacha</p>
             )}
@@ -144,12 +145,12 @@ export default function SignupPage() {
 
           <div className="flex flex-col gap-3">
             <Button onClick={() => router.push('/login')} size="lg" className="w-full">
-              CRM ga kirish
+              {t('signup.goCrm')}
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Button type="button" variant="outline" onClick={copyCredentials} className="w-full">
               <Copy className="h-4 w-4" />
-              Ma&apos;lumotlarni nusxalash
+              {t('signup.copy')}
             </Button>
           </div>
         </div>
@@ -171,35 +172,36 @@ export default function SignupPage() {
         </div>
         <div className="relative">
           <h2 className="text-4xl font-bold mb-4 leading-tight">
-            14 kun bepul
+            {t('signup.brandTitle1')}
             <br />
-            <span className="text-blue-200">demo sinab ko&apos;ring</span>
+            <span className="text-blue-200">{t('signup.brandTitle2')}</span>
           </h2>
-          <p className="text-blue-100 text-lg max-w-md">
-            Ro&apos;yxatdan o&apos;ting — CRM, buyurtmalar, mijozlar va hisobotlar darhol ishlaydi.
-            Standart xizmatlar katalogi avtomatik yaratiladi.
-          </p>
+          <p className="text-blue-100 text-lg max-w-md">{t('signup.brandSub')}</p>
         </div>
         <ul className="relative space-y-3 text-sm text-blue-100">
-          {['CRM boshqaruv paneli', 'Buyurtma va filial boshqaruvi', '3 ta demo xizmat katalogi', 'SMS/OTP integratsiya tayyor'].map((item) => (
-            <li key={item} className="flex items-center gap-2">
+          {['signup.feature1', 'signup.feature2', 'signup.feature3', 'signup.feature4'].map((key) => (
+            <li key={key} className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-blue-200 shrink-0" />
-              {item}
+              {t(key)}
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div className="relative flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md">
           <Link href="/login" className="inline-flex items-center gap-1 text-sm text-muted-foreground mb-6 hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Kirish sahifasiga
+            {t('signup.backLogin')}
           </Link>
 
-          <h1 className="text-2xl font-bold mb-2">Demo ro&apos;yxatdan o&apos;tish</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('signup.title')}</h1>
           <p className="text-muted-foreground mb-6">
-            Qadam {step} / 2 — {step === 1 ? 'Firma ma\'lumotlari' : 'Admin akkaunt'}
+            {t('signup.stepOf')} {step} / 2 — {step === 1 ? t('signup.step1') : t('signup.step2')}
           </p>
 
           <div className="flex gap-2 mb-8">
@@ -211,7 +213,7 @@ export default function SignupPage() {
             {step === 1 ? (
               <div className="space-y-4">
                 <div>
-                  <Label>Firma nomi</Label>
+                  <Label>{t('signup.companyName')}</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -227,11 +229,11 @@ export default function SignupPage() {
                   )}
                 </div>
                 <div>
-                  <Label>Filial nomi</Label>
+                  <Label>{t('signup.branchName')}</Label>
                   <Input value={branchName} onChange={(e) => setBranchName(e.target.value)} required />
                 </div>
                 <div>
-                  <Label>Filial manzili</Label>
+                  <Label>{t('signup.branchAddress')}</Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -244,11 +246,11 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Filial telefoni (ixtiyoriy)</Label>
+                  <Label>{t('signup.branchPhone')}</Label>
                   <PhoneInput value={branchPhone} onChange={setBranchPhone} placeholder="+998..." />
                 </div>
                 <div>
-                  <Label>Email (ixtiyoriy)</Label>
+                  <Label>{t('signup.contactEmail')}</Label>
                   <Input
                     type="email"
                     value={contactEmail}
@@ -257,14 +259,14 @@ export default function SignupPage() {
                   />
                 </div>
                 <Button type="submit" size="lg" className="w-full">
-                  Davom etish
+                  {t('signup.next')}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <Label>Admin ismi</Label>
+                  <Label>{t('signup.adminName')}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -277,11 +279,11 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Admin telefoni (CRM login)</Label>
+                  <Label>{t('signup.adminPhone')}</Label>
                   <PhoneInput value={adminPhone} onChange={setAdminPhone} required placeholder="+998..." />
                 </div>
                 <div>
-                  <Label>Parol</Label>
+                  <Label>{t('signup.adminPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -296,7 +298,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Parolni tasdiqlang</Label>
+                  <Label>{t('signup.confirmPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -312,10 +314,10 @@ export default function SignupPage() {
                 </div>
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
-                    Orqaga
+                    {t('common.cancel')}
                   </Button>
                   <Button type="submit" loading={loading} size="lg" className="flex-[2]">
-                    Demo yaratish
+                    {t('signup.submit')}
                   </Button>
                 </div>
               </div>
@@ -325,7 +327,7 @@ export default function SignupPage() {
           <p className="text-xs text-muted-foreground text-center mt-8">
             Akkauntingiz bormi?{' '}
             <Link href="/login" className="text-primary font-medium hover:underline">
-              Kirish
+              {t('login.submit')}
             </Link>
           </p>
         </div>

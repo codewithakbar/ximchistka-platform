@@ -7,7 +7,9 @@ import { useEffect, useState } from 'react';
 import { api, getUser, updateStoredUser } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
-import { ROLE_LABELS, StaffRole } from '@/lib/roles';
+import { StaffRole } from '@/lib/roles';
+import { useI18n } from '@/lib/i18n';
+import { ThemeToggle, LanguageToggle } from './prefs-controls';
 
 type TopbarUser = {
   role?: string;
@@ -16,6 +18,7 @@ type TopbarUser = {
 };
 
 export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: () => void }) {
+  const { t } = useI18n();
   const [user, setUser] = useState<TopbarUser | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [demoRemainingDays, setDemoRemainingDays] = useState<number | null>(null);
@@ -66,8 +69,8 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
   }, []);
 
   const roleLabel = user?.role
-    ? ROLE_LABELS[user.role as StaffRole] ?? user.role.replace(/_/g, ' ')
-    : 'Super admin';
+    ? t(`role.${user.role}`, user.role.replace(/_/g, ' '))
+    : t('role.super_admin');
 
   return (
     <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6 py-2">
@@ -90,7 +93,7 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
               </span>
               {demoPlan === 'demo' && demoRemainingDays !== null && (
                 <Badge variant="warning" className="px-2 py-0.5 text-[11px] font-semibold">
-                  Demo: {demoRemainingDays} kun
+                  {t('topbar.demo')}: {demoRemainingDays} {t('topbar.days')}
                 </Badge>
               )}
             </div>
@@ -103,10 +106,12 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="search"
-            placeholder="Qidirish..."
-            className="h-9 w-56 xl:w-64 rounded-lg border border-input bg-card pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder={t('topbar.search')}
+            className="h-9 w-48 xl:w-56 rounded-lg border border-input bg-card pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
+        <LanguageToggle />
+        <ThemeToggle />
         <NotificationBell />
         <Link
           href="/settings"

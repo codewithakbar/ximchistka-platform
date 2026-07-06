@@ -32,8 +32,13 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const localeInitScript = `(function(){try{var l=localStorage.getItem('landing-locale');if(l==='ru'||l==='uz'){document.documentElement.lang=l;}}catch(e){}})();`;
+
   return (
-    <html lang="uz" className={inter.variable}>
+    <html lang="uz" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: localeInitScript }} />
+      </head>
       <body className="font-sans">
         <PwaRegister />
         <div className="min-h-screen bg-background">{children}</div>
