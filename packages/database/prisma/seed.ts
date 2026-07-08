@@ -1,10 +1,6 @@
 import bcrypt from 'bcryptjs';
 import {
-  DeliveryType,
   OrganizationPlan,
-  OrderStatus,
-  PaymentProvider,
-  PaymentStatus,
   prisma,
   UserRole,
 } from '../src/index';
@@ -137,76 +133,6 @@ async function main() {
     create: { userId: branchManager.id, branchId: branches[0].id },
   });
 
-  const category = await prisma.serviceCategory.upsert({
-    where: { id: 'seed-category-dry' },
-    update: {},
-    create: {
-      id: 'seed-category-dry',
-      name: 'Kimyo tozalash',
-      description: 'Professional ximchistka xizmatlari',
-      sortOrder: 1,
-    },
-  });
-
-  const services = await Promise.all([
-    prisma.service.upsert({
-      where: { id: 'seed-service-koylak' },
-      update: {
-        discountType: 'percent',
-        discountValue: 10,
-      },
-      create: {
-        id: 'seed-service-koylak',
-        categoryId: category.id,
-        name: "Ko'ylak tozalash",
-        basePrice: 25000,
-        discountType: 'percent',
-        discountValue: 10,
-      },
-    }),
-    prisma.service.upsert({
-      where: { id: 'seed-service-palto' },
-      update: {},
-      create: {
-        id: 'seed-service-palto',
-        categoryId: category.id,
-        name: 'Palto tozalash',
-        basePrice: 80000,
-      },
-    }),
-    prisma.service.upsert({
-      where: { id: 'seed-service-press' },
-      update: {},
-      create: {
-        id: 'seed-service-press',
-        categoryId: category.id,
-        name: 'Press (dazmol)',
-        basePrice: 15000,
-      },
-    }),
-  ]);
-
-  for (const branch of branches) {
-    for (const service of services) {
-      await prisma.priceRule.upsert({
-        where: {
-          branchId_serviceId_itemType: {
-            branchId: branch.id,
-            serviceId: service.id,
-            itemType: 'standart',
-          },
-        },
-        update: {},
-        create: {
-          branchId: branch.id,
-          serviceId: service.id,
-          itemType: 'standart',
-          price: service.basePrice,
-        },
-      });
-    }
-  }
-
   const customerUser = await prisma.user.upsert({
     where: { phone: '+998904444444' },
     update: {},
@@ -246,59 +172,6 @@ async function main() {
     },
   });
 
-  const order = await prisma.order.upsert({
-    where: { orderNumber: 'XC-10001' },
-    update: {},
-    create: {
-      orderNumber: 'XC-10001',
-      branchId: branches[0].id,
-      customerId: customerProfile.id,
-      status: OrderStatus.in_processing,
-      totalAmount: 105000,
-      notes: 'Ehtiyotkorlik bilan',
-      items: {
-        create: [
-          {
-            serviceId: services[0].id,
-            quantity: 2,
-            unitPrice: 25000,
-          },
-          {
-            serviceId: services[1].id,
-            quantity: 1,
-            unitPrice: 80000,
-          },
-        ],
-      },
-      statusHistory: {
-        create: [
-          { status: OrderStatus.submitted },
-          { status: OrderStatus.received_at_branch, changedBy: operator.id },
-          { status: OrderStatus.in_processing, changedBy: operator.id },
-        ],
-      },
-      pickupDelivery: {
-        create: {
-          type: DeliveryType.pickup,
-          scheduledAt: new Date(Date.now() + 86400000),
-          address: "Toshkent, Chilonzor 5-kvartal, 12-uy",
-        },
-      },
-    },
-  });
-
-  await prisma.payment.upsert({
-    where: { id: 'seed-payment-1' },
-    update: {},
-    create: {
-      id: 'seed-payment-1',
-      orderId: order.id,
-      provider: PaymentProvider.cash,
-      amount: order.totalAmount,
-      status: PaymentStatus.pending,
-    },
-  });
-
   console.log('Seed completed:', {
     platformAdminPhone: platformAdmin.phone,
     platformAdminPassword: 'admin123',
@@ -307,7 +180,6 @@ async function main() {
     adminPhone: admin.phone,
     adminPassword: 'admin123',
     customerPhone: customerUser.phone,
-    orderNumber: order.orderNumber,
   });
 }
 

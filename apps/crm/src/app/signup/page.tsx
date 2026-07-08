@@ -18,10 +18,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { resolveApiBaseUrl } from '@ximchistka/shared';
 import { useI18n } from '@/lib/i18n';
 import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 const LANDING_URL = process.env.NEXT_PUBLIC_CLIENT_WEB_URL ?? 'https://cleanway.4mi.uz';
 
 type SignupResult = {
@@ -70,7 +70,7 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/public/trial-signup`, {
+      const res = await fetch(`${resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL)}/public/trial-signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

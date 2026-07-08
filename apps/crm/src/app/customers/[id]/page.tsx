@@ -22,8 +22,13 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
-import { formatDate, formatRelative } from '@/lib/utils';
-import { ORDER_STATUS_LABELS, OrderStatus } from '@ximchistka/shared';
+import {
+  useFormatDate,
+  useFormatRelative,
+  useI18n,
+  useOrderStatusLabel,
+} from '@/lib/i18n';
+import { OrderStatus } from '@ximchistka/shared';
 
 type CustomerDetail = {
   id: string;
@@ -52,6 +57,10 @@ type CustomerDetail = {
 };
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useI18n();
+  const formatDate = useFormatDate();
+  const formatRelative = useFormatRelative();
+  const statusLabel = useOrderStatusLabel();
   const { id } = use(params);
   const [data, setData] = useState<CustomerDetail | null>(null);
 
@@ -61,7 +70,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
       const res = await api<CustomerDetail>(`/customers/${id}`);
       setData(res);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Mijozni yuklab bo\'lmadi');
+      toast.error(e instanceof Error ? e.message : t('customerDetail.toastLoadError'));
     }
   }, [id]);
 
@@ -69,7 +78,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     load();
   }, [load]);
 
-  const title = data?.user.fullName ?? 'Mijoz';
+  const title = data?.user.fullName ?? t('common.customer');
 
   return (
     <AppShell title={title}>
@@ -79,7 +88,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Mijozlar
+          {t('nav./customers')}
         </Link>
       </div>
 
@@ -111,7 +120,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                     )}
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 shrink-0" />
-                      Ro&apos;yxatdan o&apos;tgan: {formatDate(data.registeredAt)}
+                      {t('customerDetail.registered')}: {formatDate(data.registeredAt)}
                     </div>
                   </div>
                   {data.notes && (
@@ -123,14 +132,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           </Card>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <StatCard icon={ClipboardList} label="Buyurtmalar" value={String(data.summary.totalOrders)} />
+            <StatCard icon={ClipboardList} label={t('orders.title')} value={String(data.summary.totalOrders)} />
             <StatCard
               icon={CheckCircle2}
-              label="Yakunlangan"
+              label={t('customerDetail.completed')}
               value={String(data.summary.completedOrders)}
             />
-            <StatCard icon={Clock} label="Faol" value={String(data.summary.activeOrders)} />
-            <StatCard icon={Wallet} label="Jami sarflangan" value={formatPrice(data.summary.totalSpent)} />
+            <StatCard icon={Clock} label={t('customerDetail.active')} value={String(data.summary.activeOrders)} />
+            <StatCard icon={Wallet} label={t('customerDetail.totalSpent')} value={formatPrice(data.summary.totalSpent)} />
           </div>
 
           {data.addresses.length > 0 && (
@@ -138,7 +147,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Manzillar
+                  {t('customerDetail.addresses')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -151,7 +160,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                       <div className="font-medium text-sm">{a.label}</div>
                       <div className="text-sm text-muted-foreground">{a.address}</div>
                     </div>
-                    {a.isDefault && <Badge variant="info">Asosiy</Badge>}
+                    {a.isDefault && <Badge variant="info">{t('customerDetail.defaultAddress')}</Badge>}
                   </div>
                 ))}
               </CardContent>
@@ -162,27 +171,27 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" />
-                Buyurtmalar tarixi
+                {t('customerDetail.orderHistory')}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                O&apos;rtacha buyurtma: {formatPrice(data.summary.avgOrder)}
+                {t('customerDetail.avgOrder')}: {formatPrice(data.summary.avgOrder)}
               </p>
             </CardHeader>
             <CardContent className="p-0">
               {data.orders.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-12">
-                  Buyurtmalar yo&apos;q
+                  {t('orders.emptyTitle')}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-muted-foreground">
-                        <th className="text-left font-medium px-4 py-3">Buyurtma</th>
-                        <th className="text-left font-medium px-4 py-3">Filial</th>
-                        <th className="text-left font-medium px-4 py-3">Sana</th>
-                        <th className="text-right font-medium px-4 py-3">Summa</th>
-                        <th className="text-left font-medium px-4 py-3">Holat</th>
+                        <th className="text-left font-medium px-4 py-3">{t('orders.colOrder')}</th>
+                        <th className="text-left font-medium px-4 py-3">{t('common.branch')}</th>
+                        <th className="text-left font-medium px-4 py-3">{t('common.date')}</th>
+                        <th className="text-right font-medium px-4 py-3">{t('common.amount')}</th>
+                        <th className="text-left font-medium px-4 py-3">{t('common.state')}</th>
                         <th className="text-right font-medium px-4 py-3" />
                       </tr>
                     </thead>
@@ -207,26 +216,26 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             )}
                             {o.paidAmount > 0 && (
                               <div className="text-xs text-muted-foreground">
-                                To&apos;langan: {formatPrice(o.paidAmount)}
+                                {t('common.paid')}: {formatPrice(o.paidAmount)}
                               </div>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge
                               status={o.status}
-                              label={ORDER_STATUS_LABELS[o.status] ?? o.status}
+                              label={statusLabel(o.status)}
                             />
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Link href={`/orders/${o.id}/receipt`} title="Chek">
+                              <Link href={`/orders/${o.id}/receipt`} title={t('orders.viewReceipt')}>
                                 <Button size="sm" variant="ghost">
                                   <Printer className="h-4 w-4" />
                                 </Button>
                               </Link>
                               <Link href={`/orders/${o.id}`}>
                                 <Button size="sm" variant="ghost">
-                                  Ko&apos;rish
+                                  {t('orders.viewOrder')}
                                 </Button>
                               </Link>
                             </div>

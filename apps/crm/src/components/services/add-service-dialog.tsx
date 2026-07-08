@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { DiscountFields } from './discount-fields';
 
 type CategoryOption = { id: string; name: string };
@@ -21,6 +22,7 @@ export function AddServiceDialog({
   onCreated: () => void;
   categories: CategoryOption[];
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [name, setName] = useState('');
@@ -73,11 +75,11 @@ export function AddServiceDialog({
               : undefined,
         }),
       });
-      toast.success('Xizmat qo\'shildi');
+      toast.success(t('dialog.service.toastCreated'));
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -88,7 +90,7 @@ export function AddServiceDialog({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-md bg-card rounded-xl border border-border shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold">Yangi xizmat</h2>
+          <h2 className="text-lg font-semibold">{t('dialog.service.title')}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -99,7 +101,7 @@ export function AddServiceDialog({
         </div>
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
-            <Label>Kategoriya</Label>
+            <Label>{t('services.addCategory')}</Label>
             <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -109,11 +111,11 @@ export function AddServiceDialog({
             </Select>
           </div>
           <div>
-            <Label>Xizmat nomi</Label>
+            <Label>{t('dialog.service.name')}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Ko'ylak" />
           </div>
           <div>
-            <Label>Tavsif (ixtiyoriy)</Label>
+            <Label>{t('common.description')} ({t('common.optional')})</Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -150,10 +152,10 @@ export function AddServiceDialog({
           />
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-              Bekor
+              {t('common.cancelShort')}
             </Button>
             <Button type="submit" className="flex-1" loading={loading} disabled={categories.length === 0}>
-              Qo&apos;shish
+              {t('common.add')}
             </Button>
           </div>
         </form>

@@ -23,6 +23,7 @@ import { Input, Label, Select } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
 import { useRealtimeOrders } from '@/hooks/use-realtime-orders';
+import { useI18n } from '@/lib/i18n';
 
 type BranchStat = {
   branchId: string;
@@ -47,6 +48,7 @@ type Report = {
 type Branch = { id: string; name: string };
 
 export default function ReportsPage() {
+  const { t } = useI18n();
   const [report, setReport] = useState<Report | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState('');
@@ -71,10 +73,10 @@ export default function ReportsPage() {
       const data = await api<Report>(`/reports/daily?${q}`);
       setReport(data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Hisobotni yuklab bo\'lmadi');
+      toast.error(err instanceof Error ? err.message : t('reports.toastLoadError'));
       setReport(emptyReport);
     }
-  }, [from, to, branchId]);
+  }, [from, to, branchId, t]);
 
   useEffect(() => {
     api<Branch[]>('/branches').then(setBranches).catch(() => setBranches([]));
@@ -101,7 +103,7 @@ export default function ReportsPage() {
   const chartBranches = report?.byBranch.filter((b) => b.orderCount > 0) ?? [];
 
   return (
-    <AppShell title="Hisobotlar">
+    <AppShell title={t('reports.title')}>
       <div className="flex items-center justify-end mb-3">
         <span
           className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
@@ -113,33 +115,33 @@ export default function ReportsPage() {
           <span
             className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`}
           />
-          {connected ? 'Jonli yangilanish' : 'Ulanmoqda...'}
+          {connected ? t('reports.liveConnected') : t('reports.liveConnecting')}
         </span>
       </div>
       <Card className="mb-4">
         <CardContent className="pt-6 flex flex-col md:flex-row gap-3 md:items-end">
           <div className="flex-1 min-w-0">
-            <Label>Boshlanish sanasi</Label>
+            <Label>{t('reports.dateFrom')}</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="flex-1 min-w-0">
-            <Label>Tugash sanasi</Label>
+            <Label>{t('reports.dateTo')}</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div className="flex-1 min-w-0">
-            <Label>Filial</Label>
+            <Label>{t('common.branch')}</Label>
             <Select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-              <option value="">Barcha filiallar (umumiy)</option>
+              <option value="">{t('reports.allBranches')}</option>
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </Select>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <Button onClick={load} className="flex-1 md:flex-none">Yangilash</Button>
+            <Button onClick={load} className="flex-1 md:flex-none">{t('reports.refresh')}</Button>
             <Button variant="outline" onClick={exportCsv} className="flex-1 md:flex-none">
               <Download className="h-4 w-4" />
-              CSV
+              {t('reports.exportCsv')}
             </Button>
           </div>
         </CardContent>
@@ -147,25 +149,25 @@ export default function ReportsPage() {
 
       <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
         <BarChart3 className="h-4 w-4" />
-        {branchId ? 'Tanlangan filial' : 'Umumiy ko\'rsatkichlar (barcha filiallar)'}
+        {branchId ? t('reports.scopeSelected') : t('reports.scopeAll')}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <SummaryCard
           icon={ClipboardList}
-          label="Jami buyurtmalar"
+          label={t('reports.totalOrders')}
           value={report ? String(report.totalOrders) : undefined}
           color="bg-blue-500/10 text-blue-600"
         />
         <SummaryCard
           icon={Wallet}
-          label="Jami tushum"
+          label={t('reports.totalRevenue')}
           value={report ? formatPrice(report.totalRevenue) : undefined}
           color="bg-violet-500/10 text-violet-600"
         />
         <SummaryCard
           icon={TrendingUp}
-          label="O'rtacha buyurtma"
+          label={t('reports.avgOrder')}
           value={
             report
               ? report.totalOrders
@@ -177,13 +179,13 @@ export default function ReportsPage() {
         />
         <SummaryCard
           icon={Building2}
-          label="Filiallar"
+          label={t('reports.branchCount')}
           value={report ? String(report.branchCount) : undefined}
           color="bg-amber-500/10 text-amber-600"
         />
         <SummaryCard
           icon={XCircle}
-          label="Bekor qilingan"
+          label={t('reports.cancelled')}
           value={report ? String(report.cancelledOrders) : undefined}
           color="bg-rose-500/10 text-rose-600"
         />
@@ -194,10 +196,10 @@ export default function ReportsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Filiallar bo&apos;yicha
+              {t('reports.byBranchTitle')}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Yaratilgan va tanlangan davrda yakunlangan buyurtmalar (tushum va ulush)
+              {t('reports.byBranchDescription')}
             </p>
           </CardHeader>
           <CardContent>
@@ -208,18 +210,18 @@ export default function ReportsPage() {
                 ))}
               </div>
             ) : report.byBranch.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">Filial topilmadi</p>
+              <p className="text-sm text-muted-foreground py-8 text-center">{t('reports.noBranches')}</p>
             ) : (
               <div className="overflow-x-auto -mx-6">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-left font-medium px-6 py-3">Filial</th>
-                      <th className="text-right font-medium px-6 py-3">Buyurtmalar</th>
-                      <th className="text-right font-medium px-6 py-3">Ulush</th>
-                      <th className="text-right font-medium px-6 py-3">Tushum</th>
-                      <th className="text-right font-medium px-6 py-3">Ulush</th>
-                      <th className="text-right font-medium px-6 py-3">O&apos;rtacha</th>
+                      <th className="text-left font-medium px-6 py-3">{t('common.branch')}</th>
+                      <th className="text-right font-medium px-6 py-3">{t('reports.colOrders')}</th>
+                      <th className="text-right font-medium px-6 py-3">{t('reports.colShare')}</th>
+                      <th className="text-right font-medium px-6 py-3">{t('reports.colRevenue')}</th>
+                      <th className="text-right font-medium px-6 py-3">{t('reports.colShare')}</th>
+                      <th className="text-right font-medium px-6 py-3">{t('reports.colAverage')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -250,7 +252,7 @@ export default function ReportsPage() {
                       </tr>
                     ))}
                     <tr className="bg-primary/5 font-semibold">
-                      <td className="px-6 py-3">JAMI</td>
+                      <td className="px-6 py-3">{t('reports.totalRow')}</td>
                       <td className="px-6 py-3 text-right">{report.totalOrders}</td>
                       <td className="px-6 py-3 text-right">100%</td>
                       <td className="px-6 py-3 text-right">{formatPrice(report.totalRevenue)}</td>
@@ -270,8 +272,8 @@ export default function ReportsPage() {
       {!branchId && chartBranches.length > 0 && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Filiallar taqqoslash</CardTitle>
-            <p className="text-sm text-muted-foreground">Tushum bo&apos;yicha</p>
+            <CardTitle>{t('reports.compareTitle')}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t('reports.compareSubtitle')}</p>
           </CardHeader>
           <CardContent>
             <div className="h-72">
@@ -285,8 +287,8 @@ export default function ReportsPage() {
                     contentStyle={{ border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
                   />
                   <Legend />
-                  <Bar dataKey="revenue" name="Tushum" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="orderCount" name="Buyurtmalar" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" name={t('reports.chartRevenue')} fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="orderCount" name={t('reports.chartOrders')} fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -296,9 +298,9 @@ export default function ReportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tushum dinamikasi</CardTitle>
+          <CardTitle>{t('reports.dynamicsTitle')}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            {branchId ? 'Tanlangan filial bo\'yicha kunlik' : 'Barcha filiallar bo\'yicha kunlik umumiy'}
+            {branchId ? t('reports.dynamicsBranchDaily') : t('reports.dynamicsAllDaily')}
           </p>
         </CardHeader>
         <CardContent>
@@ -320,7 +322,7 @@ export default function ReportsPage() {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      name="Tushum"
+                      name={t('reports.chartRevenue')}
                       stroke="#2563eb"
                       strokeWidth={2}
                       dot={{ r: 4 }}
@@ -329,7 +331,7 @@ export default function ReportsPage() {
                     <Line
                       type="monotone"
                       dataKey="count"
-                      name="Buyurtmalar"
+                      name={t('reports.chartOrders')}
                       stroke="#8b5cf6"
                       strokeWidth={2}
                       dot={{ r: 4 }}
@@ -338,7 +340,7 @@ export default function ReportsPage() {
                 </ResponsiveContainer>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-16">
-                  Tanlangan davrda ma&apos;lumot yo&apos;q
+                  {t('reports.noData')}
                 </p>
               )
             ) : (

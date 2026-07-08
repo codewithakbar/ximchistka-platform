@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from './button';
+import { useI18n } from '@/lib/i18n';
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -20,13 +21,17 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = 'Tasdiqlash',
-  cancelLabel = 'Bekor qilish',
+  confirmLabel,
+  cancelLabel,
   variant = 'primary',
   loading = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+  const resolvedConfirmLabel = confirmLabel ?? t('common.confirm');
+  const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
+
   if (!open) return null;
 
   return (
@@ -53,10 +58,10 @@ export function ConfirmDialog({
 
         <div className="mt-6 flex justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button type="button" variant={variant} onClick={onConfirm} loading={loading}>
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </div>
       </div>

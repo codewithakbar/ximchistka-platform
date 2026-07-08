@@ -9,7 +9,8 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
 import { api } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
-import { CREATABLE_ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, StaffRole } from '@/lib/roles';
+import { useI18n, useRoleLabel } from '@/lib/i18n';
+import { CREATABLE_ROLES, StaffRole } from '@/lib/roles';
 
 type Branch = { id: string; name: string };
 
@@ -31,6 +32,8 @@ export function AddStaffDialog({
   onCreated: () => void;
   organizationId: string;
 }) {
+  const { t } = useI18n();
+  const roleLabel = useRoleLabel();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<CreatedStaff | null>(null);
@@ -99,10 +102,10 @@ export function AddStaffDialog({
         }),
       });
       setCreated({ fullName, phone, role, password });
-      toast.success('Xodim qo\'shildi');
+      toast.success(t('dialog.staff.toastCreated'));
       onCreated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -110,11 +113,11 @@ export function AddStaffDialog({
 
   function copyCredentials() {
     if (!created) return;
-    const text = `CleanWay CRM\nURL: http://localhost:3000/login\nTelefon: ${created.phone}\nParol: ${created.password}\nRol: ${ROLE_LABELS[created.role as StaffRole] ?? created.role}`;
+    const text = `CleanWay CRM\nURL: http://localhost:3000/login\nTelefon: ${created.phone}\nParol: ${created.password}\nRol: ${roleLabel(created.role as StaffRole)}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success('Nusxa olindi');
+    toast.success(t('signup.copied'));
   }
 
   if (!open) return null;
@@ -125,7 +128,7 @@ export function AddStaffDialog({
       <div className="relative w-full max-w-lg bg-card rounded-xl border border-border shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-lg font-semibold">
-            {created ? 'Xodim yaratildi' : 'Yangi xodim'}
+            {created ? t('dialog.staff.createdTitle') : t('dialog.staff.title')}
           </h2>
           <button onClick={onClose} className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center">
             <X className="h-4 w-4" />
@@ -138,9 +141,9 @@ export function AddStaffDialog({
               <strong>{created.fullName}</strong> endi shaxsiy dashboardiga kirishi mumkin.
             </p>
             <div className="rounded-lg bg-secondary p-4 space-y-2 text-sm font-mono">
-              <div><span className="text-muted-foreground">Telefon:</span> {created.phone}</div>
-              <div><span className="text-muted-foreground">Parol:</span> {created.password}</div>
-              <div><span className="text-muted-foreground">Rol:</span> {ROLE_LABELS[created.role as StaffRole]}</div>
+              <div><span className="text-muted-foreground">{t('common.phone')}:</span> {created.phone}</div>
+              <div><span className="text-muted-foreground">{t('login.password')}:</span> {created.password}</div>
+              <div><span className="text-muted-foreground">Rol:</span> {roleLabel(created.role as StaffRole)}</div>
               <div><span className="text-muted-foreground">Kirish:</span> http://localhost:3000/login</div>
             </div>
             <div className="flex gap-2">
@@ -148,7 +151,7 @@ export function AddStaffDialog({
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Nusxa olindi' : 'Kirish ma\'lumotlari'}
               </Button>
-              <Button className="flex-1" onClick={onClose}>Yopish</Button>
+              <Button className="flex-1" onClick={onClose}>{t('common.close')}</Button>
             </div>
           </div>
         ) : (
@@ -158,7 +161,7 @@ export function AddStaffDialog({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="group relative"
-                title="Surat yuklash"
+                title={t('settings.profile.uploadPhoto')}
               >
                 <StaffAvatar name={fullName || '?'} src={avatarUrl} role={role} size="xl" />
                 <span className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md ring-2 ring-card">
@@ -172,10 +175,10 @@ export function AddStaffDialog({
                   className="text-xs text-destructive inline-flex items-center gap-1 hover:underline"
                 >
                   <Trash2 className="h-3 w-3" />
-                  Suratni olib tashlash
+                  {t('settings.profile.removePhoto')}
                 </button>
               ) : (
-                <span className="text-xs text-muted-foreground">Surat (ixtiyoriy)</span>
+                <span className="text-xs text-muted-foreground">Surat ({t('common.optional')})</span>
               )}
               <input
                 ref={fileInputRef}
@@ -186,25 +189,25 @@ export function AddStaffDialog({
               />
             </div>
             <div>
-              <Label>To&apos;liq ism</Label>
+              <Label>{t('settings.profile.fullName')}</Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Ali Valiyev" />
             </div>
             <div>
-              <Label>Telefon (login)</Label>
+              <Label>{t('common.phone')} (login)</Label>
               <PhoneInput value={phone} onChange={setPhone} required placeholder="+998901234567" />
             </div>
             <div>
-              <Label>Email (ixtiyoriy)</Label>
+              <Label>{t('common.email')} ({t('common.optional')})</Label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ali@ximchistka.uz" />
             </div>
             <div>
               <Label>Rol</Label>
               <Select value={role} onChange={(e) => setRole(e.target.value as StaffRole)}>
                 {CREATABLE_ROLES.map((r) => (
-                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                  <option key={r} value={r}>{roleLabel(r)}</option>
                 ))}
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">{ROLE_DESCRIPTIONS[role]}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t(`roleDesc.${role}`)}</p>
             </div>
             <div>
               <Label>Vaqtinchalik parol</Label>
@@ -216,10 +219,10 @@ export function AddStaffDialog({
                 minLength={6}
                 placeholder="kamida 6 belgi"
               />
-              <p className="text-xs text-muted-foreground mt-1">Xodimga bu parolni bering — birinchi kirishda ishlatadi</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('dialog.staff.passwordHint')}</p>
             </div>
             <div>
-              <Label>Filiallar</Label>
+              <Label>{t('common.branches')}</Label>
               <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
                 {branches.map((b) => (
                   <label
@@ -239,10 +242,10 @@ export function AddStaffDialog({
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-                Bekor
+                {t('common.cancelShort')}
               </Button>
               <Button type="submit" className="flex-1" loading={loading}>
-                Qo&apos;shish
+                {t('common.add')}
               </Button>
             </div>
           </form>

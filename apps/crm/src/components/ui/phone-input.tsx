@@ -2,6 +2,7 @@
 
 import { InputHTMLAttributes, forwardRef } from 'react';
 import { Input } from './input';
+import { cn } from '@/lib/utils';
 
 const PREFIX = '+998';
 const MAX_DIGITS = 9;
@@ -19,19 +20,28 @@ type PhoneInputProps = Omit<
 > & {
   value: string;
   onChange: (value: string) => void;
+  /** Katta sensor/POS ekranlar uchun */
+  touchSize?: 'default' | 'pos';
+};
+
+const touchSizeClasses: Record<NonNullable<PhoneInputProps['touchSize']>, string> = {
+  default: '',
+  pos: 'h-14 min-h-[56px] text-xl font-semibold tracking-wide touch-manipulation px-4',
 };
 
 export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
-  ({ value, onChange, onKeyDown, onFocus, ...props }, ref) => {
+  ({ value, onChange, onKeyDown, onFocus, touchSize = 'default', className, ...props }, ref) => {
     const display = normalizePhone(value || '');
 
     return (
       <Input
         ref={ref}
         type="tel"
-        inputMode="tel"
-        autoComplete="off"
+        inputMode="numeric"
+        autoComplete="tel"
+        enterKeyHint={touchSize === 'pos' ? 'search' : 'done'}
         value={display}
+        className={cn(touchSizeClasses[touchSize], className)}
         onChange={(e) => onChange(normalizePhone(e.target.value))}
         onFocus={(e) => {
           const len = e.currentTarget.value.length;

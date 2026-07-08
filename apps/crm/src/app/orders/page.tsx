@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Search, Filter, ClipboardList, ArrowRight, Eye, Plus, Printer } from 'lucide-react';
-import { CreateOrderDialog } from '@/components/orders/create-order-dialog';
 import { useCanCreateOrders } from '@/hooks/use-client-auth';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +14,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Empty } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
-import { formatRelative } from '@/lib/utils';
+import { useFormatRelative, useI18n, useOrderStatusLabel } from '@/lib/i18n';
 import {
-  ORDER_STATUS_LABELS,
   OrderStatus,
   VALID_STATUS_TRANSITIONS,
 } from '@ximchistka/shared';
@@ -32,19 +30,32 @@ type Order = {
   customer: { user: { fullName: string; phone: string } };
 };
 
-const nextActionLabel: Partial<Record<OrderStatus, string>> = {
-  submitted: 'Qabul',
-  received_at_branch: 'Ishlash',
-  in_processing: 'Tayyor',
-  ready: 'Yetkazish',
-  out_for_delivery: 'Yakunlash',
+const ALL_STATUSES: OrderStatus[] = [
+  'draft',
+  'submitted',
+  'received_at_branch',
+  'in_processing',
+  'ready',
+  'out_for_delivery',
+  'completed',
+  'cancelled',
+];
+
+const nextActionKeys: Partial<Record<OrderStatus, string>> = {
+  submitted: 'orders.actionAccept',
+  received_at_branch: 'orders.actionProcess',
+  in_processing: 'orders.actionReady',
+  ready: 'orders.actionDeliver',
+  out_for_delivery: 'orders.actionComplete',
 };
 
 export default function OrdersPage() {
+  const { t } = useI18n();
+  const statusLabel = useOrderStatusLabel();
+  const formatRelative = useFormatRelative();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
   const [pending, setPending] = useState<{ id: string; next: OrderStatus } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const canCreate = useCanCreateOrders();
@@ -56,7 +67,7 @@ export default function OrdersPage() {
       const r = await api<{ data: Order[] }>(`/orders${q}`);
       setOrders(r.data);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Xatolik';
+      const msg = e instanceof Error ? e.message : t('common.error');
       if (!msg.includes('Sessiya tugadi')) {
         toast.error(msg);
       }
@@ -82,13 +93,13 @@ export default function OrdersPage() {
         method: 'PATCH',
         body: JSON.stringify({ status: pending.next }),
       });
-      toast.success(`Status: ${ORDER_STATUS_LABELS[pending.next]}`);
+      toast.success(t('orders.toastStatusChanged', { status: statusLabel(pending.next) }));
       setOrders(
         (prev) => prev?.map((o) => (o.id === pending.id ? { ...o, status: pending.next } : o)) ?? null,
       );
       setPending(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Xatolik');
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setConfirming(false);
     }
@@ -102,13 +113,15 @@ export default function OrdersPage() {
   );
 
   return (
-    <AppShell title="Buyurtmalar">
+    <AppShell title={t('orders.title')}>
       {canCreate && (
         <div className="flex justify-end mb-4">
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Yangi buyurtma
-          </Button>
+          <Link href="/orders/new">
+            <Button>
+              <Plus className="h-4 w-4" />
+              {t('orders.newOrder')}
+            </Button>
+          </Link>
         </div>
       )}
       <Card className="mb-4">
@@ -116,7 +129,7 @@ export default function OrdersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buyurtma raqami, mijoz ismi yoki telefon..."
+              placeholder={t('orders.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
@@ -125,9 +138,9 @@ export default function OrdersPage() {
           <div className="relative md:w-56">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Select value={status} onChange={(e) => setStatus(e.target.value)} className="pl-10">
-              <option value="">Barcha statuslar</option>
-              {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
+              <option value="">{t('orders.allStatuses')}</option>
+              {ALL_STATUSES.map((k) => (
+                <option key={k} value={k}>{statusLabel(k)}</option>
               ))}
             </Select>
           </div>
@@ -145,14 +158,16 @@ export default function OrdersPage() {
           ) : filtered?.length === 0 ? (
             <Empty
               icon={ClipboardList}
-              title="Buyurtmalar topilmadi"
-              description="Filterni o'zgartiring yoki yangi buyurtma yarating"
+              title={t('orders.emptyTitle')}
+              description={t('orders.emptyDescription')}
               action={
                 canCreate ? (
-                  <Button onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-4 w-4" />
-                    Yangi buyurtma
-                  </Button>
+                  <Link href="/orders/new">
+                    <Button>
+                      <Plus className="h-4 w-4" />
+                      {t('orders.newOrder')}
+                    </Button>
+                  </Link>
                 ) : undefined
               }
             />
@@ -161,13 +176,13 @@ export default function OrdersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left font-medium px-6 py-3">Buyurtma</th>
-                    <th className="text-left font-medium px-6 py-3">Mijoz</th>
-                    <th className="text-left font-medium px-6 py-3">Filial</th>
-                    <th className="text-right font-medium px-6 py-3">Summa</th>
-                    <th className="text-left font-medium px-6 py-3">Status</th>
-                    <th className="text-left font-medium px-6 py-3">Sana</th>
-                    <th className="text-right font-medium px-6 py-3">Amallar</th>
+                    <th className="text-left font-medium px-6 py-3">{t('orders.colOrder')}</th>
+                    <th className="text-left font-medium px-6 py-3">{t('orders.colCustomer')}</th>
+                    <th className="text-left font-medium px-6 py-3">{t('orders.colBranch')}</th>
+                    <th className="text-right font-medium px-6 py-3">{t('orders.colAmount')}</th>
+                    <th className="text-left font-medium px-6 py-3">{t('orders.colStatus')}</th>
+                    <th className="text-left font-medium px-6 py-3">{t('orders.colDate')}</th>
+                    <th className="text-right font-medium px-6 py-3">{t('orders.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,27 +200,27 @@ export default function OrdersPage() {
                       <td className="px-6 py-3 text-muted-foreground">{o.branch.name}</td>
                       <td className="px-6 py-3 text-right font-semibold">{formatPrice(o.totalAmount)}</td>
                       <td className="px-6 py-3">
-                        <StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} />
+                        <StatusBadge status={o.status} label={statusLabel(o.status)} />
                       </td>
                       <td className="px-6 py-3 text-muted-foreground text-xs">{formatRelative(o.createdAt)}</td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {nextActionLabel[o.status] && (
+                          {nextActionKeys[o.status] && (
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => requestAdvance(o.id, o.status)}
                             >
-                              {nextActionLabel[o.status]}
+                              {t(nextActionKeys[o.status]!)}
                               <ArrowRight className="h-3 w-3" />
                             </Button>
                           )}
-                          <Link href={`/orders/${o.id}/receipt`} title="Chek">
+                          <Link href={`/orders/${o.id}/receipt`} title={t('orders.viewReceipt')}>
                             <Button size="icon" variant="ghost">
                               <Printer className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Link href={`/orders/${o.id}`} title="Ko'rish">
+                          <Link href={`/orders/${o.id}`} title={t('orders.viewOrder')}>
                             <Button size="icon" variant="ghost">
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -221,30 +236,17 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
 
-      <CreateOrderDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={(order) => {
-          load();
-          if (order?.id) {
-            window.open(`/orders/${order.id}/receipt?print=1`, '_blank');
-          }
-        }}
-      />
-
       <ConfirmDialog
         open={pending !== null}
-        title="Statusni o'zgartirish"
+        title={t('orders.confirmStatusTitle')}
         description={
           pending ? (
             <>
-              Buyurtma statusini{' '}
-              <strong className="text-foreground">{ORDER_STATUS_LABELS[pending.next]}</strong> ga
-              o&apos;zgartirishni tasdiqlaysizmi?
+              {t('orders.confirmStatusDescription', { status: statusLabel(pending.next) })}
             </>
           ) : null
         }
-        confirmLabel="Ha, o'zgartirish"
+        confirmLabel={t('common.yesChange')}
         loading={confirming}
         onConfirm={confirmAdvance}
         onCancel={() => setPending(null)}

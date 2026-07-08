@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider, themeInitScript } from '@/lib/theme';
-import { I18nProvider } from '@/lib/i18n';
+import { I18nProvider, localeInitScript } from '@/lib/i18n';
 import { ThemedToaster } from '@/components/themed-toaster';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="uz" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: localeInitScript }} />
       </head>
       <body className="font-sans">
         <ThemeProvider>

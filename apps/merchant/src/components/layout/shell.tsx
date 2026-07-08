@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Layers, LogOut, LayoutDashboard } from 'lucide-react';
+import { Layers, LogOut, LayoutDashboard, Settings } from 'lucide-react';
 import { clearAuth, ensureValidSession, getToken, getUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { href: '/dashboard', label: 'Firmalar', icon: LayoutDashboard },
+  { href: '/settings', label: 'Sozlamalar', icon: Settings },
+] as const;
 
 export function MerchantShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -54,16 +60,29 @@ export function MerchantShell({ children }: { children: React.ReactNode }) {
           </div>
           <span className="font-semibold text-sm">Merchant Panel</span>
         </div>
-        <nav className="p-3 flex-1">
-          <Link
-            href="/dashboard"
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-              pathname === '/dashboard' ? 'bg-violet-600 text-white' : 'text-muted-foreground hover:bg-secondary'
-            }`}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            Firmalar
-          </Link>
+        <nav className="p-3 flex-1 space-y-1">
+          {navItems.map((item) => {
+            const active =
+              item.href === '/dashboard'
+                ? pathname === '/dashboard' || pathname.startsWith('/organizations')
+                : pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-violet-600 text-white'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="p-3 border-t border-border">
           <p className="text-xs text-muted-foreground px-3 mb-2">{user?.fullName ?? 'Platform admin'}</p>

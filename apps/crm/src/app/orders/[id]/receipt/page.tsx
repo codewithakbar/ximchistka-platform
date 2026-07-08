@@ -9,6 +9,7 @@ import { OrderReceipt, type ReceiptOrder } from '@/components/orders/order-recei
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, getUser } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type OrderDetail = ReceiptOrder & { id: string };
 
@@ -21,12 +22,13 @@ export default function OrderReceiptPage({ params }: { params: Promise<{ id: str
 }
 
 function ReceiptPageFallback({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useI18n();
   const { id } = use(params);
   return (
     <div className="min-h-screen bg-secondary">
       <div className="no-print px-4 py-3 border-b border-border bg-card">
         <Link href={`/orders/${id}`} className="text-sm text-muted-foreground">
-          Yuklanmoqda...
+          {t('common.loading')}
         </Link>
       </div>
       <div className="py-6 px-4 flex justify-center">
@@ -37,6 +39,7 @@ function ReceiptPageFallback({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function OrderReceiptContent({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useI18n();
   const { id } = use(params);
   const searchParams = useSearchParams();
   const autoPrint = searchParams.get('print') === '1';
@@ -49,7 +52,7 @@ function OrderReceiptContent({ params }: { params: Promise<{ id: string }> }) {
       const data = await api<OrderDetail>(`/orders/${id}`);
       setOrder(data);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chekni yuklab bo\'lmadi');
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     }
   }, [id]);
 
@@ -75,11 +78,11 @@ function OrderReceiptContent({ params }: { params: Promise<{ id: string }> }) {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Buyurtmaga qaytish
+          {t('orderDetail.backToOrder')}
         </Link>
         <Button onClick={handlePrint} disabled={!order}>
           <Printer className="h-4 w-4" />
-          Chop etish
+          {t('orderDetail.print')}
         </Button>
       </div>
 

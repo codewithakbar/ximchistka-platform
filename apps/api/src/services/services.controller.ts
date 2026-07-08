@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { ServicesCatalogService } from './services.service';
 import { Public, Roles } from '../auth/guards';
 import { CurrentUser } from '../auth/decorators';
+import { TenantUser } from '../branches/tenant-scope';
 
 class CreateCategoryDto {
   @IsString() name!: string;
@@ -51,16 +52,22 @@ class UpdateCategoryDto {
 export class ServicesController {
   constructor(private services: ServicesCatalogService) {}
 
-  @Public()
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
   @Get('categories')
-  listCategories() {
-    return this.services.listCategories();
+  listCategories(@CurrentUser() user: TenantUser) {
+    return this.services.listCategories(user);
   }
 
-  @Public()
+  @Roles(UserRole.super_admin, UserRole.branch_manager)
+  @Get('manage/categories')
+  listCategoriesForManage(@CurrentUser() user: TenantUser) {
+    return this.services.listCategoriesForManage(user);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager)
   @Get()
-  listServices() {
-    return this.services.listServices();
+  listServices(@CurrentUser() user: TenantUser) {
+    return this.services.listServices(user);
   }
 
   @Public()
@@ -69,42 +76,53 @@ export class ServicesController {
     return this.services.getBranchPrices(branchId);
   }
 
-  @Roles(UserRole.super_admin, UserRole.branch_manager)
-  @Get('manage/categories')
-  listCategoriesForManage() {
-    return this.services.listCategoriesForManage();
-  }
-
   @Roles(UserRole.super_admin)
   @Post('categories')
-  createCategory(@Body() dto: CreateCategoryDto) {
-    return this.services.createCategory(dto);
+  createCategory(@CurrentUser() user: TenantUser, @Body() dto: CreateCategoryDto) {
+    return this.services.createCategory(user, dto);
   }
 
   @Roles(UserRole.super_admin)
   @Post()
-  createService(@Body() dto: CreateServiceDto) {
-    return this.services.createService(dto);
+  createService(@CurrentUser() user: TenantUser, @Body() dto: CreateServiceDto) {
+    return this.services.createService(user, dto);
   }
 
   @Roles(UserRole.super_admin, UserRole.branch_manager)
   @Post('prices')
-  upsertPrice(
-    @CurrentUser() user: { role: UserRole; organizationId?: string; branchIds: string[] },
-    @Body() dto: PriceRuleDto,
-  ) {
+  upsertPrice(@CurrentUser() user: TenantUser, @Body() dto: PriceRuleDto) {
     return this.services.upsertPriceRule(user, dto);
   }
 
   @Roles(UserRole.super_admin)
   @Patch('categories/:id')
-  updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
-    return this.services.updateCategory(id, dto);
+  updateCategory(
+    @CurrentUser() user: TenantUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.services.updateCategory(user, id, dto);
+  }
+
+  @Roles(UserRole.super_admin)
+  @Delete('categories/:id')
+  deleteCategory(@CurrentUser() user: TenantUser, @Param('id') id: string) {
+    return this.services.deleteCategory(user, id);
   }
 
   @Roles(UserRole.super_admin)
   @Patch(':id')
-  updateService(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.services.updateService(id, dto);
+  updateService(
+    @CurrentUser() user: TenantUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateServiceDto,
+  ) {
+    return this.services.updateService(user, id, dto);
+  }
+
+  @Roles(UserRole.super_admin)
+  @Delete(':id')
+  deleteService(@CurrentUser() user: TenantUser, @Param('id') id: string) {
+    return this.services.deleteService(user, id);
   }
 }

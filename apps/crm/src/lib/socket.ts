@@ -1,11 +1,13 @@
 import { io, Socket } from 'socket.io-client';
+import { resolveWsBaseUrl } from '@ximchistka/shared';
 
 let socket: Socket | null = null;
 
 export function getSocketUrl() {
-  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
-  return apiUrl.replace(/\/api\/v1\/?$/, '');
+  return resolveWsBaseUrl(
+    process.env.NEXT_PUBLIC_WS_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+  );
 }
 
 export function getSocket() {

@@ -3,19 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrganizationPlan, Prisma, UserRole } from '@prisma/client';
+import { OrganizationPlan, OrderStatus, Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const DEMO_DAYS = 14;
 const PUBLIC_TRIAL_DAYS = 14;
-
-const DEFAULT_SERVICES = [
-  { name: "Ko'ylak tozalash", basePrice: 25000, discountType: 'percent' as const, discountValue: 10 },
-  { name: 'Palto tozalash', basePrice: 80000 },
-  { name: 'Press (dazmol)', basePrice: 15000 },
-];
 
 type BranchWithCount = {
   id: string;
@@ -96,7 +90,7 @@ export class PlatformService {
     if (!org) throw new NotFoundException('Tashkilot topilmadi');
 
     const branchIds = org.branches.map((b) => b.id);
-    const [statusGroups, orderStats, customerCount] = await Promise.all([
+    const [statusGroups, orderStats, customerCount, categories] = await Promise.all([
       this.prisma.order.groupBy({
         by: ['status'],
         where: { branchId: { in: branchIds } },
@@ -110,6 +104,26 @@ export class PlatformService {
       this.prisma.user.count({
         where: { organizationId: id, role: UserRole.customer },
       }),
+      this.prisma.serviceCategory.findMany({
+        where: { organizationId: id },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        include: {
+          services: {
+            orderBy: { name: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              unit: true,
+              basePrice: true,
+              discountType: true,
+              discountValue: true,
+              discountValidUntil: true,
+              isActive: true,
+            },
+          },
+        },
+      }),
     ]);
 
     const ordersByStatus = statusGroups.reduce<Record<string, number>>((acc, g) => {
@@ -118,15 +132,186 @@ export class PlatformService {
     }, {});
 
     const mapped = this.mapOrganization(org, new Date(), true);
+    const serviceCount = categories.reduce((sum, c) => sum + c.services.length, 0);
     return {
       ...mapped,
+      catalog: {
+        categoryCount: categories.length,
+        serviceCount,
+        categories: categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          isActive: c.isActive,
+          sortOrder: c.sortOrder,
+          services: c.services.map((s) => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            unit: s.unit,
+            basePrice: s.basePrice,
+            discountType: s.discountType,
+            discountValue: s.discountValue,
+            discountValidUntil: s.discountValidUntil?.toISOString() ?? null,
+            isActive: s.isActive,
+          })),
+        })),
+      },
       stats: {
         totalOrders: orderStats._count._all,
         totalRevenue: orderStats._sum.totalAmount ?? 0,
         customerCount,
         staffCount: org.users.length,
         ordersByStatus,
+        categoryCount: categories.length,
+        serviceCount,
       },
+    };
+  }
+
+  private async getOrgBranchIds(orgId: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { branches: { select: { id: true } } },
+    });
+    if (!org) throw new NotFoundException('Tashkilot topilmadi');
+    return org.branches.map((b) => b.id);
+  }
+
+  async listOrganizationOrders(
+    orgId: string,
+    query: { status?: OrderStatus; page?: number; limit?: number },
+  ) {
+    const branchIds = await this.getOrgBranchIds(orgId);
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(Math.max(1, query.limit ?? 20), 50);
+
+    const where: Prisma.OrderWhereInput = {
+      branchId: { in: branchIds.length ? branchIds : ['__none__'] },
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [rows, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          branch: { select: { id: true, name: true } },
+          customer: { include: { user: { select: { fullName: true, phone: true } } } },
+          statusHistory: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data: rows.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        totalAmount: o.totalAmount,
+        createdAt: o.createdAt.toISOString(),
+        updatedAt: o.updatedAt.toISOString(),
+        branch: o.branch,
+        customer: {
+          fullName: o.customer.user.fullName,
+          phone: o.customer.user.phone,
+        },
+        lastStatusAt: o.statusHistory[0]?.createdAt.toISOString() ?? o.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getOrganizationOrder(orgId: string, orderId: string) {
+    const branchIds = await this.getOrgBranchIds(orgId);
+
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        branchId: { in: branchIds },
+      },
+      include: {
+        branch: { select: { id: true, name: true, address: true, phone: true } },
+        customer: {
+          include: {
+            user: { select: { fullName: true, phone: true, email: true } },
+          },
+        },
+        items: { include: { service: { select: { name: true, unit: true } } } },
+        pickupDelivery: {
+          include: {
+            courier: { select: { id: true, fullName: true, phone: true } },
+          },
+        },
+        statusHistory: {
+          include: { user: { select: { id: true, fullName: true, role: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
+        payments: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      discountAmount: order.discountAmount,
+      notes: order.notes,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+      estimatedReady: order.estimatedReady?.toISOString() ?? null,
+      branch: order.branch,
+      customer: {
+        fullName: order.customer.user.fullName,
+        phone: order.customer.user.phone,
+        email: order.customer.user.email,
+      },
+      items: order.items.map((i) => ({
+        id: i.id,
+        serviceName: i.service.name,
+        unit: i.service.unit,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        itemType: i.itemType,
+      })),
+      pickupDelivery: order.pickupDelivery
+        ? {
+            type: order.pickupDelivery.type,
+            address: order.pickupDelivery.address,
+            scheduledAt: order.pickupDelivery.scheduledAt?.toISOString() ?? null,
+            completedAt: order.pickupDelivery.completedAt?.toISOString() ?? null,
+            courier: order.pickupDelivery.courier
+              ? {
+                  fullName: order.pickupDelivery.courier.fullName,
+                  phone: order.pickupDelivery.courier.phone,
+                }
+              : null,
+          }
+        : null,
+      statusHistory: order.statusHistory.map((h) => ({
+        id: h.id,
+        status: h.status,
+        note: h.note,
+        createdAt: h.createdAt.toISOString(),
+        changedBy: h.user
+          ? { fullName: h.user.fullName, role: h.user.role }
+          : null,
+      })),
+      payments: order.payments.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        provider: p.provider,
+        status: p.status,
+        createdAt: p.createdAt.toISOString(),
+      })),
     };
   }
 
@@ -188,8 +373,6 @@ export class PlatformService {
           userBranches: { create: { branchId: branch.id } },
         },
       });
-
-      await this.seedDefaultCatalog(tx, branch.id);
 
       return { org, branch, admin };
     });
@@ -353,38 +536,6 @@ export class PlatformService {
       slug = `${candidate}-${++n}`;
     }
     return slug;
-  }
-
-  private async seedDefaultCatalog(tx: Prisma.TransactionClient, branchId: string) {
-    const category = await tx.serviceCategory.create({
-      data: {
-        name: 'Kimyo tozalash',
-        description: 'Professional ximchistka xizmatlari',
-        sortOrder: 1,
-      },
-    });
-
-    for (const svc of DEFAULT_SERVICES) {
-      const service = await tx.service.create({
-        data: {
-          categoryId: category.id,
-          name: svc.name,
-          basePrice: svc.basePrice,
-          ...(svc.discountType
-            ? { discountType: svc.discountType, discountValue: svc.discountValue }
-            : {}),
-        },
-      });
-
-      await tx.priceRule.create({
-        data: {
-          branchId,
-          serviceId: service.id,
-          itemType: 'standart',
-          price: svc.basePrice,
-        },
-      });
-    }
   }
 
   private normalizePhone(phone: string) {

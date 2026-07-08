@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 export type BranchFormData = {
   id: string;
@@ -27,6 +28,7 @@ export function EditBranchForm({
   canManage: boolean;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(branch.name);
   const [address, setAddress] = useState(branch.address);
@@ -59,10 +61,10 @@ export function EditBranchForm({
           ...(canManage ? { isActive } : {}),
         }),
       });
-      toast.success('Filial saqlandi');
+      toast.success(t('dialog.branch.toastSaved'));
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -71,24 +73,24 @@ export function EditBranchForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4 max-w-xl">
       <div>
-        <Label>Filial nomi</Label>
+        <Label>{t('dialog.branch.name')}</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div>
-        <Label>Manzil</Label>
+        <Label>{t('common.address')}</Label>
         <Input value={address} onChange={(e) => setAddress(e.target.value)} required />
       </div>
       <div>
-        <Label>Telefon</Label>
+        <Label>{t('common.phone')}</Label>
         <PhoneInput value={phone} onChange={setPhone} required />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Ochilish vaqti</Label>
+          <Label>{t('common.openTime')}</Label>
           <Input type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} required />
         </div>
         <div>
-          <Label>Yopilish vaqti</Label>
+          <Label>{t('common.closeTime')}</Label>
           <Input type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} required />
         </div>
       </div>
@@ -100,12 +102,12 @@ export function EditBranchForm({
             onChange={(e) => setIsActive(e.target.checked)}
             className="accent-primary h-4 w-4"
           />
-          Filial faol (mijozlar ko&apos;radi va buyurtma beradi)
+          {t('dialog.branch.activeHint')}
         </label>
       )}
       <Button type="submit" loading={loading}>
         <Save className="h-4 w-4" />
-        Saqlash
+        {t('common.save')}
       </Button>
     </form>
   );

@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label, Select } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { useCanManageServicesCatalog } from '@/hooks/use-client-auth';
 import { cn } from '@/lib/utils';
 import {
   applyServiceDiscount,
@@ -50,6 +52,8 @@ type PriceRule = {
 };
 
 export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
+  const { t } = useI18n();
+  const canManageCatalog = useCanManageServicesCatalog();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [branchId, setBranchId] = useState('');
@@ -59,10 +63,9 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadCatalog = useCallback(() => {
-    return api<Category[]>('/services/manage/categories').catch(() =>
-      api<Category[]>('/services/categories'),
-    );
-  }, []);
+    const path = canManageCatalog ? '/services/manage/categories' : '/services/categories';
+    return api<Category[]>(path);
+  }, [canManageCatalog]);
 
   useEffect(() => {
     Promise.all([api<Branch[]>('/branches'), loadCatalog()])
@@ -133,7 +136,7 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
       const rules = await api<PriceRule[]>(`/services/prices/${branchId}`);
       setPrices(rules);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSavingId(null);
     }
@@ -152,9 +155,9 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="w-full sm:max-w-xs">
-          <Label>Filial</Label>
+          <Label>{t('common.branch')}</Label>
           <Select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-            <option value="">Filialni tanlang</option>
+            <option value="">{t('branchPrices.selectBranch')}</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -165,7 +168,7 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
         {branchId && (
           <p className="text-sm text-muted-foreground flex items-center gap-1.5 pb-0.5">
             <Building2 className="h-4 w-4" />
-            Buyurtmalarda shu filial narxi ishlatiladi
+            {t('branchPrices.hint')}
           </p>
         )}
       </div>
@@ -185,9 +188,9 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
           <div className="hidden md:grid grid-cols-[1fr_100px_120px_140px_100px] gap-3 px-4 py-3 bg-secondary/60 text-xs font-medium text-muted-foreground">
-            <span>Xizmat</span>
+            <span>{t('branchPrices.colService')}</span>
             <span>Asosiy</span>
-            <span>Filial narxi</span>
+            <span>{t('branchPrices.colPrice')}</span>
             <span>Chegirmadan keyin</span>
             <span />
           </div>
@@ -220,7 +223,7 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {s.categoryName} · 1 {s.unit}
+                      {s.categoryName} · {t('services.unitPrefix', { unit: s.unit })}
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground md:text-right">
@@ -266,7 +269,7 @@ export function BranchPricesPanel({ canEdit }: { canEdit: boolean }) {
                         onClick={() => savePrice(s.id, s.basePrice)}
                       >
                         <Save className="h-3.5 w-3.5" />
-                        Saqlash
+                        {t('common.save')}
                       </Button>
                     )}
                   </div>

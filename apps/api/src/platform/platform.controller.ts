@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   IsBoolean,
   IsEmail,
@@ -8,7 +8,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { OrganizationPlan, UserRole } from '@prisma/client';
+import { OrderStatus, OrganizationPlan, UserRole } from '@prisma/client';
 import { PlatformService } from './platform.service';
 import { Roles } from '../auth/guards';
 
@@ -57,6 +57,28 @@ export class PlatformController {
   @Get('organizations/:id')
   getOrganization(@Param('id') id: string) {
     return this.platform.getOrganization(id);
+  }
+
+  @Get('organizations/:id/orders')
+  listOrganizationOrders(
+    @Param('id') id: string,
+    @Query('status') status?: OrderStatus,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.platform.listOrganizationOrders(id, {
+      status,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
+
+  @Get('organizations/:id/orders/:orderId')
+  getOrganizationOrder(
+    @Param('id') id: string,
+    @Param('orderId') orderId: string,
+  ) {
+    return this.platform.getOrganizationOrder(id, orderId);
   }
 
   @Post('organizations')

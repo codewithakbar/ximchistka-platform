@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { applyServiceDiscount } from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertBranchAccessible, TenantUser } from '../branches/tenant-scope';
@@ -7,57 +12,128 @@ import { assertBranchAccessible, TenantUser } from '../branches/tenant-scope';
 export class ServicesCatalogService {
   constructor(private prisma: PrismaService) {}
 
-  listCategories() {
+  private requireOrganizationId(user: TenantUser) {
+    if (!user.organizationId) {
+      throw new ForbiddenException('Tashkilot topilmadi');
+    }
+    return user.organizationId;
+  }
+
+  listCategories(user: TenantUser) {
+    const organizationId = this.requireOrganizationId(user);
     return this.prisma.serviceCategory.findMany({
-      where: { isActive: true },
+      where: { organizationId, isActive: true },
       include: { services: { where: { isActive: true }, orderBy: { name: 'asc' } } },
       orderBy: { sortOrder: 'asc' },
     });
   }
 
-  listCategoriesForManage() {
+  listCategoriesForManage(user: TenantUser) {
+    const organizationId = this.requireOrganizationId(user);
     return this.prisma.serviceCategory.findMany({
-      where: { isActive: true },
+      where: { organizationId },
       include: { services: { orderBy: { name: 'asc' } } },
       orderBy: { sortOrder: 'asc' },
     });
   }
 
-  listServices() {
+  listServices(user: TenantUser) {
+    const organizationId = this.requireOrganizationId(user);
     return this.prisma.service.findMany({
-      where: { isActive: true },
+      where: { isActive: true, category: { organizationId } },
       include: { category: true },
     });
   }
 
   async getBranchPrices(branchId: string) {
-    const rules = await this.prisma.priceRule.findMany({
-      where: { branchId },
-      include: { service: { include: { category: true } } },
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { organizationId: true },
     });
-    return rules.map((rule) => ({
-      ...rule,
-      listPrice: rule.price,
-      effectivePrice: applyServiceDiscount(rule.price, rule.service),
-    }));
+    if (!branch) throw new NotFoundException('Filial topilmadi');
+
+    const [rules, services] = await Promise.all([
+      this.prisma.priceRule.findMany({
+        where: {
+          branchId,
+          service: { category: { organizationId: branch.organizationId } },
+        },
+        include: { service: { include: { category: true } } },
+      }),
+      this.prisma.service.findMany({
+        where: {
+          isActive: true,
+          category: { organizationId: branch.organizationId, isActive: true },
+        },
+        include: { category: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    const ruleByServiceId = new Map(rules.map((rule) => [rule.serviceId, rule]));
+
+    const missing = services.filter((service) => !ruleByServiceId.has(service.id));
+    if (missing.length > 0) {
+      await this.prisma.priceRule.createMany({
+        data: missing.map((service) => ({
+          branchId,
+          serviceId: service.id,
+          itemType: 'standart',
+          price: service.basePrice,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    return services.map((service) => {
+      const rule = ruleByServiceId.get(service.id);
+      const listPrice = rule?.price ?? service.basePrice;
+      const pricedService = rule?.service ?? service;
+      return {
+        serviceId: service.id,
+        branchId,
+        price: listPrice,
+        listPrice,
+        effectivePrice: applyServiceDiscount(listPrice, pricedService),
+        itemType: rule?.itemType ?? 'standart',
+        service: {
+          id: service.id,
+          name: service.name,
+          unit: service.unit,
+          categoryId: service.categoryId,
+          categoryName: service.category.name,
+        },
+      };
+    });
   }
 
-  createCategory(data: { name: string; description?: string; sortOrder?: number }) {
-    return this.prisma.serviceCategory.create({ data });
+  createCategory(
+    user: TenantUser,
+    data: { name: string; description?: string; sortOrder?: number },
+  ) {
+    const organizationId = this.requireOrganizationId(user);
+    return this.prisma.serviceCategory.create({
+      data: { ...data, organizationId },
+    });
   }
 
-  createService(data: {
-    categoryId: string;
-    name: string;
-    description?: string;
-    basePrice: number;
-    unit?: string;
-    discountType?: string | null;
-    discountValue?: number | null;
-    discountValidUntil?: string | null;
-  }) {
+  async createService(
+    user: TenantUser,
+    data: {
+      categoryId: string;
+      name: string;
+      description?: string;
+      basePrice: number;
+      unit?: string;
+      discountType?: string | null;
+      discountValue?: number | null;
+      discountValidUntil?: string | null;
+    },
+  ) {
+    const organizationId = this.requireOrganizationId(user);
+    await this.ensureCategoryInOrg(data.categoryId, organizationId);
     const discount = this.normalizeDiscount(data);
-    return this.prisma.service.create({
+    const service = await this.prisma.service.create({
       data: {
         categoryId: data.categoryId,
         name: data.name,
@@ -67,6 +143,24 @@ export class ServicesCatalogService {
         ...discount,
       },
     });
+
+    const branches = await this.prisma.branch.findMany({
+      where: { organizationId, isActive: true },
+      select: { id: true },
+    });
+    if (branches.length > 0) {
+      await this.prisma.priceRule.createMany({
+        data: branches.map((branch) => ({
+          branchId: branch.id,
+          serviceId: service.id,
+          itemType: 'standart',
+          price: service.basePrice,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    return service;
   }
 
   async upsertPriceRule(
@@ -79,7 +173,8 @@ export class ServicesCatalogService {
     },
   ) {
     await assertBranchAccessible(this.prisma, user, data.branchId);
-    await this.ensureService(data.serviceId);
+    const organizationId = this.requireOrganizationId(user);
+    await this.ensureServiceInOrg(data.serviceId, organizationId);
 
     return this.prisma.priceRule.upsert({
       where: {
@@ -100,6 +195,7 @@ export class ServicesCatalogService {
   }
 
   async updateService(
+    user: TenantUser,
     id: string,
     data: Partial<{
       name: string;
@@ -112,7 +208,8 @@ export class ServicesCatalogService {
       discountValidUntil: string | null;
     }>,
   ) {
-    await this.ensureService(id);
+    const organizationId = this.requireOrganizationId(user);
+    await this.ensureServiceInOrg(id, organizationId);
     const { discountType, discountValue, discountValidUntil, ...rest } = data;
     const updateData: Record<string, unknown> = { ...rest };
     if (
@@ -126,6 +223,66 @@ export class ServicesCatalogService {
       );
     }
     return this.prisma.service.update({ where: { id }, data: updateData });
+  }
+
+  async updateCategory(
+    user: TenantUser,
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string | null;
+      sortOrder: number;
+      isActive: boolean;
+    }>,
+  ) {
+    const organizationId = this.requireOrganizationId(user);
+    await this.ensureCategoryInOrg(id, organizationId);
+    return this.prisma.serviceCategory.update({ where: { id }, data });
+  }
+
+  async deleteService(user: TenantUser, id: string) {
+    const organizationId = this.requireOrganizationId(user);
+    await this.ensureServiceInOrg(id, organizationId);
+
+    const orderCount = await this.prisma.orderItem.count({ where: { serviceId: id } });
+    if (orderCount > 0) {
+      throw new BadRequestException(
+        'Bu xizmat buyurtmalarda ishlatilgan — o\'chirish mumkin emas. Faolsizlantiring.',
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.priceRule.deleteMany({ where: { serviceId: id } }),
+      this.prisma.service.delete({ where: { id } }),
+    ]);
+
+    return { deleted: true };
+  }
+
+  async deleteCategory(user: TenantUser, id: string) {
+    const organizationId = this.requireOrganizationId(user);
+    const category = await this.ensureCategoryInOrg(id, organizationId);
+
+    const services = await this.prisma.service.findMany({
+      where: { categoryId: id },
+      select: { id: true, _count: { select: { orderItems: true } } },
+    });
+
+    const blocked = services.some((s) => s._count.orderItems > 0);
+    if (blocked) {
+      throw new BadRequestException(
+        'Kategoriyadagi ba\'zi xizmatlar buyurtmalarda ishlatilgan — o\'chirish mumkin emas.',
+      );
+    }
+
+    const serviceIds = services.map((s) => s.id);
+    await this.prisma.$transaction([
+      this.prisma.priceRule.deleteMany({ where: { serviceId: { in: serviceIds } } }),
+      this.prisma.service.deleteMany({ where: { categoryId: id } }),
+      this.prisma.serviceCategory.delete({ where: { id: category.id } }),
+    ]);
+
+    return { deleted: true };
   }
 
   private normalizeDiscount(data: {
@@ -159,27 +316,18 @@ export class ServicesCatalogService {
     };
   }
 
-  async updateCategory(
-    id: string,
-    data: Partial<{
-      name: string;
-      description: string | null;
-      sortOrder: number;
-      isActive: boolean;
-    }>,
-  ) {
-    await this.ensureCategory(id);
-    return this.prisma.serviceCategory.update({ where: { id }, data });
-  }
-
-  private async ensureCategory(id: string) {
-    const c = await this.prisma.serviceCategory.findUnique({ where: { id } });
+  private async ensureCategoryInOrg(id: string, organizationId: string) {
+    const c = await this.prisma.serviceCategory.findFirst({
+      where: { id, organizationId },
+    });
     if (!c) throw new NotFoundException('Kategoriya topilmadi');
     return c;
   }
 
-  private async ensureService(id: string) {
-    const s = await this.prisma.service.findUnique({ where: { id } });
+  private async ensureServiceInOrg(id: string, organizationId: string) {
+    const s = await this.prisma.service.findFirst({
+      where: { id, category: { organizationId } },
+    });
     if (!s) throw new NotFoundException('Xizmat topilmadi');
     return s;
   }

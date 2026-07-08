@@ -120,3 +120,5 @@ export function discountLabel(service: ServiceDiscountFields): string | null {
   if (service.discountType === 'fixed') return `-${service.discountValue} so'm`;
   return null;
 }
+
+export { resolveApiBaseUrl, resolveWsBaseUrl } from './api-url';

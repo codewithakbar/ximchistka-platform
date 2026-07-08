@@ -79,7 +79,7 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
           type="button"
           onClick={onMenuClick}
           className="md:hidden h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-card hover:bg-secondary"
-          aria-label="Menyu"
+          aria-label={t('common.menu')}
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -115,7 +115,7 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
         <NotificationBell />
         <Link
           href="/settings"
-          title="Profilni ko'rish"
+          title={t('common.viewProfile')}
           className="group flex items-center gap-2 pl-3 border-l border-border rounded-lg py-1 pr-1 transition-colors hover:bg-secondary"
         >
           <StaffAvatar

@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { ruExtra, uzExtra } from './i18n-dict-extra';
+import { ruExtra2, uzExtra2 } from './i18n-dict-extra2';
 
 export type Locale = 'uz' | 'ru';
 
@@ -128,10 +130,10 @@ const uz: Record<string, string> = {
   'signup.brandTitle1': '14 kun bepul',
   'signup.brandTitle2': 'demo sinab ko‘ring',
   'signup.brandSub':
-    'Ro‘yxatdan o‘ting — CRM, buyurtmalar, mijozlar va hisobotlar darhol ishlaydi. Standart xizmatlar katalogi avtomatik yaratiladi.',
+    'Ro‘yxatdan o‘ting — CRM, buyurtmalar, mijozlar va hisobotlar darhol ishlaydi. Xizmatlar katalogini o‘zingiz sozlaysiz.',
   'signup.feature1': 'CRM boshqaruv paneli',
   'signup.feature2': 'Buyurtma va filial boshqaruvi',
-  'signup.feature3': '3 ta demo xizmat katalogi',
+  'signup.feature3': 'Xizmatlar katalogi va filial narxlari',
   'signup.feature4': 'SMS/OTP integratsiya tayyor',
   'signup.backLogin': 'Kirish sahifasiga',
   'signup.title': 'Demo ro‘yxatdan o‘tish',
@@ -156,6 +158,8 @@ const uz: Record<string, string> = {
   'signup.passwordMismatch': 'Parollar mos kelmadi',
   'signup.error': 'Xatolik',
   'signup.copied': 'Nusxa olindi',
+  ...uzExtra,
+  ...uzExtra2,
 };
 
 const ru: Record<string, string> = {
@@ -269,10 +273,10 @@ const ru: Record<string, string> = {
   'signup.brandTitle1': '14 дней бесплатно',
   'signup.brandTitle2': 'попробуйте демо',
   'signup.brandSub':
-    'Зарегистрируйтесь — CRM, заказы, клиенты и отчёты заработают сразу. Каталог услуг создаётся автоматически.',
+    'Зарегистрируйтесь — CRM, заказы, клиенты и отчёты заработают сразу. Каталог услуг настраиваете сами.',
   'signup.feature1': 'CRM панель управления',
   'signup.feature2': 'Управление заказами и филиалами',
-  'signup.feature3': '3 демо-услуги в каталоге',
+  'signup.feature3': 'Каталог услуг и цены по филиалам',
   'signup.feature4': 'SMS/OTP интеграция готова',
   'signup.backLogin': 'На страницу входа',
   'signup.title': 'Демо-регистрация',
@@ -297,9 +301,21 @@ const ru: Record<string, string> = {
   'signup.passwordMismatch': 'Пароли не совпадают',
   'signup.error': 'Ошибка',
   'signup.copied': 'Скопировано',
+  ...ruExtra,
+  ...ruExtra2,
 };
 
 const dictionaries: Record<Locale, Record<string, string>> = { uz, ru };
+
+type TranslateParams = Record<string, string | number>;
+
+function interpolate(text: string, params?: TranslateParams) {
+  if (!params) return text;
+  return Object.entries(params).reduce(
+    (s, [k, v]) => s.replaceAll(`{${k}}`, String(v)),
+    text,
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* Context                                                             */
@@ -308,19 +324,21 @@ const dictionaries: Record<Locale, Record<string, string>> = { uz, ru };
 type I18nContextValue = {
   locale: Locale;
   setLocale: (l: Locale) => void;
-  t: (key: string, fallback?: string) => string;
+  t: (key: string, fallbackOrParams?: string | TranslateParams) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('uz');
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === 'undefined') return 'uz';
+    const stored = localStorage.getItem(LOCALE_KEY) as Locale | null;
+    return stored === 'ru' || stored === 'uz' ? stored : 'uz';
+  });
 
   useEffect(() => {
-    const stored = (localStorage.getItem(LOCALE_KEY) as Locale | null) ?? null;
-    if (stored === 'uz' || stored === 'ru') setLocaleState(stored);
-    document.documentElement.lang = stored ?? 'uz';
-  }, []);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
@@ -329,7 +347,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: string, fallback?: string) => dictionaries[locale][key] ?? fallback ?? key,
+    (key: string, fallbackOrParams?: string | TranslateParams) => {
+      const fallback = typeof fallbackOrParams === 'string' ? fallbackOrParams : undefined;
+      const params = typeof fallbackOrParams === 'object' ? fallbackOrParams : undefined;
+      const text = dictionaries[locale][key] ?? fallback ?? key;
+      return interpolate(text, params);
+    },
     [locale],
   );
 
@@ -348,3 +371,40 @@ export function useOrderStatusLabel() {
   const { t } = useI18n();
   return (status: string) => t(`status.${status}`, status);
 }
+
+export function useRoleLabel() {
+  const { t } = useI18n();
+  return (role: string) => t(`role.${role}`, role);
+}
+
+export function useFormatRelative() {
+  const { t, locale } = useI18n();
+  return (date: string | Date) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return t('time.justNow');
+    if (minutes < 60) return t('time.minutesAgo', { count: minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t('time.hoursAgo', { count: hours });
+    const days = Math.floor(hours / 24);
+    if (days < 7) return t('time.daysAgo', { count: days });
+    return new Date(date).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'uz-UZ', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+    });
+  };
+}
+
+export function useFormatDate() {
+  const { locale } = useI18n();
+  const loc = locale === 'ru' ? 'ru-RU' : 'uz-UZ';
+  return (date: string | Date, withTime = false) => {
+    const d = new Date(date);
+    const dateStr = d.toLocaleDateString(loc, { year: 'numeric', month: 'short', day: '2-digit' });
+    if (!withTime) return dateStr;
+    return `${dateStr}, ${d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })}`;
+  };
+}
+
+export const localeInitScript = `(function(){try{var l=localStorage.getItem('${LOCALE_KEY}');if(l==='ru'||l==='uz'){document.documentElement.lang=l;}}catch(e){}})();`;

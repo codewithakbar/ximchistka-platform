@@ -68,6 +68,7 @@ model Organization {
   updatedAt     DateTime         @updatedAt
   branches      Branch[]
   users         User[]
+  serviceCategories ServiceCategory[]
 }
 
 model Branch {
@@ -144,14 +145,18 @@ model CustomerAddress {
 }
 
 model ServiceCategory {
-  id           String    @id @default(cuid())
-  name         String
-  description  String?
-  sortOrder    Int       @default(0)
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  services     Service[]
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  services       Service[]
+
+  @@index([organizationId])
 }
 
 model Service {

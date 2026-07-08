@@ -22,10 +22,9 @@ import { StatusBadge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice, getUser } from '@/lib/api';
-import { formatDate } from '@/lib/utils';
+import { useFormatDate, useI18n, useOrderStatusLabel } from '@/lib/i18n';
 import { OrderReceipt } from '@/components/orders/order-receipt';
 import {
-  ORDER_STATUS_LABELS,
   OrderStatus,
   VALID_STATUS_TRANSITIONS,
 } from '@ximchistka/shared';
@@ -55,6 +54,9 @@ type OrderDetail = {
 };
 
 export default function OrderDetailPage() {
+  const { t } = useI18n();
+  const formatDate = useFormatDate();
+  const statusLabel = useOrderStatusLabel();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -78,11 +80,11 @@ export default function OrderDetailPage() {
         method: 'PATCH',
         body: JSON.stringify({ status: pending }),
       });
-      toast.success(`Yangilandi: ${ORDER_STATUS_LABELS[pending]}`);
+      toast.success(t('orderDetail.toastUpdated', { status: statusLabel(pending) }));
       setPending(null);
       load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Xatolik');
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setConfirming(false);
     }
@@ -96,10 +98,10 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <AppShell title={order ? order.orderNumber : 'Buyurtma'}>
+    <AppShell title={order ? order.orderNumber : t('orderDetail.title')}>
       <Button variant="ghost" size="sm" onClick={() => router.back()} className="mb-4">
         <ArrowLeft className="h-4 w-4" />
-        Orqaga
+        {t('common.back')}
       </Button>
 
       {!order ? (
@@ -116,14 +118,14 @@ export default function OrderDetailPage() {
                   <div>
                     <CardTitle className="text-2xl">{order.orderNumber}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Yaratilgan: {formatDate(order.createdAt, true)}
+                      {t('orderDetail.created')}: {formatDate(order.createdAt, true)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <StatusBadge status={order.status} label={ORDER_STATUS_LABELS[order.status]} />
+                    <StatusBadge status={order.status} label={statusLabel(order.status)} />
                     <Button size="sm" variant="outline" onClick={printReceipt}>
                       <Printer className="h-4 w-4" />
-                      Chek chop etish
+                      {t('orderDetail.printReceipt')}
                     </Button>
                   </div>
                 </div>
@@ -131,14 +133,14 @@ export default function OrderDetailPage() {
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1">Filial</div>
+                    <div className="text-xs text-muted-foreground mb-1">{t('common.branch')}</div>
                     <div className="font-medium flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       {order.branch.name}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1">Tayyor bo&apos;ladi</div>
+                    <div className="text-xs text-muted-foreground mb-1">{t('orderDetail.readyAt')}</div>
                     <div className="font-medium flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       {order.estimatedReady ? formatDate(order.estimatedReady, true) : '—'}
@@ -146,7 +148,7 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
 
-                <h4 className="text-sm font-semibold mb-3">Buyurtma tarkibi</h4>
+                <h4 className="text-sm font-semibold mb-3">{t('orderDetail.items')}</h4>
                 <div className="space-y-2 mb-4">
                   {order.items.map((item) => (
                     <div
@@ -168,13 +170,13 @@ export default function OrderDetailPage() {
                 </div>
 
                 <div className="border-t border-border pt-4 flex justify-between items-center">
-                  <span className="font-semibold">Jami</span>
+                  <span className="font-semibold">{t('common.total')}</span>
                   <span className="text-xl font-bold text-primary">{formatPrice(order.totalAmount)}</span>
                 </div>
 
                 {order.notes && (
                   <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-                    <strong>Eslatma:</strong> {order.notes}
+                    <strong>{t('common.note')}:</strong> {order.notes}
                   </div>
                 )}
               </CardContent>
@@ -182,7 +184,7 @@ export default function OrderDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Status tarixi</CardTitle>
+                <CardTitle>{t('orderDetail.statusHistory')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="relative border-l border-border ml-2 space-y-4">
@@ -191,7 +193,7 @@ export default function OrderDetailPage() {
                       <div className="absolute -left-2 h-4 w-4 rounded-full bg-primary flex items-center justify-center">
                         <CheckCircle2 className="h-3 w-3 text-white" />
                       </div>
-                      <div className="font-medium text-sm">{ORDER_STATUS_LABELS[h.status]}</div>
+                      <div className="font-medium text-sm">{statusLabel(h.status)}</div>
                       <div className="text-xs text-muted-foreground">
                         {formatDate(h.createdAt, true)}
                         {h.user?.fullName && <> · {h.user.fullName}</>}
@@ -207,7 +209,7 @@ export default function OrderDetailPage() {
             {allowedNext.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Statusni yangilash</CardTitle>
+                  <CardTitle>{t('orderDetail.updateStatus')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {allowedNext.map((s) => (
@@ -217,7 +219,7 @@ export default function OrderDetailPage() {
                       className="w-full"
                       onClick={() => setPending(s)}
                     >
-                      {ORDER_STATUS_LABELS[s]}
+                      {statusLabel(s)}
                     </Button>
                   ))}
                 </CardContent>
@@ -226,7 +228,7 @@ export default function OrderDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Mijoz</CardTitle>
+                <CardTitle>{t('common.customer')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
@@ -248,10 +250,10 @@ export default function OrderDetailPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle>Chek</CardTitle>
+                <CardTitle>{t('orderDetail.receipt')}</CardTitle>
                 <Button size="sm" variant="outline" onClick={printReceipt}>
                   <Printer className="h-4 w-4" />
-                  Chop etish
+                  {t('orderDetail.print')}
                 </Button>
               </CardHeader>
               <CardContent className="flex justify-center p-4 bg-secondary/50">
@@ -281,18 +283,16 @@ export default function OrderDetailPage() {
 
       <ConfirmDialog
         open={pending !== null}
-        title="Statusni o'zgartirish"
+        title={t('orders.confirmStatusTitle')}
         variant={pending === 'cancelled' ? 'destructive' : 'primary'}
         description={
           pending ? (
             <>
-              Buyurtma statusini{' '}
-              <strong className="text-foreground">{ORDER_STATUS_LABELS[pending]}</strong> ga
-              o&apos;zgartirishni tasdiqlaysizmi?
+              {t('orders.confirmStatusDescription', { status: statusLabel(pending) })}
             </>
           ) : null
         }
-        confirmLabel="Ha, o'zgartirish"
+        confirmLabel={t('common.yesChange')}
         loading={confirming}
         onConfirm={confirmAdvance}
         onCancel={() => setPending(null)}

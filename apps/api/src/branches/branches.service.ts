@@ -72,7 +72,10 @@ export class BranchesService {
     });
 
     const services = await this.prisma.service.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        category: { organizationId: data.organizationId },
+      },
       select: { id: true, basePrice: true },
     });
     if (services.length > 0) {

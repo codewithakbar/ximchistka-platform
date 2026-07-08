@@ -34,11 +34,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/badge';
 import { api, formatPrice } from '@/lib/api';
-import { formatRelative } from '@/lib/utils';
 import { useRealtimeOrders } from '@/hooks/use-realtime-orders';
 import { EditBranchForm } from '@/components/branches/edit-branch-form';
 import { useCanEditBranch, useCanManageBranches } from '@/hooks/use-client-auth';
 import type { OrderStatus } from '@ximchistka/shared';
+import { useI18n, useFormatRelative } from '@/lib/i18n';
 
 type BranchFinance = {
   branch: {
@@ -97,16 +97,10 @@ type BranchFinance = {
 
 type Tab = 'overview' | 'revenue' | 'payments' | 'ledger' | 'settings';
 
-const tabs: { id: Tab; label: string; icon: typeof Wallet }[] = [
-  { id: 'overview', label: 'Umumiy', icon: TrendingUp },
-  { id: 'revenue', label: 'Tushumlar tarixi', icon: ClipboardList },
-  { id: 'payments', label: 'To\'lovlar', icon: Wallet },
-  { id: 'ledger', label: 'Foliyat tarixi', icon: History },
-  { id: 'settings', label: 'Sozlamalar', icon: Settings },
-];
-
 export default function BranchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { t } = useI18n();
+  const formatRelative = useFormatRelative();
   const router = useRouter();
   const canManage = useCanManageBranches();
   const canEdit = useCanEditBranch();
@@ -116,6 +110,14 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
   const [from, setFrom] = useState(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
 
+  const tabs: { id: Tab; label: string; icon: typeof Wallet }[] = [
+    { id: 'overview', label: t('branchDetail.tabOverview'), icon: TrendingUp },
+    { id: 'revenue', label: t('branchDetail.tabRevenue'), icon: ClipboardList },
+    { id: 'payments', label: t('branchDetail.tabPayments'), icon: Wallet },
+    { id: 'ledger', label: t('branchDetail.tabLedger'), icon: History },
+    { id: 'settings', label: t('branchDetail.tabSettings'), icon: Settings },
+  ];
+
   const load = useCallback(async () => {
     setData(null);
     try {
@@ -123,9 +125,9 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
       const res = await api<BranchFinance>(`/reports/branch/${id}/finance?${q}`);
       setData(res);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Filial ma\'lumotlarini yuklab bo\'lmadi');
+      toast.error(e instanceof Error ? e.message : t('branchDetail.toastLoadError'));
     }
-  }, [id, from, to]);
+  }, [id, from, to, t]);
 
   useEffect(() => {
     load();
@@ -135,24 +137,22 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
 
   async function deleteBranch() {
     if (!data?.branch.name) return;
-    const ok = window.confirm(
-      `"${data.branch.name}" filialini butunlay o'chirasizmi? Bu amalni qaytarib bo'lmaydi.`,
-    );
+    const ok = window.confirm(t('branchDetail.deleteConfirm', { name: data.branch.name }));
     if (!ok) return;
     setDeleting(true);
     try {
       await api(`/branches/${id}`, { method: 'DELETE' });
-      toast.success('Filial o\'chirildi');
+      toast.success(t('branches.toastDeleted'));
       router.push('/branches');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Xatolik');
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setDeleting(false);
     }
   }
 
-  const title = data?.branch.name ?? 'Filial';
-  const visibleTabs = tabs.filter((t) => t.id !== 'settings' || canEdit);
+  const title = data?.branch.name ?? t('common.branch');
+  const visibleTabs = tabs.filter((tabItem) => tabItem.id !== 'settings' || canEdit);
 
   return (
     <AppShell title={title}>
@@ -162,7 +162,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Filiallar
+          {t('nav./branches')}
         </Link>
       </div>
 
@@ -180,9 +180,9 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-xl font-bold">{data.branch.name}</h2>
                     {data.branch.isActive ? (
-                      <Badge variant="success">Faol</Badge>
+                      <Badge variant="success">{t('common.active')}</Badge>
                     ) : (
-                      <Badge variant="secondary">No&apos;faol</Badge>
+                      <Badge variant="secondary">{t('common.inactive')}</Badge>
                     )}
                   </div>
                   <div className="mt-2 space-y-1 text-sm text-muted-foreground">
@@ -204,15 +204,15 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
 
               <div className="flex flex-col sm:flex-row gap-2 items-end flex-wrap">
                 <div>
-                  <Label className="text-xs">Dan</Label>
+                  <Label className="text-xs">{t('branchDetail.dateFrom')}</Label>
                   <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
                 </div>
                 <div>
-                  <Label className="text-xs">Gacha</Label>
+                  <Label className="text-xs">{t('branchDetail.dateTo')}</Label>
                   <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
                 </div>
                 <Button onClick={load} className="mt-5 sm:mt-0">
-                  Yangilash
+                  {t('common.refresh')}
                 </Button>
                 {canManage && (
                   <Button
@@ -223,7 +223,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                     loading={deleting}
                   >
                     <Trash2 className="h-4 w-4" />
-                    Filialni o&apos;chirish
+                    {t('branchDetail.deleteBranch')}
                   </Button>
                 )}
               </div>
@@ -235,29 +235,29 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
       {data && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-            <Stat label="Buyurtmalar" value={String(data.summary.totalOrders)} />
-            <Stat label="Jami tushum" value={formatPrice(data.summary.totalRevenue)} />
-            <Stat label="To'langan" value={formatPrice(data.summary.totalPaid)} highlight />
-            <Stat label="Kutilmoqda" value={formatPrice(data.summary.totalPending)} />
-            <Stat label="Yig'ish %" value={`${data.summary.collectionRate}%`} />
+            <Stat label={t('reports.colOrders')} value={String(data.summary.totalOrders)} />
+            <Stat label={t('branchDetail.totalRevenue')} value={formatPrice(data.summary.totalRevenue)} />
+            <Stat label={t('common.paid')} value={formatPrice(data.summary.totalPaid)} highlight />
+            <Stat label={t('branchDetail.pending')} value={formatPrice(data.summary.totalPending)} />
+            <Stat label={t('branchDetail.collectionRate')} value={`${data.summary.collectionRate}%`} />
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4 border-b border-border pb-2">
-            {visibleTabs.map((t) => {
-              const Icon = t.icon;
+            {visibleTabs.map((tabItem) => {
+              const Icon = tabItem.icon;
               return (
                 <button
-                  key={t.id}
+                  key={tabItem.id}
                   type="button"
-                  onClick={() => setTab(t.id)}
+                  onClick={() => setTab(tabItem.id)}
                   className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    tab === t.id
+                    tab === tabItem.id
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-secondary'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {t.label}
+                  {tabItem.label}
                 </button>
               );
             })}
@@ -266,7 +266,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
           {tab === 'overview' && (
             <Card>
               <CardHeader>
-                <CardTitle>Kunlik tushum</CardTitle>
+                <CardTitle>{t('branchDetail.dailyRevenue')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-72">
@@ -281,7 +281,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-center text-sm text-muted-foreground py-16">Ma&apos;lumot yo&apos;q</p>
+                    <p className="text-center text-sm text-muted-foreground py-16">{t('reports.noData')}</p>
                   )}
                 </div>
               </CardContent>
@@ -290,8 +290,8 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
 
           {tab === 'revenue' && (
             <HistoryTable
-              empty="Tushumlar tarixi bo'sh"
-              headers={['Sana', 'Buyurtma', 'Mijoz', 'Summa', 'To\'langan', 'Holat']}
+              empty={t('branchDetail.revenueEmpty')}
+              headers={[t('common.date'), t('orders.colOrder'), t('orders.colCustomer'), t('common.amount'), t('common.paid'), t('common.state')]}
               rows={data.revenueHistory.map((r) => (
                 <tr key={r.id} className="border-b border-border hover:bg-secondary/50">
                   <td className="px-4 py-3 text-xs text-muted-foreground">{formatRelative(r.date)}</td>
@@ -316,8 +316,8 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
 
           {tab === 'payments' && (
             <HistoryTable
-              empty="To'lovlar tarixi bo'sh"
-              headers={['Sana', 'Buyurtma', 'Mijoz', 'Provayder', 'Summa', 'Holat']}
+              empty={t('branchDetail.paymentsEmpty')}
+              headers={[t('common.date'), t('orders.colOrder'), t('orders.colCustomer'), t('branchDetail.colProvider'), t('common.amount'), t('common.state')]}
               rows={data.paymentHistory.map((p) => (
                 <tr key={p.id} className="border-b border-border hover:bg-secondary/50">
                   <td className="px-4 py-3 text-xs text-muted-foreground">{formatRelative(p.date)}</td>
@@ -339,8 +339,8 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
 
           {tab === 'ledger' && (
             <HistoryTable
-              empty="Foliyat tarixi bo'sh"
-              headers={['Sana', 'Operatsiya', 'Summa', 'Balans', '']}
+              empty={t('branchDetail.ledgerEmpty')}
+              headers={[t('common.date'), t('branchDetail.colOperation'), t('common.amount'), t('branchDetail.colBalance'), '']}
               rows={data.ledger.map((e) => (
                 <tr key={e.id} className="border-b border-border hover:bg-secondary/50">
                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -350,7 +350,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                     <div className="font-medium text-sm">{e.title}</div>
                     <div className="text-xs text-muted-foreground">{e.subtitle}</div>
                     <Badge variant="secondary" className="mt-1 text-[10px]">
-                      {e.kind === 'payment' ? 'To\'lov' : 'Buyurtma'}
+                      {e.kind === 'payment' ? t('branchDetail.payment') : t('branchDetail.orderKind')}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-emerald-600">
@@ -362,7 +362,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                   <td className="px-4 py-3 text-right">
                     <Link href={`/orders/${e.orderId}`}>
                       <Button size="sm" variant="ghost">
-                        Ko&apos;rish
+                        {t('orders.viewOrder')}
                       </Button>
                     </Link>
                   </td>
@@ -374,7 +374,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
           {tab === 'settings' && (
             <Card>
               <CardHeader>
-                <CardTitle>Filial ma&apos;lumotlari</CardTitle>
+                <CardTitle>{t('branchDetail.info')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {canEdit ? (
@@ -385,7 +385,7 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Tahrirlash uchun ruxsat yo&apos;q
+                    {t('branchDetail.noEditPermission')}
                   </p>
                 )}
               </CardContent>

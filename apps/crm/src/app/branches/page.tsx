@@ -14,6 +14,7 @@ import { Empty } from '@/components/ui/empty';
 import { AddBranchDialog } from '@/components/branches/add-branch-dialog';
 import { api } from '@/lib/api';
 import { useCanManageBranches } from '@/hooks/use-client-auth';
+import { useI18n } from '@/lib/i18n';
 
 type Branch = {
   id: string;
@@ -26,6 +27,7 @@ type Branch = {
 };
 
 export default function BranchesPage() {
+  const { t } = useI18n();
   const canManage = useCanManageBranches();
   const [branches, setBranches] = useState<Branch[] | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,9 +38,9 @@ export default function BranchesPage() {
       .then(setBranches)
       .catch(() => {
         setBranches([]);
-        toast.error('Filiallarni yuklab bo\'lmadi');
+        toast.error(t('branches.toastLoadError'));
       });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -47,30 +49,30 @@ export default function BranchesPage() {
   async function deleteBranch(b: Branch, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    const ok = window.confirm(`"${b.name}" filialini o'chirasizmi?`);
+    const ok = window.confirm(t('branches.deleteConfirm', { name: b.name }));
     if (!ok) return;
     try {
       await api(`/branches/${b.id}`, { method: 'DELETE' });
-      toast.success('Filial o\'chirildi');
+      toast.success(t('branches.toastDeleted'));
       load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     }
   }
 
   const activeCount = branches?.filter((b) => b.isActive).length ?? 0;
 
   return (
-    <AppShell title="Filiallar">
+    <AppShell title={t('branches.title')}>
       <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-muted-foreground">
-          Jami {branches?.length ?? 0} ta filial
-          {branches && branches.length !== activeCount && ` · ${activeCount} ta faol`}
+          {t('branches.summary', { total: branches?.length ?? 0 })}
+          {branches && branches.length !== activeCount && ` ${t('branches.summaryActive', { active: activeCount })}`}
         </p>
         {canManage && (
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4" />
-            Yangi filial
+            {t('branches.newBranch')}
           </Button>
         )}
       </div>
@@ -84,13 +86,13 @@ export default function BranchesPage() {
       ) : branches.length === 0 ? (
         <Empty
           icon={Building2}
-          title="Filiallar yo'q"
-          description="Birinchi filialingizni qo'shing"
+          title={t('branches.emptyTitle')}
+          description={t('branches.emptyDescription')}
           action={
             canManage ? (
               <Button onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
-                Yangi filial
+                {t('branches.newBranch')}
               </Button>
             ) : undefined
           }
@@ -116,16 +118,16 @@ export default function BranchesPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       {b.isActive ? (
-                        <Badge variant="success">Faol</Badge>
+                        <Badge variant="success">{t('common.active')}</Badge>
                       ) : (
-                        <Badge variant="secondary">No&apos;faol</Badge>
+                        <Badge variant="secondary">{t('common.inactive')}</Badge>
                       )}
                       {canManage && (
                         <button
                           type="button"
                           onClick={(e) => deleteBranch(b, e)}
                           className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          title="Filialni o'chirish"
+                          title={t('branches.deleteTitle')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -157,7 +159,7 @@ export default function BranchesPage() {
                       variant="outline"
                       className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
                     >
-                      Filial ichiga kirish
+                      {t('branches.enterBranch')}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>

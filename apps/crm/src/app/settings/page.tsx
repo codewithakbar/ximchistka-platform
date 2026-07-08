@@ -28,7 +28,7 @@ import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls'
 import { api, clearAuth, updateStoredUser } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
 import { cn } from '@/lib/utils';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, useRoleLabel } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 
 type Profile = {
@@ -71,13 +71,6 @@ const defaultNotif: NotifPrefs = {
   dailyReport: false,
 };
 
-const roleLabels: Record<string, string> = {
-  super_admin: 'Super admin',
-  branch_manager: 'Filial menejeri',
-  operator: 'Operator',
-  courier: 'Kuryer',
-};
-
 const tabs = [
   { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   { id: 'profile', labelKey: 'settings.profile', icon: User },
@@ -91,6 +84,7 @@ type TabId = (typeof tabs)[number]['id'];
 export default function SettingsPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const roleLabel = useRoleLabel();
   const { theme } = useTheme();
   const [tab, setTab] = useState<TabId>('appearance');
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -120,9 +114,9 @@ export default function SettingsPage() {
       setProfile(updated);
       updateStoredUser({ avatarUrl: updated.avatarUrl ?? null });
       window.dispatchEvent(new Event('profile-updated'));
-      toast.success(avatarUrl ? 'Surat yangilandi' : 'Surat olib tashlandi');
+      toast.success(avatarUrl ? t('settings.toast.photoUpdated') : t('settings.toast.photoRemoved'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setAvatarSaving(false);
     }
@@ -136,7 +130,7 @@ export default function SettingsPage() {
       const dataUrl = await fileToAvatarDataUrl(file);
       await saveAvatar(dataUrl);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Rasmni yuklab bo\'lmadi');
+      toast.error(err instanceof Error ? err.message : t('settings.toast.photoUploadError'));
     }
   }
 
@@ -174,7 +168,7 @@ export default function SettingsPage() {
           }
         }
       })
-      .catch(() => toast.error('Sozlamalarni yuklab bo\'lmadi'))
+      .catch(() => toast.error(t('settings.toast.loadError')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -187,9 +181,9 @@ export default function SettingsPage() {
       });
       setProfile(updated);
       updateStoredUser({ fullName: updated.fullName });
-      toast.success('Profil saqlandi');
+      toast.success(t('settings.toast.profileSaved'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     }
   }
 
@@ -200,7 +194,7 @@ export default function SettingsPage() {
         method: 'PATCH',
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      toast.success('Parol yangilandi. Qayta kiring.');
+      toast.success(t('settings.toast.passwordUpdated'));
       clearAuth();
       router.push('/login');
     } catch (err) {
@@ -217,7 +211,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ name: orgName, slug: orgSlug }),
       });
       setOrg(updated);
-      toast.success('Tashkilot saqlandi');
+      toast.success(t('settings.toast.orgSaved'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Xatolik');
     }
@@ -225,7 +219,7 @@ export default function SettingsPage() {
 
   function saveNotifications() {
     localStorage.setItem(NOTIF_KEY, JSON.stringify(notif));
-    toast.success('Bildirishnoma sozlamalari saqlandi');
+    toast.success(t('settings.toast.notificationsSaved'));
   }
 
   const visibleTabs = tabs.filter((t) => {
@@ -284,7 +278,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between gap-4 p-4 rounded-lg border border-border bg-secondary/30">
                       <div>
                         <div className="font-medium text-sm">{t('settings.language')}</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">O‘zbek / Русский</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{t('settings.languageOptions')}</div>
                       </div>
                       <LanguageToggle />
                     </div>
@@ -296,8 +290,8 @@ export default function SettingsPage() {
                 <div className="space-y-4 animate-fade-in">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Shaxsiy ma&apos;lumotlar</CardTitle>
-                      <CardDescription>Ism va email manzilingizni yangilang</CardDescription>
+                      <CardTitle>{t('settings.profile.personalTitle')}</CardTitle>
+                      <CardDescription>{t('settings.profile.personalDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-4 mb-6">
@@ -305,7 +299,7 @@ export default function SettingsPage() {
                           type="button"
                           onClick={() => avatarInputRef.current?.click()}
                           className="group relative"
-                          title="Suratni o'zgartirish"
+                          title={t('staff.changePhoto')}
                         >
                           <StaffAvatar
                             name={profile.fullName}
@@ -325,7 +319,7 @@ export default function SettingsPage() {
                         <div>
                           <div className="font-medium">{profile.fullName}</div>
                           <p className="text-xs text-muted-foreground mb-2">
-                            JPG yoki PNG — kvadrat surat tavsiya etiladi
+                            {t('settings.profile.photoHint')}
                           </p>
                           <div className="flex items-center gap-2">
                             <Button
@@ -336,7 +330,7 @@ export default function SettingsPage() {
                               loading={avatarSaving}
                             >
                               <Camera className="h-3.5 w-3.5" />
-                              Surat yuklash
+                              {t('settings.profile.uploadPhoto')}
                             </Button>
                             {profile.avatarUrl && (
                               <Button
@@ -347,7 +341,7 @@ export default function SettingsPage() {
                                 disabled={avatarSaving}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
-                                Olib tashlash
+                                {t('settings.profile.removePhoto')}
                               </Button>
                             )}
                           </div>
@@ -362,11 +356,11 @@ export default function SettingsPage() {
                       </div>
                       <form onSubmit={saveProfile} className="space-y-4 max-w-md">
                         <div>
-                          <Label>To&apos;liq ism</Label>
+                          <Label>{t('settings.profile.fullName')}</Label>
                           <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                         </div>
                         <div>
-                          <Label>Email</Label>
+                          <Label>{t('common.email')}</Label>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -379,22 +373,22 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div>
-                          <Label>Telefon</Label>
+                          <Label>{t('common.phone')}</Label>
                           <div className="relative">
                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input className="pl-10 bg-muted" value={profile.phone} disabled />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">Telefon raqamini o&apos;zgartirish uchun admin bilan bog&apos;laning</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t('settings.profile.phoneHint')}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="info">{roleLabels[profile.role] ?? profile.role}</Badge>
+                          <Badge variant="info">{roleLabel(profile.role)}</Badge>
                           {profile.branches.map((b) => (
                             <Badge key={b.id} variant="secondary">{b.name}</Badge>
                           ))}
                         </div>
                         <Button type="submit">
                           <Save className="h-4 w-4" />
-                          Saqlash
+                          {t('common.save')}
                         </Button>
                       </form>
                     </CardContent>
@@ -402,13 +396,13 @@ export default function SettingsPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Parolni o&apos;zgartirish</CardTitle>
-                      <CardDescription>Xavfsizlik uchun kuchli parol tanlang</CardDescription>
+                      <CardTitle>{t('settings.password.title')}</CardTitle>
+                      <CardDescription>{t('settings.password.desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={savePassword} className="space-y-4 max-w-md">
                         <div>
-                          <Label>Joriy parol</Label>
+                          <Label>{t('settings.password.current')}</Label>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -421,7 +415,7 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div>
-                          <Label>Yangi parol</Label>
+                          <Label>{t('settings.password.new')}</Label>
                           <div className="relative">
                             <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -435,7 +429,7 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <Button type="submit" variant="outline">
-                          Parolni yangilash
+                          {t('settings.password.submit')}
                         </Button>
                       </form>
                     </CardContent>
@@ -446,11 +440,11 @@ export default function SettingsPage() {
               {tab === 'organization' && profile?.organization && (
                 <Card className="animate-fade-in">
                   <CardHeader>
-                    <CardTitle>Tashkilot</CardTitle>
+                    <CardTitle>{t('settings.org.title')}</CardTitle>
                     <CardDescription>
                       {isSuperAdmin
-                        ? 'Kompaniya nomi va identifikatorini boshqaring'
-                        : 'Tashkilot ma\'lumotlari (faqat ko\'rish)'}
+                        ? t('settings.org.descEdit')
+                        : t('settings.org.descView')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -458,17 +452,17 @@ export default function SettingsPage() {
                       <div className="grid grid-cols-2 gap-4 mb-6 max-w-sm">
                         <div className="rounded-lg bg-secondary p-4">
                           <div className="text-2xl font-bold">{org.branchCount}</div>
-                          <div className="text-xs text-muted-foreground">Filiallar</div>
+                          <div className="text-xs text-muted-foreground">{t('settings.org.branchesStat')}</div>
                         </div>
                         <div className="rounded-lg bg-secondary p-4">
                           <div className="text-2xl font-bold">{org.userCount}</div>
-                          <div className="text-xs text-muted-foreground">Xodimlar</div>
+                          <div className="text-xs text-muted-foreground">{t('settings.org.staffStat')}</div>
                         </div>
                       </div>
                     )}
                     <form onSubmit={saveOrganization} className="space-y-4 max-w-md">
                       <div>
-                        <Label>Tashkilot nomi</Label>
+                        <Label>{t('settings.org.name')}</Label>
                         <Input
                           value={orgName}
                           onChange={(e) => setOrgName(e.target.value)}
@@ -477,7 +471,7 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <Label>Slug (URL identifikator)</Label>
+                        <Label>{t('settings.org.slug')}</Label>
                         <Input
                           value={orgSlug}
                           onChange={(e) => setOrgSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
@@ -488,7 +482,7 @@ export default function SettingsPage() {
                       {isSuperAdmin && (
                         <Button type="submit">
                           <Save className="h-4 w-4" />
-                          Saqlash
+                          {t('common.save')}
                         </Button>
                       )}
                     </form>
@@ -499,14 +493,14 @@ export default function SettingsPage() {
               {tab === 'notifications' && (
                 <Card className="animate-fade-in">
                   <CardHeader>
-                    <CardTitle>Bildirishnomalar</CardTitle>
-                    <CardDescription>CRM ichidagi bildirishnoma afzalliklari</CardDescription>
+                    <CardTitle>{t('settings.notifications.title')}</CardTitle>
+                    <CardDescription>{t('settings.notifications.desc')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 max-w-lg">
                     {[
-                      { key: 'orderStatus' as const, label: 'Buyurtma statusi o\'zgarganda', desc: 'SMS va panel bildirishnomasi' },
-                      { key: 'newOrder' as const, label: 'Yangi buyurtma kelganda', desc: 'Operator va menejerlar uchun' },
-                      { key: 'dailyReport' as const, label: 'Kunlik hisobot', desc: 'Har kuni ertalab email' },
+                      { key: 'orderStatus' as const, label: t('settings.notifications.orderStatus'), desc: t('settings.notifications.orderStatusDesc') },
+                      { key: 'newOrder' as const, label: t('settings.notifications.newOrder'), desc: t('settings.notifications.newOrderDesc') },
+                      { key: 'dailyReport' as const, label: t('settings.notifications.dailyReport'), desc: t('settings.notifications.dailyReportDesc') },
                     ].map((item) => (
                       <label
                         key={item.key}
@@ -526,7 +520,7 @@ export default function SettingsPage() {
                     ))}
                     <Button onClick={saveNotifications}>
                       <Save className="h-4 w-4" />
-                      Saqlash
+                      {t('common.save')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -535,17 +529,17 @@ export default function SettingsPage() {
               {tab === 'system' && (
                 <Card className="animate-fade-in">
                   <CardHeader>
-                    <CardTitle>Tizim ma&apos;lumotlari</CardTitle>
-                    <CardDescription>Server va integratsiya holati</CardDescription>
+                    <CardTitle>{t('settings.system.title')}</CardTitle>
+                    <CardDescription>{t('settings.system.desc')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <dl className="space-y-4 max-w-md">
                       {[
-                        { label: 'SMS provayder', value: system?.smsProvider ?? '—' },
-                        { label: 'API versiya', value: system?.apiVersion ?? '—' },
-                        { label: 'Muhit', value: system?.environment ?? '—' },
-                        { label: 'Foydalanuvchi ID', value: profile?.id ?? '—', mono: true },
-                        { label: 'API URL', value: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1', mono: true },
+                        { label: t('settings.system.smsProvider'), value: system?.smsProvider ?? '—' },
+                        { label: t('settings.system.apiVersion'), value: system?.apiVersion ?? '—' },
+                        { label: t('settings.system.environment'), value: system?.environment ?? '—' },
+                        { label: t('settings.system.userId'), value: profile?.id ?? '—', mono: true },
+                        { label: t('settings.system.apiUrl'), value: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1', mono: true },
                       ].map((row) => (
                         <div key={row.label} className="flex justify-between gap-4 py-2 border-b border-border last:border-0">
                           <dt className="text-sm text-muted-foreground">{row.label}</dt>

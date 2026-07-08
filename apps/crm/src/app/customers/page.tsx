@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Search, Users, Phone, ClipboardList, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Empty } from '@/components/ui/empty';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type Customer = {
   id: string;
@@ -21,6 +22,7 @@ type Customer = {
 };
 
 export default function CustomersPage() {
+  const { t } = useI18n();
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [q, setQ] = useState('');
 
@@ -33,22 +35,22 @@ export default function CustomersPage() {
       setCustomers(data);
     } catch {
       setCustomers([]);
-      toast.error('Mijozlarni yuklab bo\'lmadi');
+      toast.error(t('customers.toastLoadError'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   return (
-    <AppShell title="Mijozlar">
+    <AppShell title={t('customers.title')}>
       <Card className="mb-4">
         <CardContent className="pt-6 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Mijoz ismi yoki telefon raqami..."
+              placeholder={t('customers.searchPlaceholder')}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && load(q)}
@@ -56,7 +58,7 @@ export default function CustomersPage() {
             />
           </div>
           <Button variant="secondary" onClick={() => load(q)}>
-            Qidirish
+            {t('common.search')}
           </Button>
         </CardContent>
       </Card>
@@ -68,7 +70,7 @@ export default function CustomersPage() {
           ))}
         </div>
       ) : customers.length === 0 ? (
-        <Empty icon={Users} title="Mijozlar topilmadi" description="Qidiruvni o'zgartiring" />
+        <Empty icon={Users} title={t('customers.emptyTitle')} description={t('customers.emptyDescription')} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {customers.map((c) => (
@@ -91,7 +93,7 @@ export default function CustomersPage() {
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <ClipboardList className="h-3 w-3" />
-                      {c.orders.length} ta buyurtma
+                      {t('customers.orderCount', { count: c.orders.length })}
                     </div>
                     {c.orders.length > 0 && (
                       <Badge variant="info">{c.orders[0].orderNumber}</Badge>
@@ -99,7 +101,7 @@ export default function CustomersPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-center gap-1 text-sm text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    Profilni ko&apos;rish
+                    {t('customers.viewProfile')}
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 </CardContent>

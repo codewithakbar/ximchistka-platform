@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Plus, Sparkles, Tag } from 'lucide-react';
+import { Pencil, Plus, Sparkles, Tag, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import {
   type ServiceItem,
 } from '@/components/services/edit-service-dialog';
 import { BranchPricesPanel } from '@/components/services/branch-prices-panel';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { api, formatPrice } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
@@ -27,6 +28,7 @@ import {
   useCanEditBranchPrices,
   useCanManageServicesCatalog,
 } from '@/hooks/use-client-auth';
+import { useI18n } from '@/lib/i18n';
 
 type Category = {
   id: string;
@@ -38,11 +40,14 @@ type Category = {
 type Tab = 'catalog' | 'prices';
 
 export default function ServicesPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>('catalog');
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [categoryDialog, setCategoryDialog] = useState(false);
   const [serviceDialog, setServiceDialog] = useState(false);
   const [editService, setEditService] = useState<ServiceItem | null>(null);
+  const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState(false);
 
   const canManageCatalog = useCanManageServicesCatalog();
   const canEditPrices = useCanEditBranchPrices();
@@ -54,9 +59,9 @@ export default function ServicesPage() {
       .then(setCategories)
       .catch(() => {
         setCategories([]);
-        toast.error('Xizmatlarni yuklab bo\'lmadi');
+        toast.error(t('services.toastLoadError'));
       });
-  }, [canManageCatalog]);
+  }, [canManageCatalog, t]);
 
   useEffect(() => {
     load();
@@ -64,11 +69,26 @@ export default function ServicesPage() {
 
   const categoryOptions = (categories ?? []).map((c) => ({ id: c.id, name: c.name }));
 
+  async function confirmDeleteCategory() {
+    if (!deleteCategory) return;
+    setDeletingCategory(true);
+    try {
+      await api(`/services/categories/${deleteCategory.id}`, { method: 'DELETE' });
+      toast.success(t('services.toastCategoryDeleted'));
+      setDeleteCategory(null);
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setDeletingCategory(false);
+    }
+  }
+
   return (
-    <AppShell title="Xizmatlar va narxlar">
+    <AppShell title={t('services.title')}>
       <div className="flex flex-col gap-4 mb-6">
         <p className="text-sm text-muted-foreground">
-          Xizmatlar katalogi va har bir filial uchun alohida narxlarni boshqaring
+          {t('services.subtitle')}
         </p>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -83,7 +103,7 @@ export default function ServicesPage() {
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              Katalog
+              {t('services.tabCatalog')}
             </button>
             <button
               type="button"
@@ -95,7 +115,7 @@ export default function ServicesPage() {
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              Filial narxlari
+              {t('services.tabBranchPrices')}
             </button>
           </div>
 
@@ -103,11 +123,11 @@ export default function ServicesPage() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setCategoryDialog(true)}>
                 <Plus className="h-4 w-4" />
-                Kategoriya
+                {t('services.addCategory')}
               </Button>
               <Button onClick={() => setServiceDialog(true)} disabled={categoryOptions.length === 0}>
                 <Plus className="h-4 w-4" />
-                Xizmat
+                {t('services.addService')}
               </Button>
             </div>
           )}
@@ -125,13 +145,13 @@ export default function ServicesPage() {
       ) : categories.length === 0 ? (
         <Empty
           icon={Sparkles}
-          title="Xizmatlar yo'q"
-          description="Birinchi kategoriya va xizmatni qo'shing"
+          title={t('services.emptyTitle')}
+          description={t('services.emptyDescription')}
           action={
             canManageCatalog ? (
               <Button onClick={() => setCategoryDialog(true)}>
                 <Plus className="h-4 w-4" />
-                Kategoriya qo&apos;shish
+                {t('services.addCategoryAction')}
               </Button>
             ) : undefined
           }
@@ -147,16 +167,29 @@ export default function ServicesPage() {
 
             return (
               <div key={cat.id}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Tag className="h-4 w-4" />
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Tag className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">{cat.name}</h3>
+                      {cat.description && (
+                        <p className="text-xs text-muted-foreground">{cat.description}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{cat.name}</h3>
-                    {cat.description && (
-                      <p className="text-xs text-muted-foreground">{cat.description}</p>
-                    )}
-                  </div>
+                  {canManageCatalog && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive shrink-0"
+                      onClick={() => setDeleteCategory(cat)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -180,7 +213,7 @@ export default function ServicesPage() {
                               </p>
                             )}
                             <div className="text-xs text-muted-foreground mt-1">
-                              1 {s.unit}
+                              {t('services.unitPrefix', { unit: s.unit })}
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -203,7 +236,7 @@ export default function ServicesPage() {
                             )}
                             {!s.isActive && (
                               <Badge variant="secondary" className="mt-1">
-                                No&apos;faol
+                                {t('common.inactive')}
                               </Badge>
                             )}
                           </div>
@@ -211,7 +244,7 @@ export default function ServicesPage() {
                         {canManageCatalog && (
                           <div className="mt-3 pt-3 border-t border-border flex items-center gap-1 text-xs text-muted-foreground">
                             <Pencil className="h-3 w-3" />
-                            Tahrirlash
+                            {t('common.edit')}
                           </div>
                         )}
                       </CardContent>
@@ -240,6 +273,21 @@ export default function ServicesPage() {
         service={editService}
         onClose={() => setEditService(null)}
         onSaved={load}
+      />
+
+      <ConfirmDialog
+        open={!!deleteCategory}
+        title={t('services.deleteCategoryTitle')}
+        description={
+          deleteCategory
+            ? t('services.deleteCategoryConfirm', { name: deleteCategory.name })
+            : undefined
+        }
+        variant="destructive"
+        confirmLabel={t('common.delete')}
+        loading={deletingCategory}
+        onConfirm={confirmDeleteCategory}
+        onCancel={() => setDeleteCategory(null)}
       />
     </AppShell>
   );

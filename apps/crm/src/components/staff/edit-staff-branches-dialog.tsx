@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/input';
 import { api } from '@/lib/api';
-import { ROLE_LABELS, StaffRole } from '@/lib/roles';
+import { useI18n, useRoleLabel } from '@/lib/i18n';
+import { StaffRole } from '@/lib/roles';
 
 type Branch = { id: string; name: string };
 
@@ -28,6 +29,8 @@ export function EditStaffBranchesDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
+  const roleLabel = useRoleLabel();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchIds, setBranchIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,11 +68,11 @@ export function EditStaffBranchesDialog({
         method: 'PATCH',
         body: JSON.stringify({ branchIds }),
       });
-      toast.success('Filiallar yangilandi');
+      toast.success(t('dialog.staff.branchesToast'));
       onSaved();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -81,7 +84,7 @@ export function EditStaffBranchesDialog({
       <div className="relative w-full max-w-md bg-card rounded-xl border border-border shadow-xl">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold">Filiallarni tahrirlash</h2>
+            <h2 className="text-lg font-semibold">{t('dialog.staff.branchesTitle')}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">{staff.fullName}</p>
           </div>
           <button
@@ -101,10 +104,10 @@ export function EditStaffBranchesDialog({
           <form onSubmit={onSubmit} className="p-6 space-y-4">
             <div>
               <Label className="mb-1 block">
-                Rol: {ROLE_LABELS[staff.role as StaffRole] ?? staff.role}
+                Rol: {roleLabel(staff.role as StaffRole)}
               </Label>
               <p className="text-xs text-muted-foreground mb-3">
-                Xodim faqat tanlangan filiallarga kirishi va ishlay oladi
+                {t('dialog.staff.branchesHint')}
               </p>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {branches.map((b) => (
@@ -125,10 +128,10 @@ export function EditStaffBranchesDialog({
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-                Bekor
+                {t('common.cancelShort')}
               </Button>
               <Button type="submit" className="flex-1" loading={loading}>
-                Saqlash
+                {t('common.save')}
               </Button>
             </div>
           </form>

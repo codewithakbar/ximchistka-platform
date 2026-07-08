@@ -15,10 +15,13 @@ import {
   Phone,
   Mail,
   MapPin,
+  Layers,
+  Tag,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, OrderStatus } from '@ximchistka/shared';
 import { MerchantShell } from '@/components/layout/shell';
+import { OrderProcessPanel } from '@/components/organizations/order-process-panel';
+import { ServiceCatalogPanel } from '@/components/organizations/service-catalog-panel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,11 +63,35 @@ type OrgDetail = {
     staffCount: number;
   }[];
   staff: StaffMember[];
+  catalog: {
+    categoryCount: number;
+    serviceCount: number;
+    categories: {
+      id: string;
+      name: string;
+      description: string | null;
+      isActive: boolean;
+      sortOrder: number;
+      services: {
+        id: string;
+        name: string;
+        description: string | null;
+        unit: string;
+        basePrice: number;
+        discountType: string | null;
+        discountValue: number | null;
+        discountValidUntil: string | null;
+        isActive: boolean;
+      }[];
+    }[];
+  };
   stats: {
     totalOrders: number;
     totalRevenue: number;
     customerCount: number;
     staffCount: number;
+    categoryCount: number;
+    serviceCount: number;
     ordersByStatus: Record<string, number>;
   };
 };
@@ -86,16 +113,6 @@ const ROLE_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'info' | 
   operator: 'warning',
   courier: 'success',
 };
-
-const PROCESS_ORDER: OrderStatus[] = [
-  'submitted',
-  'received_at_branch',
-  'in_processing',
-  'ready',
-  'out_for_delivery',
-  'completed',
-  'cancelled',
-];
 
 export default function OrganizationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -202,10 +219,12 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
           </div>
 
           {/* Umumiy ko'rsatkichlar */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
             {[
               { icon: Users, label: 'Xodimlar', value: org.stats.staffCount, color: 'text-blue-600 bg-blue-500/10' },
               { icon: Building2, label: 'Filiallar', value: org.branchCount, color: 'text-violet-600 bg-violet-500/10' },
+              { icon: Layers, label: 'Kategoriyalar', value: org.stats.categoryCount ?? org.catalog?.categoryCount ?? 0, color: 'text-indigo-600 bg-indigo-500/10' },
+              { icon: Tag, label: 'Xizmatlar', value: org.stats.serviceCount ?? org.catalog?.serviceCount ?? 0, color: 'text-sky-600 bg-sky-500/10' },
               { icon: ShoppingBag, label: 'Buyurtmalar', value: org.stats.totalOrders, color: 'text-amber-600 bg-amber-500/10' },
               { icon: Wallet, label: 'Umumiy tushum', value: formatPrice(org.stats.totalRevenue), color: 'text-emerald-600 bg-emerald-500/10', small: true },
             ].map((s) => {
@@ -224,32 +243,13 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             })}
           </div>
 
-          {/* Buyurtma jarayonlari */}
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Buyurtma jarayonlari</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {org.stats.totalOrders === 0 ? (
-                <p className="text-sm text-muted-foreground">Hozircha buyurtmalar yo&apos;q</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {PROCESS_ORDER.filter((st) => (org.stats.ordersByStatus[st] ?? 0) > 0).map((st) => (
-                    <div key={st} className="p-3 rounded-lg border border-border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: ORDER_STATUS_COLORS[st] }}
-                        />
-                        <span className="text-xs text-muted-foreground">{ORDER_STATUS_LABELS[st]}</span>
-                      </div>
-                      <div className="text-xl font-bold">{org.stats.ordersByStatus[st]}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <OrderProcessPanel
+            orgId={org.id}
+            ordersByStatus={org.stats.ordersByStatus}
+            totalOrders={org.stats.totalOrders}
+          />
+
+          {org.catalog && <ServiceCatalogPanel catalog={org.catalog} />}
 
           {/* Xodimlar ro'yxati */}
           <Card className="mb-4">

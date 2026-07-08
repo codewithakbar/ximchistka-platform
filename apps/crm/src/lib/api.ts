@@ -1,4 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+import { resolveApiBaseUrl } from '@ximchistka/shared';
+
+function apiUrl() {
+  return resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
+}
 
 type AuthResponse = {
   accessToken: string;
@@ -62,7 +66,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
+    const res = await fetch(`${apiUrl()}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -108,7 +112,7 @@ export async function api<T>(
   retried = false,
 ): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${apiUrl()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 export function AddBranchDialog({
   open,
@@ -17,6 +18,7 @@ export function AddBranchDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -48,12 +50,12 @@ export function AddBranchDialog({
           closeTime,
         }),
       });
-      toast.success('Filial qo\'shildi. Xizmat narxlari avtomatik yaratildi.');
+      toast.success(t('dialog.branch.toastCreated'));
       reset();
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +66,7 @@ export function AddBranchDialog({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-card rounded-xl border border-border shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold">Yangi filial</h2>
+          <h2 className="text-lg font-semibold">{t('dialog.branch.title')}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -75,7 +77,7 @@ export function AddBranchDialog({
         </div>
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
-            <Label>Filial nomi</Label>
+            <Label>{t('dialog.branch.name')}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -84,7 +86,7 @@ export function AddBranchDialog({
             />
           </div>
           <div>
-            <Label>Manzil</Label>
+            <Label>{t('common.address')}</Label>
             <Input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -93,7 +95,7 @@ export function AddBranchDialog({
             />
           </div>
           <div>
-            <Label>Telefon</Label>
+            <Label>{t('common.phone')}</Label>
             <PhoneInput
               value={phone}
               onChange={setPhone}
@@ -103,23 +105,23 @@ export function AddBranchDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Ochilish</Label>
+              <Label>{t('common.openTime')}</Label>
               <Input type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} required />
             </div>
             <div>
-              <Label>Yopilish</Label>
+              <Label>{t('common.closeTime')}</Label>
               <Input type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} required />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Yangi filial uchun barcha faol xizmatlarning asosiy narxlari avtomatik belgilanadi.
+            {t('dialog.branch.hint')}
           </p>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-              Bekor
+              {t('common.cancelShort')}
             </Button>
             <Button type="submit" className="flex-1" loading={loading}>
-              Qo&apos;shish
+              {t('common.add')}
             </Button>
           </div>
         </form>

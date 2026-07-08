@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 export function AddCategoryDialog({
   open,
@@ -16,6 +17,7 @@ export function AddCategoryDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -35,14 +37,14 @@ export function AddCategoryDialog({
           sortOrder: Number(sortOrder) || 0,
         }),
       });
-      toast.success('Kategoriya qo\'shildi');
+      toast.success(t('dialog.category.toastCreated'));
       setName('');
       setDescription('');
       setSortOrder('1');
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Xatolik');
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -53,7 +55,7 @@ export function AddCategoryDialog({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-md bg-card rounded-xl border border-border shadow-xl">
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold">Yangi kategoriya</h2>
+          <h2 className="text-lg font-semibold">{t('dialog.category.title')}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -64,11 +66,11 @@ export function AddCategoryDialog({
         </div>
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
-            <Label>Nomi</Label>
+            <Label>{t('common.name')}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Kimyo tozalash" />
           </div>
           <div>
-            <Label>Tavsif (ixtiyoriy)</Label>
+            <Label>{t('common.description')} ({t('common.optional')})</Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -76,7 +78,7 @@ export function AddCategoryDialog({
             />
           </div>
           <div>
-            <Label>Tartib raqami</Label>
+            <Label>{t('common.sortOrder')}</Label>
             <Input
               type="number"
               min={0}
@@ -86,10 +88,10 @@ export function AddCategoryDialog({
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-              Bekor
+              {t('common.cancelShort')}
             </Button>
             <Button type="submit" className="flex-1" loading={loading}>
-              Qo&apos;shish
+              {t('common.add')}
             </Button>
           </div>
         </form>

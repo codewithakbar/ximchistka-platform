@@ -1,4 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+import { resolveApiBaseUrl } from '@ximchistka/shared';
+
+function apiUrl() {
+  return resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
+}
 
 export function getToken() {
   if (typeof window === 'undefined') return null;
@@ -7,7 +11,7 @@ export function getToken() {
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${apiUrl()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

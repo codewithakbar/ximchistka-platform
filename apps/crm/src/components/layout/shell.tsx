@@ -8,8 +8,17 @@ import { ensureValidSession, getToken, getUser } from '@/lib/api';
 import { canAccessRoute } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
-export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
+export function AppShell({
+  title,
+  children,
+  flush = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  flush?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
@@ -78,8 +87,19 @@ export function AppShell({ title, children }: { title: string; children: React.R
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar title={title} onMenuClick={() => setMobileNavOpen(true)} />
-        <main className="flex-1 overflow-y-auto scrollbar-thin animate-fade-in">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-6">{children}</div>
+        <main
+          className={cn(
+            'flex-1 animate-fade-in',
+            flush ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin',
+          )}
+        >
+          <div
+            className={cn(
+              flush ? 'h-full' : 'mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-6',
+            )}
+          >
+            {children}
+          </div>
         </main>
       </div>
     </div>

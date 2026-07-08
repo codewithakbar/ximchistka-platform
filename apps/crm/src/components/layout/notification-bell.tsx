@@ -5,20 +5,19 @@ import Link from 'next/link';
 import { Bell, CheckCheck, Wallet } from 'lucide-react';
 import { useAdminNotifications } from '@/hooks/use-admin-notifications';
 import { formatPrice } from '@/lib/api';
-import { formatRelative } from '@/lib/utils';
+import { useFormatRelative, useI18n } from '@/lib/i18n';
 import type { AdminRevenueNotification } from '@/lib/admin-notifications';
 
-const typeLabels: Record<AdminRevenueNotification['type'], string> = {
-  order_created: 'Yangi buyurtma',
-  order_received: 'Filial qabul qildi',
-  order_completed: 'Yakunlandi',
-  payment_received: 'To\'lov',
-};
-
 export function NotificationBell() {
+  const { t } = useI18n();
+  const formatRelative = useFormatRelative();
   const { items, unread, enabled, markRead, markAllRead } = useAdminNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  function typeLabel(type: AdminRevenueNotification['type']) {
+    return t(`notif.${type}`);
+  }
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -36,7 +35,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="relative h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-card hover:bg-secondary"
-        aria-label="Bildirishnomalar"
+        aria-label={t('notif.aria')}
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
@@ -50,8 +49,8 @@ export function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div>
-              <p className="font-semibold text-sm">Tushum bildirishnomalari</p>
-              <p className="text-xs text-muted-foreground">Jonli yangilanish</p>
+              <p className="font-semibold text-sm">{t('notif.title')}</p>
+              <p className="text-xs text-muted-foreground">{t('notif.live')}</p>
             </div>
             {unread > 0 && (
               <button
@@ -60,7 +59,7 @@ export function NotificationBell() {
                 className="text-xs text-primary hover:underline inline-flex items-center gap-1"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
-                O&apos;qildi
+                {t('notif.markRead')}
               </button>
             )}
           </div>
@@ -68,7 +67,7 @@ export function NotificationBell() {
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-10 px-4">
-                Hozircha bildirishnoma yo&apos;q
+                {t('notif.empty')}
               </p>
             ) : (
               items.map((n) => (
@@ -98,7 +97,7 @@ export function NotificationBell() {
                       <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         <span className="text-xs font-semibold text-primary">{formatPrice(n.amount)}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-                          {typeLabels[n.type]}
+                          {typeLabel(n.type)}
                         </span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
                           {n.statusLabel}

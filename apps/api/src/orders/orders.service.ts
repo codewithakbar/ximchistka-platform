@@ -151,7 +151,11 @@ export class OrdersService {
     await this.branches.assertBranchAccess(user, data.branchId);
 
     const customerPhone = this.normalizePhone(data.customerPhone);
-    let customerUser = await this.prisma.user.findUnique({ where: { phone: customerPhone } });
+    let customerUser = await this.prisma.user.findUnique({
+      where: { phone: customerPhone },
+      include: { customerProfile: true },
+    });
+
     if (!customerUser) {
       customerUser = await this.prisma.user.create({
         data: {
@@ -162,11 +166,33 @@ export class OrdersService {
         },
         include: { customerProfile: true },
       });
+    } else if (customerUser.role !== UserRole.customer) {
+      throw new BadRequestException(
+        'Bu telefon boshqa xodim akkauntiga bog\'langan — boshqa raqam kiriting',
+      );
+    } else {
+      if (!customerUser.customerProfile) {
+        await this.prisma.customerProfile.create({
+          data: { userId: customerUser.id },
+        });
+        customerUser = await this.prisma.user.findUniqueOrThrow({
+          where: { id: customerUser.id },
+          include: { customerProfile: true },
+        });
+      }
+      if (
+        data.customerName.trim() &&
+        customerUser.fullName !== data.customerName.trim()
+      ) {
+        customerUser = await this.prisma.user.update({
+          where: { id: customerUser.id },
+          data: { fullName: data.customerName.trim() },
+          include: { customerProfile: true },
+        });
+      }
     }
 
-    const profile = await this.prisma.customerProfile.findUnique({
-      where: { userId: customerUser.id },
-    });
+    const profile = customerUser.customerProfile;
     if (!profile) throw new BadRequestException('Mijoz profili yaratilmadi');
 
     return this.createOrderForCustomer(profile.id, user.id, data);
@@ -205,10 +231,10 @@ export class OrdersService {
       const itemType = item.itemType ?? 'standart';
       const entry = priceMap.get(`${item.serviceId}:${itemType}`);
       const service = entry?.service ?? serviceMap.get(item.serviceId);
-      if (!entry || !service) {
-        throw new BadRequestException(`Narx topilmadi: ${item.serviceId}`);
+      if (!service) {
+        throw new BadRequestException(`Xizmat topilmadi: ${item.serviceId}`);
       }
-      const listPrice = entry.listPrice;
+      const listPrice = entry?.listPrice ?? service.basePrice;
       const unitPrice = applyServiceDiscount(listPrice, service);
       subtotal += listPrice * item.quantity;
       totalAmount += unitPrice * item.quantity;

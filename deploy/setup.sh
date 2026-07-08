@@ -75,6 +75,7 @@ npm run db:seed
 echo "==> Build all apps"
 set -a && source "$APP_DIR/.env" && set +a
 export MERCHANT_BASE_PATH=/platform
+export ENFORCE_PRODUCTION_API_URL=1
 npm run build
 
 echo "==> PM2"

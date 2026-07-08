@@ -28,8 +28,8 @@ import {
 import { api, getUser } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
 import { useCanAddStaff } from '@/hooks/use-client-auth';
-import { ROLE_LABELS, StaffRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
+import { useI18n, useRoleLabel } from '@/lib/i18n';
 
 type Staff = StaffForBranches & {
   phone: string;
@@ -47,6 +47,8 @@ const roleVariants: Record<string, 'default' | 'success' | 'warning' | 'info' | 
 };
 
 export default function StaffPage() {
+  const { t } = useI18n();
+  const roleLabel = useRoleLabel();
   const [staff, setStaff] = useState<Staff[] | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editStaff, setEditStaff] = useState<StaffForBranches | null>(null);
@@ -98,9 +100,9 @@ export default function StaffPage() {
         body: JSON.stringify({ avatarUrl: dataUrl }),
       });
       setStaff((prev) => prev?.map((s) => (s.id === id ? { ...s, avatarUrl: dataUrl } : s)) ?? null);
-      toast.success('Surat yangilandi');
+      toast.success(t('staff.toastPhotoUpdated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Suratni yuklab bo\'lmadi');
+      toast.error(err instanceof Error ? err.message : t('staff.toastPhotoUploadError'));
     } finally {
       setUploadingId(null);
     }
@@ -109,15 +111,15 @@ export default function StaffPage() {
   const addButton = canAdd && (
     <Button onClick={() => setDialogOpen(true)}>
       <Plus className="h-4 w-4" />
-      Xodim qo&apos;shish
+      {t('staff.addStaff')}
     </Button>
   );
 
   return (
-    <AppShell title="Xodimlar">
+    <AppShell title={t('staff.title')}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <p className="text-sm text-muted-foreground">
-          Yangi xodim qo&apos;shing — u telefon va parol bilan shaxsiy dashboardiga kiradi
+          {t('staff.subtitle')}
         </p>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-lg border border-border p-0.5 bg-card">
@@ -128,7 +130,7 @@ export default function StaffPage() {
                 'h-8 w-8 rounded-md flex items-center justify-center transition-colors',
                 view === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary',
               )}
-              title="Karta ko'rinishi"
+              title={t('staff.viewGrid')}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
@@ -139,7 +141,7 @@ export default function StaffPage() {
                 'h-8 w-8 rounded-md flex items-center justify-center transition-colors',
                 view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary',
               )}
-              title="Ro'yxat ko'rinishi"
+              title={t('staff.viewList')}
             >
               <List className="h-4 w-4" />
             </button>
@@ -165,8 +167,8 @@ export default function StaffPage() {
       ) : staff.length === 0 ? (
         <Empty
           icon={UserCog}
-          title="Xodimlar yo'q"
-          description="Birinchi xodimni qo'shing va unga login ma'lumotlarini bering"
+          title={t('staff.emptyTitle')}
+          description={t('staff.emptyDescription')}
           action={addButton || undefined}
         />
       ) : view === 'grid' ? (
@@ -179,6 +181,8 @@ export default function StaffPage() {
               uploading={uploadingId === s.id}
               onEditBranches={() => setEditStaff(s)}
               onChangeAvatar={() => triggerAvatarUpload(s.id)}
+              roleLabel={roleLabel}
+              t={t}
             />
           ))}
         </div>
@@ -197,6 +201,7 @@ export default function StaffPage() {
                     uploading={uploadingId === s.id}
                     size="md"
                     onChangeAvatar={() => triggerAvatarUpload(s.id)}
+                    changePhotoTitle={t('staff.changePhoto')}
                   />
                   <div className="min-w-0">
                     <div className="font-medium truncate">{s.fullName}</div>
@@ -214,11 +219,11 @@ export default function StaffPage() {
                     </span>
                   ) : (
                     s.role !== 'super_admin' && (
-                      <span className="text-xs text-amber-600">Filial biriktirilmagan</span>
+                      <span className="text-xs text-amber-600">{t('staff.noBranchAssigned')}</span>
                     )
                   )}
                   <Badge variant={roleVariants[s.role] ?? 'default'}>
-                    {ROLE_LABELS[s.role as StaffRole] ?? s.role}
+                    {roleLabel(s.role)}
                   </Badge>
                   {canAdd && s.role !== 'super_admin' && (
                     <Button
@@ -226,10 +231,10 @@ export default function StaffPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => setEditStaff(s)}
-                      title="Filiallarni tahrirlash"
+                      title={t('staff.editBranches')}
                     >
                       <Pencil className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Filiallar</span>
+                      <span className="hidden sm:inline">{t('staff.branchesShort')}</span>
                     </Button>
                   )}
                 </div>
@@ -272,18 +277,20 @@ function AvatarButton({
   uploading,
   size,
   onChangeAvatar,
+  changePhotoTitle,
 }: {
   staff: Staff;
   canManage: boolean;
   uploading: boolean;
   size: 'md' | 'xl';
   onChangeAvatar: () => void;
+  changePhotoTitle: string;
 }) {
   if (!canManage) {
     return <StaffAvatar name={staff.fullName} src={staff.avatarUrl} role={staff.role} size={size} />;
   }
   return (
-    <button type="button" onClick={onChangeAvatar} className="group relative" title="Suratni o'zgartirish">
+    <button type="button" onClick={onChangeAvatar} className="group relative" title={changePhotoTitle}>
       <StaffAvatar name={staff.fullName} src={staff.avatarUrl} role={staff.role} size={size} />
       <span
         className={cn(
@@ -303,12 +310,16 @@ function StaffCard({
   uploading,
   onEditBranches,
   onChangeAvatar,
+  roleLabel,
+  t,
 }: {
   staff: Staff;
   canManage: boolean;
   uploading: boolean;
   onEditBranches: () => void;
   onChangeAvatar: () => void;
+  roleLabel: (role: string) => string;
+  t: (key: string, fallbackOrParams?: string | Record<string, string | number>) => string;
 }) {
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -319,10 +330,11 @@ function StaffCard({
           uploading={uploading}
           size="xl"
           onChangeAvatar={onChangeAvatar}
+          changePhotoTitle={t('staff.changePhoto')}
         />
         <div className="mt-3 font-semibold leading-tight">{staff.fullName}</div>
         <Badge variant={roleVariants[staff.role] ?? 'default'} className="mt-2">
-          {ROLE_LABELS[staff.role as StaffRole] ?? staff.role}
+          {roleLabel(staff.role)}
         </Badge>
 
         <div className="mt-4 w-full space-y-1.5 text-sm text-left">
@@ -343,9 +355,9 @@ function StaffCard({
                 {staff.userBranches.map((b) => b.branch.name).join(', ')}
               </span>
             ) : staff.role === 'super_admin' ? (
-              <span>Barcha filiallar</span>
+              <span>{t('staff.allBranches')}</span>
             ) : (
-              <span className="text-amber-600">Filial biriktirilmagan</span>
+              <span className="text-amber-600">{t('staff.noBranchAssigned')}</span>
             )}
           </div>
         </div>
@@ -359,7 +371,7 @@ function StaffCard({
             onClick={onEditBranches}
           >
             <Pencil className="h-3.5 w-3.5" />
-            Filiallarni tahrirlash
+            {t('staff.editBranches')}
           </Button>
         )}
       </CardContent>

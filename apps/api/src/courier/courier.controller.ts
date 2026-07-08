@@ -20,6 +20,12 @@ export class CourierController {
     return this.courier.listTasks(user.id);
   }
 
+  @Roles(UserRole.courier)
+  @Get('completed')
+  myCompleted(@CurrentUser() user: { id: string }) {
+    return this.courier.listCompleted(user.id);
+  }
+
   @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
   @Get('unassigned')
   unassigned(@CurrentUser() user: TenantUser) {
@@ -27,9 +33,31 @@ export class CourierController {
   }
 
   @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Get('active')
+  active(@CurrentUser() user: TenantUser) {
+    return this.courier.listActive(user);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Get('history')
+  history(@CurrentUser() user: TenantUser) {
+    return this.courier.listCompletedForBranches(user);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Get('couriers')
+  couriers(@CurrentUser() user: TenantUser) {
+    return this.courier.listCouriers(user);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
   @Patch('deliveries/:id/assign')
-  assign(@Param('id') id: string, @Body() dto: AssignDto) {
-    return this.courier.assign(id, dto.courierId);
+  assign(
+    @Param('id') id: string,
+    @Body() dto: AssignDto,
+    @CurrentUser() user: TenantUser,
+  ) {
+    return this.courier.assign(id, dto.courierId, user);
   }
 
   @Roles(UserRole.courier)

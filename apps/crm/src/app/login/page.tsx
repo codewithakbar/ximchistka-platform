@@ -22,6 +22,11 @@ export default function LoginPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 12) {
+      toast.error(t('orders.create.toastPhoneIncomplete'));
+      return;
+    }
     setLoading(true);
     try {
       const data = await api<{
@@ -115,7 +120,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold mb-2">{t('login.title')}</h1>
           <p className="text-muted-foreground mb-8">{t('login.subtitle')}</p>
 
-          <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
+          <form onSubmit={onSubmit} className="space-y-4" autoComplete="off" noValidate>
             <div>
               <Label>{t('login.phone')}</Label>
               <div className="relative">
