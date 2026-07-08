@@ -35,7 +35,7 @@ type PhoneInputProps = Omit<
   onChange: (value: string) => void;
   /** Katta sensor/POS ekranlar uchun */
   touchSize?: 'default' | 'pos';
-  /** Tizim klaviaturasini yopib, ekran raqamli klaviaturani ochish */
+  /** Fokusda ekran raqamli klaviaturani ham ochish (fizik klaviatura ham ishlaydi) */
   virtualPad?: boolean;
   onVirtualPadOpen?: () => void;
 };
@@ -69,18 +69,16 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       <Input
         ref={ref}
         type="tel"
-        inputMode={virtualPad ? 'none' : (inputModeProp ?? 'numeric')}
+        inputMode={inputModeProp ?? 'numeric'}
         autoComplete="tel"
-        readOnly={virtualPad ? true : readOnlyProp}
+        readOnly={readOnlyProp}
         enterKeyHint={touchSize === 'pos' ? 'search' : 'done'}
         value={display}
-        className={cn(touchSizeClasses[touchSize], virtualPad && 'cursor-pointer', className)}
+        className={cn(touchSizeClasses[touchSize], className)}
         onChange={(e) => onChange(normalizePhone(e.target.value))}
         onPointerDown={(e) => {
           if (virtualPad) {
-            e.preventDefault();
             onVirtualPadOpen?.();
-            (e.currentTarget as HTMLInputElement).focus({ preventScroll: true });
           }
           onPointerDown?.(e);
         }}
