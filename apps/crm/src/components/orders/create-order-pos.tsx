@@ -17,7 +17,8 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input, Select, Textarea } from '@/components/ui/input';
-import { PhoneInput } from '@/components/ui/phone-input';
+import { PhoneInput, appendPhoneDigit, backspacePhone, normalizePhone } from '@/components/ui/phone-input';
+import { VirtualNumpad } from '@/components/ui/virtual-numpad';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
@@ -76,14 +77,13 @@ export function CreateOrderPos() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [categoryId, setCategoryId] = useState('all');
   const [serviceSearch, setServiceSearch] = useState('');
+  const [phonePadOpen, setPhonePadOpen] = useState(true);
 
   useEffect(() => {
     api<Branch[]>('/branches').then((all) => {
       setBranches(all);
       if (all.length === 1) setBranchId(all[0].id);
     });
-    const t = window.setTimeout(() => phoneInputRef.current?.focus(), 300);
-    return () => window.clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -189,6 +189,7 @@ export function CreateOrderPos() {
           setAddress(res.defaultAddress ?? '');
         }
         setCustomerReady(true);
+        setPhonePadOpen(false);
       } else {
         setLookupState('not_found');
         setCustomerName('');
@@ -196,6 +197,7 @@ export function CreateOrderPos() {
         setSelectedAddressId('');
         setAddress('');
         setCustomerReady(true);
+        setPhonePadOpen(false);
         toast.message(t('orders.create.toastNewCustomer'));
       }
     } catch (err) {
@@ -212,7 +214,8 @@ export function CreateOrderPos() {
     if (item) setAddress(item.address);
   }
 
-  function changePhone() {
+  function resetCustomerForPhoneEdit() {
+    if (!customerReady) return;
     setLookupState('idle');
     setCustomerReady(false);
     setCustomerName('');
@@ -220,6 +223,28 @@ export function CreateOrderPos() {
     setSelectedAddressId('');
     setAddress('');
   }
+
+  function updatePhone(next: string) {
+    setCustomerPhone(next);
+    resetCustomerForPhoneEdit();
+    if (next.replace(/\D/g, '').length >= 12) {
+      void lookupCustomer(next);
+    }
+  }
+
+  function onPhoneDigit(digit: string) {
+    updatePhone(appendPhoneDigit(customerPhone, digit));
+  }
+
+  function onPhoneBackspace() {
+    updatePhone(backspacePhone(customerPhone));
+  }
+
+  function onPhoneClear() {
+    updatePhone(normalizePhone(''));
+  }
+
+  const showPhonePad = phonePadOpen || !customerReady;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -284,12 +309,13 @@ export function CreateOrderPos() {
           <PhoneInput
             ref={phoneInputRef}
             touchSize="pos"
-            autoFocus
+            virtualPad
+            onVirtualPadOpen={() => setPhonePadOpen(true)}
             className="flex-1 min-w-0"
             value={customerPhone}
             onChange={(v) => {
               setCustomerPhone(v);
-              if (customerReady) changePhone();
+              resetCustomerForPhoneEdit();
               if (v.replace(/\D/g, '').length >= 12) lookupCustomer(v);
             }}
             onKeyDown={(e) => {
@@ -341,13 +367,30 @@ export function CreateOrderPos() {
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
         {/* Catalog — POS grid */}
         <div className="flex flex-col flex-1 min-h-0 min-w-0 border-b lg:border-b-0 lg:border-r border-border">
-          {!customerReady ? (
-            <div className="flex-1 flex items-center justify-center p-8 text-center">
-              <div className="max-w-sm space-y-2">
+          {!showPhonePad && !branchId ? (
+            <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
+              {t('orders.pos.selectBranch')}
+            </div>
+          ) : showPhonePad ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 gap-6 min-h-0 overflow-y-auto">
+              <div className="text-center space-y-3 w-full max-w-lg">
                 <Phone className="h-10 w-10 mx-auto text-muted-foreground" />
-                <p className="font-medium">{t('orders.pos.enterPhone')}</p>
+                <p className="font-medium text-lg">{t('orders.pos.enterPhone')}</p>
+                <p className="text-3xl sm:text-4xl font-bold tracking-wide tabular-nums">
+                  {normalizePhone(customerPhone)}
+                </p>
                 <p className="text-sm text-muted-foreground">{t('orders.pos.enterPhoneHint')}</p>
               </div>
+              <VirtualNumpad
+                className="px-2"
+                onDigit={onPhoneDigit}
+                onBackspace={onPhoneBackspace}
+                onClear={onPhoneClear}
+                onSubmit={() => lookupCustomer()}
+                submitDisabled={lookupState === 'loading'}
+                backspaceLabel={t('orders.pos.phonePadBackspace')}
+                submitLabel={t('orders.pos.phonePadSearch')}
+              />
             </div>
           ) : !branchId ? (
             <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">

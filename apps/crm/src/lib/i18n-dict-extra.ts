@@ -94,6 +94,8 @@ export const uzExtra: Record<string, string> = {
   'orders.pos.selectBranch': 'Filialni tanlang',
   'orders.pos.enterPhone': 'Mijoz telefonini kiriting',
   'orders.pos.enterPhoneHint': 'Telefon kiritilgandan keyin xizmatlar katalogi ochiladi',
+  'orders.pos.phonePadBackspace': 'Oxirgi raqamni o\'chirish',
+  'orders.pos.phonePadSearch': 'Mijozni qidirish',
 
   // Branches
   'branches.title': 'Filiallar',
@@ -356,6 +358,8 @@ export const ruExtra: Record<string, string> = {
   'orders.pos.selectBranch': 'Выберите филиал',
   'orders.pos.enterPhone': 'Введите телефон клиента',
   'orders.pos.enterPhoneHint': 'После ввода телефона откроется каталог услуг',
+  'orders.pos.phonePadBackspace': 'Удалить последнюю цифру',
+  'orders.pos.phonePadSearch': 'Найти клиента',
 
   // Branches
   'branches.title': 'Филиалы',

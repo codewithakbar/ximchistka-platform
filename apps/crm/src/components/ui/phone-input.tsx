@@ -7,11 +7,24 @@ import { cn } from '@/lib/utils';
 const PREFIX = '+998';
 const MAX_DIGITS = 9;
 
-export function normalizePhone(input: string): string {
+function localDigits(input: string): string {
   let digits = input.replace(/\D/g, '');
   if (digits.startsWith('998')) digits = digits.slice(3);
-  digits = digits.slice(0, MAX_DIGITS);
-  return PREFIX + digits;
+  return digits.slice(0, MAX_DIGITS);
+}
+
+export function normalizePhone(input: string): string {
+  return PREFIX + localDigits(input);
+}
+
+export function appendPhoneDigit(current: string, digit: string): string {
+  const digits = localDigits(current);
+  if (digits.length >= MAX_DIGITS) return normalizePhone(current);
+  return normalizePhone(digits + digit.replace(/\D/g, '').slice(-1));
+}
+
+export function backspacePhone(current: string): string {
+  return normalizePhone(localDigits(current).slice(0, -1));
 }
 
 type PhoneInputProps = Omit<
@@ -22,6 +35,9 @@ type PhoneInputProps = Omit<
   onChange: (value: string) => void;
   /** Katta sensor/POS ekranlar uchun */
   touchSize?: 'default' | 'pos';
+  /** Tizim klaviaturasini yopib, ekran raqamli klaviaturani ochish */
+  virtualPad?: boolean;
+  onVirtualPadOpen?: () => void;
 };
 
 const touchSizeClasses: Record<NonNullable<PhoneInputProps['touchSize']>, string> = {
@@ -30,20 +46,48 @@ const touchSizeClasses: Record<NonNullable<PhoneInputProps['touchSize']>, string
 };
 
 export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
-  ({ value, onChange, onKeyDown, onFocus, touchSize = 'default', className, ...props }, ref) => {
+  (
+    {
+      value,
+      onChange,
+      onKeyDown,
+      onFocus,
+      onPointerDown,
+      touchSize = 'default',
+      virtualPad = false,
+      onVirtualPadOpen,
+      className,
+      readOnly: readOnlyProp,
+      inputMode: inputModeProp,
+      ...props
+    },
+    ref,
+  ) => {
     const display = normalizePhone(value || '');
 
     return (
       <Input
         ref={ref}
         type="tel"
-        inputMode="numeric"
+        inputMode={virtualPad ? 'none' : (inputModeProp ?? 'numeric')}
         autoComplete="tel"
+        readOnly={virtualPad ? true : readOnlyProp}
         enterKeyHint={touchSize === 'pos' ? 'search' : 'done'}
         value={display}
-        className={cn(touchSizeClasses[touchSize], className)}
+        className={cn(touchSizeClasses[touchSize], virtualPad && 'cursor-pointer', className)}
         onChange={(e) => onChange(normalizePhone(e.target.value))}
+        onPointerDown={(e) => {
+          if (virtualPad) {
+            e.preventDefault();
+            onVirtualPadOpen?.();
+            (e.currentTarget as HTMLInputElement).focus({ preventScroll: true });
+          }
+          onPointerDown?.(e);
+        }}
         onFocus={(e) => {
+          if (virtualPad) {
+            onVirtualPadOpen?.();
+          }
           const len = e.currentTarget.value.length;
           if (e.currentTarget.selectionStart !== null && e.currentTarget.selectionStart < PREFIX.length) {
             e.currentTarget.setSelectionRange(len, len);
