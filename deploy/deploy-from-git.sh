@@ -20,7 +20,7 @@ export MERCHANT_BASE_PATH=/platform
 export ENFORCE_PRODUCTION_API_URL=1
 
 echo "==> Dependencies"
-npm ci 2>/dev/null || npm install
+npm ci --include=dev 2>/dev/null || npm install --include=dev
 
 echo "==> Database schema"
 npm run db:generate
