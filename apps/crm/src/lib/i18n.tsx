@@ -46,6 +46,7 @@ const uz: Record<string, string> = {
   'topbar.search': 'Qidirish...',
   'topbar.demo': 'Demo',
   'topbar.days': 'kun',
+  'topbar.demoSupportHint': 'Savollaringiz bo\'lsa — Telegram orqali bog\'laning',
 
   // Dashboard
   'dash.title': 'Boshqaruv paneli',
@@ -189,6 +190,7 @@ const ru: Record<string, string> = {
   'topbar.search': 'Поиск...',
   'topbar.demo': 'Демо',
   'topbar.days': 'дн.',
+  'topbar.demoSupportHint': 'Если есть вопросы — напишите в Telegram',
 
   // Dashboard
   'dash.title': 'Панель управления',

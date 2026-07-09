@@ -22,18 +22,24 @@ export function ThemeToggle() {
   );
 }
 
-export function LanguageToggle() {
+export function LanguageToggle({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale } = useI18n();
   const options: Locale[] = ['uz', 'ru'];
   return (
-    <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
+    <div
+      className={cn(
+        'inline-flex items-center rounded-lg border border-border bg-card p-0.5',
+        compact && 'scale-90 sm:scale-100 origin-right',
+      )}
+    >
       {options.map((l) => (
         <button
           key={l}
           type="button"
           onClick={() => setLocale(l)}
           className={cn(
-            'h-8 px-2.5 rounded-md text-xs font-semibold uppercase transition-colors',
+            'rounded-md text-xs font-semibold uppercase transition-colors',
+            compact ? 'h-7 px-1.5 sm:h-8 sm:px-2.5' : 'h-8 px-2.5',
             locale === l
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground',

@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Building2, ChevronRight, Menu } from 'lucide-react';
+import { Building2, Menu, Send } from 'lucide-react';
 import { NotificationBell } from './notification-bell';
 import { useEffect, useState } from 'react';
 import { api, getUser, updateStoredUser } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
-import { StaffRole } from '@/lib/roles';
 import { useI18n } from '@/lib/i18n';
 import { ThemeToggle, LanguageToggle } from './prefs-controls';
+
+const SUPPORT_TELEGRAM = 'https://t.me/avilab_uz_support';
 
 type TopbarUser = {
   role?: string;
@@ -22,7 +23,7 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
   const [user, setUser] = useState<TopbarUser | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [demoRemainingDays, setDemoRemainingDays] = useState<number | null>(null);
-  const [demoPlan, setDemoPlan] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     setUser(getUser<TopbarUser>());
@@ -43,9 +44,10 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
 
         const org = p.organization;
         setOrgName(org?.name ?? null);
-        setDemoPlan(org?.plan ?? null);
+        const demo = org?.plan === 'demo';
+        setIsDemo(demo);
 
-        if (org?.plan === 'demo' && org?.demoEndsAt) {
+        if (demo && org?.demoEndsAt) {
           const endsAt = new Date(org.demoEndsAt).getTime();
           const days = Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000));
           setDemoRemainingDays(days);
@@ -68,71 +70,79 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
     return () => window.removeEventListener('profile-updated', syncFromStore);
   }, []);
 
-  const roleLabel = user?.role
-    ? t(`role.${user.role}`, user.role.replace(/_/g, ' '))
-    : t('role.super_admin');
-
   return (
-    <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6 py-2">
-      <div className="flex items-center gap-2 min-w-0">
-        <button
-          type="button"
-          onClick={onMenuClick}
-          className="md:hidden h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-card hover:bg-secondary"
-          aria-label={t('common.menu')}
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <div className="min-w-0">
-          <h1 className="truncate text-base sm:text-lg font-semibold">{title}</h1>
-          {orgName && (
-            <div className="mt-0.5 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-muted-foreground">
-                <Building2 className="h-3 w-3 shrink-0" />
-                <span className="truncate max-w-[140px] sm:max-w-[220px] md:max-w-[320px]">{orgName}</span>
-              </span>
-              {demoPlan === 'demo' && demoRemainingDays !== null && (
-                <Badge variant="warning" className="px-2 py-0.5 text-[11px] font-semibold">
-                  {t('topbar.demo')}: {demoRemainingDays} {t('topbar.days')}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <div className="relative hidden lg:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder={t('topbar.search')}
-            className="h-9 w-48 xl:w-56 rounded-lg border border-input bg-card pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </div>
-        <LanguageToggle />
-        <ThemeToggle />
-        <NotificationBell />
-        <Link
-          href="/settings"
-          title={t('common.viewProfile')}
-          className="group flex items-center gap-2 pl-3 border-l border-border rounded-lg py-1 pr-1 transition-colors hover:bg-secondary"
-        >
-          <StaffAvatar
-            name={user?.fullName ?? 'Admin'}
-            src={user?.avatarUrl}
-            role={user?.role}
-            size="sm"
-          />
-          <div className="hidden md:block text-left">
-            <div className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">
-              {user?.fullName ?? 'Admin'}
-            </div>
-            <div className="text-xs text-muted-foreground">{roleLabel}</div>
+    <div className="sticky top-0 z-20 shrink-0">
+      <header className="flex h-14 sm:h-16 items-center justify-between gap-2 border-b border-border bg-background/95 backdrop-blur-md px-3 sm:px-6">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="md:hidden h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-card hover:bg-secondary"
+            aria-label={t('common.menu')}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base sm:text-lg font-semibold leading-tight">{title}</h1>
+            {orgName && (
+              <div className="mt-0.5 hidden sm:flex items-center gap-2 min-w-0">
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+                  <Building2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate max-w-[200px] md:max-w-[280px]">{orgName}</span>
+                </span>
+                {isDemo && demoRemainingDays !== null && (
+                  <Badge variant="warning" className="px-1.5 py-0 text-[10px] font-semibold shrink-0">
+                    {t('topbar.demo')}: {demoRemainingDays} {t('topbar.days')}
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
-          <ChevronRight className="hidden md:block h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        </Link>
-      </div>
-    </header>
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <LanguageToggle compact />
+          <ThemeToggle />
+          <NotificationBell />
+          <Link
+            href="/settings"
+            title={t('common.viewProfile')}
+            className="group inline-flex items-center rounded-lg p-0.5 transition-colors hover:bg-secondary"
+          >
+            <StaffAvatar
+              name={user?.fullName ?? 'Admin'}
+              src={user?.avatarUrl}
+              role={user?.role}
+              size="sm"
+            />
+          </Link>
+        </div>
+      </header>
+
+      {isDemo && (
+        <div className="flex items-center justify-between gap-2 border-b border-amber-500/30 bg-amber-500/10 px-3 sm:px-6 py-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm text-amber-900 dark:text-amber-100 leading-snug">
+              <span className="sm:hidden">
+                {orgName ? `${orgName} · ` : ''}
+                {demoRemainingDays !== null
+                  ? `${t('topbar.demo')}: ${demoRemainingDays} ${t('topbar.days')}`
+                  : t('topbar.demo')}
+              </span>
+              <span className="hidden sm:inline">{t('topbar.demoSupportHint')}</span>
+            </p>
+          </div>
+          <a
+            href={SUPPORT_TELEGRAM}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 shrink-0 rounded-lg bg-[#2AABEE] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#229ED9] transition-colors"
+          >
+            <Send className="h-3.5 w-3.5" />
+            <span>@avilab_uz_support</span>
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
