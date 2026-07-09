@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { ORDER_STATUS_LABELS, OrderStatus } from '@ximchistka/shared';
 
 export default function TrackScreen() {
-  const [num, setNum] = useState('XC-10001');
+  const [num, setNum] = useState('XC-0001');
   const [status, setStatus] = useState('');
 
   async function track() {

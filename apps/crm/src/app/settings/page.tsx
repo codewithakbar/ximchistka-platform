@@ -102,7 +102,7 @@ export default function SettingsPage() {
   const [orgName, setOrgName] = useState('');
   const [orgSlug, setOrgSlug] = useState('');
   const [orderPrefix, setOrderPrefix] = useState('XC');
-  const [orderNext, setOrderNext] = useState('10001');
+  const [orderNext, setOrderNext] = useState('1');
   const [notif, setNotif] = useState<NotifPrefs>(defaultNotif);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -167,7 +167,7 @@ export default function SettingsPage() {
             setOrgName(o.name);
             setOrgSlug(o.slug);
             setOrderPrefix(o.orderNumberPrefix ?? 'XC');
-            setOrderNext(String(o.orderNumberNext ?? 10001));
+            setOrderNext(String(o.orderNumberNext ?? 1));
           } catch {
             setOrg(p.organization as Organization);
             setOrgName(p.organization.name);
@@ -239,8 +239,8 @@ export default function SettingsPage() {
   const orderPreview = (() => {
     const cleaned = orderPrefix.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'XC';
     const n = Number.parseInt(orderNext, 10);
-    const seq = Number.isFinite(n) && n > 0 ? n : 10001;
-    const pad = Math.max(5, String(seq).length);
+    const seq = Number.isFinite(n) && n > 0 ? n : 1;
+    const pad = Math.max(4, String(seq).length);
     return `${cleaned}-${String(seq).padStart(pad, '0')}`;
   })();
 

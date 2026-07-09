@@ -168,7 +168,7 @@ export class SettingsService {
   }
 
   private formatOrderNumberPreview(prefix: string, sequence: number) {
-    const pad = Math.max(5, String(sequence).length);
+    const pad = Math.max(4, String(sequence).length);
     return `${prefix}-${String(sequence).padStart(pad, '0')}`;
   }
 

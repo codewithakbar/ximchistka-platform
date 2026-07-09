@@ -95,7 +95,7 @@ function TrackContent() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               className="pl-12"
-              placeholder="XC-10001"
+              placeholder="XC-0001"
               value={num}
               onChange={(e) => setNum(e.target.value.toUpperCase())}
             />
@@ -203,7 +203,7 @@ function TrackContent() {
           <Card className="text-center py-12">
             <Search className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <h3 className="font-semibold mb-1">Buyurtma raqamini kiriting</h3>
-            <p className="text-sm text-muted-foreground">Masalan: XC-10001</p>
+            <p className="text-sm text-muted-foreground">Masalan: XC-0001</p>
           </Card>
         )}
       </div>

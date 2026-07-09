@@ -242,7 +242,7 @@ export const uzExtra: Record<string, string> = {
   'settings.org.slug': 'Slug (URL identifikator)',
   'settings.org.orderNumberTitle': 'Chek raqami tartibi',
   'settings.org.orderNumberDesc':
-    'Yangi buyurtma cheklarida chiqadigan raqam formati. Masalan: XC-10009',
+    'Yangi buyurtma cheklarida chiqadigan raqam formati. Masalan: XC-0001',
   'settings.org.orderPrefix': 'Prefiks',
   'settings.org.orderNext': 'Keyingi raqam',
   'settings.org.orderPreview': 'Namuna chek',
@@ -513,7 +513,7 @@ export const ruExtra: Record<string, string> = {
   'settings.org.slug': 'Slug (URL-идентификатор)',
   'settings.org.orderNumberTitle': 'Формат номера чека',
   'settings.org.orderNumberDesc':
-    'Формат номера на чеках новых заказов. Например: XC-10009',
+    'Формат номера на чеках новых заказов. Например: XC-0001',
   'settings.org.orderPrefix': 'Префикс',
   'settings.org.orderNext': 'Следующий номер',
   'settings.org.orderPreview': 'Пример чека',

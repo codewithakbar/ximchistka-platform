@@ -371,7 +371,7 @@ export class OrdersService {
   }
 
   private formatOrderNumber(prefix: string, sequence: number) {
-    const pad = Math.max(5, String(sequence).length);
+    const pad = Math.max(4, String(sequence).length);
     return `${this.normalizeOrderPrefix(prefix)}-${String(sequence).padStart(pad, '0')}`;
   }
 
