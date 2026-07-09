@@ -242,7 +242,14 @@ export class OrdersService {
     });
 
     const discountAmount = Math.max(0, subtotal - totalAmount);
-    const orderNumber = await this.generateOrderNumber();
+
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: data.branchId },
+      select: { organizationId: true },
+    });
+    if (!branch) throw new BadRequestException('Filial topilmadi');
+
+    const orderNumber = await this.generateOrderNumber(branch.organizationId);
 
     const order = await this.prisma.order.create({
       data: {
@@ -355,9 +362,38 @@ export class OrdersService {
     await this.branches.assertBranchAccess(user, branchId);
   }
 
-  private async generateOrderNumber() {
-    const count = await this.prisma.order.count();
-    return `XC-${String(10001 + count).padStart(5, '0')}`;
+  private normalizeOrderPrefix(prefix: string) {
+    const cleaned = prefix
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 8);
+    return cleaned || 'XC';
+  }
+
+  private formatOrderNumber(prefix: string, sequence: number) {
+    const pad = Math.max(5, String(sequence).length);
+    return `${this.normalizeOrderPrefix(prefix)}-${String(sequence).padStart(pad, '0')}`;
+  }
+
+  /** Firma sozlamasidagi prefiks + ketma-ket raqam (atomik) */
+  private async generateOrderNumber(organizationId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const org = await tx.organization.update({
+          where: { id: organizationId },
+          data: { orderNumberNext: { increment: 1 } },
+          select: { orderNumberPrefix: true, orderNumberNext: true },
+        });
+        const sequence = org.orderNumberNext - 1;
+        const orderNumber = this.formatOrderNumber(org.orderNumberPrefix, sequence);
+        const exists = await tx.order.findUnique({
+          where: { orderNumber },
+          select: { id: true },
+        });
+        if (!exists) return orderNumber;
+      }
+      throw new BadRequestException('Chek raqami yaratilmadi — sozlamalarni tekshiring');
+    });
   }
 
   private normalizePhone(phone: string) {

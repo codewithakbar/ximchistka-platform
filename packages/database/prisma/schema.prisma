@@ -55,19 +55,23 @@ enum PaymentStatus {
 }
 
 model Organization {
-  id            String           @id @default(cuid())
-  name          String
-  slug          String           @unique
-  plan          OrganizationPlan @default(demo)
-  demoStartedAt DateTime?
-  demoEndsAt    DateTime?
-  isActive      Boolean          @default(true)
-  contactPhone  String?
-  contactEmail  String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  branches      Branch[]
-  users         User[]
+  id                String           @id @default(cuid())
+  name              String
+  slug              String           @unique
+  plan              OrganizationPlan @default(demo)
+  demoStartedAt     DateTime?
+  demoEndsAt        DateTime?
+  isActive          Boolean          @default(true)
+  contactPhone      String?
+  contactEmail      String?
+  /** Chek raqami prefiksi, masalan XC → XC-10009 */
+  orderNumberPrefix String           @default("XC")
+  /** Keyingi chek raqami (har yaratilganda +1) */
+  orderNumberNext   Int              @default(10001)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  branches          Branch[]
+  users             User[]
   serviceCategories ServiceCategory[]
 }
 

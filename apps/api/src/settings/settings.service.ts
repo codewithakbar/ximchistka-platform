@@ -109,19 +109,17 @@ export class SettingsService {
       },
     });
     if (!org) throw new NotFoundException('Tashkilot topilmadi');
-    return {
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      branchCount: org._count.branches,
-      userCount: org._count.users,
-      createdAt: org.createdAt,
-    };
+    return this.mapOrganization(org);
   }
 
   async updateOrganization(
     organizationId: string | null | undefined,
-    data: { name?: string; slug?: string },
+    data: {
+      name?: string;
+      slug?: string;
+      orderNumberPrefix?: string;
+      orderNumberNext?: number;
+    },
   ) {
     if (!organizationId) throw new ForbiddenException('Tashkilot yo\'q');
     if (data.slug) {
@@ -130,18 +128,69 @@ export class SettingsService {
       });
       if (taken) throw new BadRequestException('Bu slug band');
     }
+
+    let orderNumberPrefix: string | undefined;
+    if (data.orderNumberPrefix !== undefined) {
+      orderNumberPrefix = this.normalizeOrderPrefix(data.orderNumberPrefix);
+    }
+
+    let orderNumberNext: number | undefined;
+    if (data.orderNumberNext !== undefined) {
+      const n = Math.floor(Number(data.orderNumberNext));
+      if (!Number.isFinite(n) || n < 1 || n > 99999999) {
+        throw new BadRequestException('Keyingi chek raqami 1 dan 99999999 gacha bo\'lishi kerak');
+      }
+      orderNumberNext = n;
+    }
+
     const org = await this.prisma.organization.update({
       where: { id: organizationId },
       data: {
         ...(data.name ? { name: data.name.trim() } : {}),
         ...(data.slug ? { slug: data.slug.trim().toLowerCase() } : {}),
+        ...(orderNumberPrefix !== undefined ? { orderNumberPrefix } : {}),
+        ...(orderNumberNext !== undefined ? { orderNumberNext } : {}),
       },
       include: { _count: { select: { branches: true, users: true } } },
     });
+    return this.mapOrganization(org);
+  }
+
+  private normalizeOrderPrefix(prefix: string) {
+    const cleaned = prefix
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 8);
+    if (!cleaned) {
+      throw new BadRequestException('Chek prefiksi kamida 1 ta harf yoki raqam bo\'lishi kerak');
+    }
+    return cleaned;
+  }
+
+  private formatOrderNumberPreview(prefix: string, sequence: number) {
+    const pad = Math.max(5, String(sequence).length);
+    return `${prefix}-${String(sequence).padStart(pad, '0')}`;
+  }
+
+  private mapOrganization(org: {
+    id: string;
+    name: string;
+    slug: string;
+    orderNumberPrefix: string;
+    orderNumberNext: number;
+    createdAt: Date;
+    _count: { branches: number; users: number };
+  }) {
     return {
       id: org.id,
       name: org.name,
       slug: org.slug,
+      orderNumberPrefix: org.orderNumberPrefix,
+      orderNumberNext: org.orderNumberNext,
+      orderNumberPreview: this.formatOrderNumberPreview(
+        org.orderNumberPrefix,
+        org.orderNumberNext,
+      ),
       branchCount: org._count.branches,
       userCount: org._count.users,
       createdAt: org.createdAt,

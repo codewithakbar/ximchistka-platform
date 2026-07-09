@@ -1,5 +1,14 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { UserRole } from '@prisma/client';
 import { SettingsService } from './settings.service';
 import { CurrentUser } from '../auth/decorators';
@@ -19,6 +28,13 @@ class ChangePasswordDto {
 class UpdateOrganizationDto {
   @IsOptional() @IsString() name?: string;
   @IsOptional() @IsString() slug?: string;
+  @IsOptional() @IsString() orderNumberPrefix?: string;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(99999999)
+  orderNumberNext?: number;
 }
 
 @Controller('settings')

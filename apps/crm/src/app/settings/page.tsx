@@ -47,6 +47,9 @@ type Organization = {
   id: string;
   name: string;
   slug: string;
+  orderNumberPrefix?: string;
+  orderNumberNext?: number;
+  orderNumberPreview?: string;
   branchCount: number;
   userCount: number;
 };
@@ -98,6 +101,8 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [orgName, setOrgName] = useState('');
   const [orgSlug, setOrgSlug] = useState('');
+  const [orderPrefix, setOrderPrefix] = useState('XC');
+  const [orderNext, setOrderNext] = useState('10001');
   const [notif, setNotif] = useState<NotifPrefs>(defaultNotif);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -161,6 +166,8 @@ export default function SettingsPage() {
             setOrg(o);
             setOrgName(o.name);
             setOrgSlug(o.slug);
+            setOrderPrefix(o.orderNumberPrefix ?? 'XC');
+            setOrderNext(String(o.orderNumberNext ?? 10001));
           } catch {
             setOrg(p.organization as Organization);
             setOrgName(p.organization.name);
@@ -205,17 +212,37 @@ export default function SettingsPage() {
   async function saveOrganization(e: FormEvent) {
     e.preventDefault();
     if (!isSuperAdmin) return;
+    const nextNum = Number.parseInt(orderNext, 10);
+    if (!Number.isFinite(nextNum) || nextNum < 1) {
+      toast.error(t('settings.org.orderNextInvalid'));
+      return;
+    }
     try {
       const updated = await api<Organization>('/settings/organization', {
         method: 'PATCH',
-        body: JSON.stringify({ name: orgName, slug: orgSlug }),
+        body: JSON.stringify({
+          name: orgName,
+          slug: orgSlug,
+          orderNumberPrefix: orderPrefix,
+          orderNumberNext: nextNum,
+        }),
       });
       setOrg(updated);
+      setOrderPrefix(updated.orderNumberPrefix ?? orderPrefix);
+      setOrderNext(String(updated.orderNumberNext ?? nextNum));
       toast.success(t('settings.toast.orgSaved'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Xatolik');
     }
   }
+
+  const orderPreview = (() => {
+    const cleaned = orderPrefix.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'XC';
+    const n = Number.parseInt(orderNext, 10);
+    const seq = Number.isFinite(n) && n > 0 ? n : 10001;
+    const pad = Math.max(5, String(seq).length);
+    return `${cleaned}-${String(seq).padStart(pad, '0')}`;
+  })();
 
   function saveNotifications() {
     localStorage.setItem(NOTIF_KEY, JSON.stringify(notif));
@@ -479,6 +506,53 @@ export default function SettingsPage() {
                           required
                         />
                       </div>
+
+                      <div className="rounded-lg border border-border p-4 space-y-4 bg-secondary/20">
+                        <div>
+                          <div className="font-medium text-sm">{t('settings.org.orderNumberTitle')}</div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('settings.org.orderNumberDesc')}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>{t('settings.org.orderPrefix')}</Label>
+                            <Input
+                              value={orderPrefix}
+                              onChange={(e) =>
+                                setOrderPrefix(
+                                  e.target.value.toUpperCase().replace(/[^A-Z0-9]/gi, '').slice(0, 8),
+                                )
+                              }
+                              disabled={!isSuperAdmin}
+                              placeholder="XC"
+                              maxLength={8}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label>{t('settings.org.orderNext')}</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={99999999}
+                              value={orderNext}
+                              onChange={(e) => setOrderNext(e.target.value)}
+                              disabled={!isSuperAdmin}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="rounded-md bg-card border border-border px-3 py-2">
+                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {t('settings.org.orderPreview')}
+                          </div>
+                          <div className="text-lg font-bold font-mono tracking-wide mt-0.5">
+                            {orderPreview}
+                          </div>
+                        </div>
+                      </div>
+
                       {isSuperAdmin && (
                         <Button type="submit">
                           <Save className="h-4 w-4" />
