@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Select, Textarea } from '@/components/ui/input';
 import { PhoneInput, appendPhoneDigit, backspacePhone, normalizePhone } from '@/components/ui/phone-input';
 import { VirtualNumpad } from '@/components/ui/virtual-numpad';
+import { CartItemColorPicker } from '@/components/orders/cart-item-color-picker';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
@@ -75,6 +76,8 @@ export function CreateOrderPos() {
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery' | 'in_store'>('pickup');
   const [notes, setNotes] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [itemColors, setItemColors] = useState<Record<string, string>>({});
+  const [itemColorOtherOpen, setItemColorOtherOpen] = useState<Record<string, boolean>>({});
   const [categoryId, setCategoryId] = useState('all');
   const [serviceSearch, setServiceSearch] = useState('');
   const [phonePadOpen, setPhonePadOpen] = useState(true);
@@ -94,6 +97,8 @@ export function CreateOrderPos() {
     }
     setPricesLoading(true);
     setQuantities({});
+    setItemColors({});
+    setItemColorOtherOpen({});
     setCategoryId('all');
     setServiceSearch('');
     api<PriceRule[]>(`/services/prices/${branchId}`)
@@ -149,6 +154,14 @@ export function CreateOrderPos() {
       const next = Math.max(0, (prev[serviceId] ?? 0) + delta);
       if (next === 0) {
         const { [serviceId]: _, ...rest } = prev;
+        setItemColors((c) => {
+          const { [serviceId]: __, ...cr } = c;
+          return cr;
+        });
+        setItemColorOtherOpen((o) => {
+          const { [serviceId]: __, ...or } = o;
+          return or;
+        });
         return rest;
       }
       return { ...prev, [serviceId]: next };
@@ -157,6 +170,8 @@ export function CreateOrderPos() {
 
   function clearCart() {
     setQuantities({});
+    setItemColors({});
+    setItemColorOtherOpen({});
   }
 
   async function lookupCustomer(phoneArg?: string) {
@@ -268,7 +283,11 @@ export function CreateOrderPos() {
     try {
       const items = Object.entries(quantities)
         .filter(([, q]) => q > 0)
-        .map(([serviceId, quantity]) => ({ serviceId, quantity }));
+        .map(([serviceId, quantity]) => ({
+          serviceId,
+          quantity,
+          color: itemColors[serviceId]?.trim() || undefined,
+        }));
 
       const order = await api<{ id: string; orderNumber: string }>('/orders/staff', {
         method: 'POST',
@@ -562,32 +581,56 @@ export function CreateOrderPos() {
               cartItems.map((item) => (
                 <div
                   key={item.serviceId}
-                  className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30"
+                  className="p-2 rounded-lg bg-secondary/30 space-y-2"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{item.service.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatPrice(unitPriceFor(item))} × {item.quantity}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{item.service.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatPrice(unitPriceFor(item))} × {item.quantity}
+                      </div>
+                    </div>
+                    <div className="font-semibold text-sm shrink-0">{formatPrice(item.lineTotal)}</div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setQty(item.serviceId, -1)}
+                        className="h-9 w-9 rounded-lg border border-border flex items-center justify-center hover:bg-secondary touch-manipulation"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="w-6 text-center font-bold">{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => setQty(item.serviceId, 1)}
+                        className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center touch-manipulation"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="font-semibold text-sm shrink-0">{formatPrice(item.lineTotal)}</div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setQty(item.serviceId, -1)}
-                      className="h-9 w-9 rounded-lg border border-border flex items-center justify-center hover:bg-secondary touch-manipulation"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="w-6 text-center font-bold">{item.quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => setQty(item.serviceId, 1)}
-                      className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center touch-manipulation"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <CartItemColorPicker
+                    value={itemColors[item.serviceId] ?? ''}
+                    otherOpen={itemColorOtherOpen[item.serviceId] ?? false}
+                    onChange={(color) =>
+                      setItemColors((prev) => {
+                        if (!color.trim()) {
+                          const { [item.serviceId]: _, ...rest } = prev;
+                          return rest;
+                        }
+                        return { ...prev, [item.serviceId]: color };
+                      })
+                    }
+                    onOtherOpenChange={(open) =>
+                      setItemColorOtherOpen((prev) => {
+                        if (!open) {
+                          const { [item.serviceId]: _, ...rest } = prev;
+                          return rest;
+                        }
+                        return { ...prev, [item.serviceId]: true };
+                      })
+                    }
+                  />
                 </div>
               ))
             )}

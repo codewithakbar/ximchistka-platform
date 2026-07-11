@@ -25,6 +25,7 @@ interface OrderItemInput {
   itemType?: string;
   quantity: number;
   notes?: string;
+  color?: string;
   photoUrl?: string;
 }
 
@@ -238,7 +239,8 @@ export class OrdersService {
       const unitPrice = applyServiceDiscount(listPrice, service);
       subtotal += listPrice * item.quantity;
       totalAmount += unitPrice * item.quantity;
-      return { ...item, itemType, unitPrice };
+      const color = item.color?.trim().slice(0, 40) || undefined;
+      return { ...item, itemType, unitPrice, color };
     });
 
     const discountAmount = Math.max(0, subtotal - totalAmount);

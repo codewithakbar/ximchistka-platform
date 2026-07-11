@@ -224,6 +224,7 @@ model OrderItem {
   quantity  Int      @default(1)
   unitPrice Int
   notes     String?
+  color     String?
   photoUrl  String?
   createdAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)

@@ -18,6 +18,7 @@ class OrderItemDto {
   @IsOptional() @IsString() itemType?: string;
   @IsNumber() quantity!: number;
   @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsString() color?: string;
   @IsOptional() @IsString() photoUrl?: string;
 }
 

@@ -47,6 +47,7 @@ type OrderDetail = {
     id: string;
     quantity: number;
     unitPrice: number;
+    color?: string | null;
     service: { name: string; unit?: string };
   }[];
   pickupDelivery: { type: string; address: string | null; scheduledAt: string | null } | null;
@@ -161,6 +162,9 @@ export default function OrderDetailPage() {
                           <div className="font-medium text-sm">{item.service.name}</div>
                           <div className="text-xs text-muted-foreground">
                             {item.quantity} × {formatPrice(item.unitPrice)}
+                            {item.color && (
+                              <> · {t('orders.pos.color')}: {item.color}</>
+                            )}
                           </div>
                         </div>
                       </div>

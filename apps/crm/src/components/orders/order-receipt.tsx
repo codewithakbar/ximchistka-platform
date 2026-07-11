@@ -16,7 +16,7 @@ export type ReceiptOrder = {
   estimatedReady: string | null;
   branch: { name: string; address: string; phone: string };
   customer: { user: { fullName: string; phone: string } };
-  items: { quantity: number; unitPrice: number; service: { name: string; unit?: string } }[];
+  items: { quantity: number; unitPrice: number; color?: string | null; service: { name: string; unit?: string } }[];
   pickupDelivery?: { type: string; address: string | null } | null;
 };
 
@@ -86,6 +86,9 @@ export function OrderReceipt({
               {item.quantity} × {formatPrice(item.unitPrice)}
               {item.service.unit ? ` (${item.service.unit})` : ''}
             </div>
+            {item.color && (
+              <div className="text-[10px] text-gray-600">Rang: {item.color}</div>
+            )}
           </div>
         ))}
       </section>
