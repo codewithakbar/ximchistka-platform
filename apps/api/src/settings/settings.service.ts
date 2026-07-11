@@ -36,6 +36,7 @@ export class SettingsService {
             slug: user.organization.slug,
             plan: user.organization.plan,
             demoEndsAt: user.organization.demoEndsAt,
+            orderItemColors: user.organization.orderItemColors ?? [],
           }
         : null,
       branches: user.userBranches.map((ub) => ({
@@ -119,6 +120,7 @@ export class SettingsService {
       slug?: string;
       orderNumberPrefix?: string;
       orderNumberNext?: number;
+      orderItemColors?: string[];
     },
   ) {
     if (!organizationId) throw new ForbiddenException('Tashkilot yo\'q');
@@ -143,6 +145,11 @@ export class SettingsService {
       orderNumberNext = n;
     }
 
+    let orderItemColors: string[] | undefined;
+    if (data.orderItemColors !== undefined) {
+      orderItemColors = this.normalizeOrderItemColors(data.orderItemColors);
+    }
+
     const org = await this.prisma.organization.update({
       where: { id: organizationId },
       data: {
@@ -150,6 +157,7 @@ export class SettingsService {
         ...(data.slug ? { slug: data.slug.trim().toLowerCase() } : {}),
         ...(orderNumberPrefix !== undefined ? { orderNumberPrefix } : {}),
         ...(orderNumberNext !== undefined ? { orderNumberNext } : {}),
+        ...(orderItemColors !== undefined ? { orderItemColors } : {}),
       },
       include: { _count: { select: { branches: true, users: true } } },
     });
@@ -167,6 +175,24 @@ export class SettingsService {
     return cleaned;
   }
 
+  private normalizeOrderItemColors(colors: string[]) {
+    if (!Array.isArray(colors)) {
+      throw new BadRequestException('Ranglar ro\'yxati noto\'g\'ri');
+    }
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const raw of colors) {
+      const label = String(raw).trim().slice(0, 40);
+      if (!label) continue;
+      const key = label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(label);
+      if (result.length >= 30) break;
+    }
+    return result;
+  }
+
   private formatOrderNumberPreview(prefix: string, sequence: number) {
     const pad = Math.max(4, String(sequence).length);
     return `${prefix}-${String(sequence).padStart(pad, '0')}`;
@@ -178,6 +204,7 @@ export class SettingsService {
     slug: string;
     orderNumberPrefix: string;
     orderNumberNext: number;
+    orderItemColors: string[];
     createdAt: Date;
     _count: { branches: number; users: number };
   }) {
@@ -187,6 +214,7 @@ export class SettingsService {
       slug: org.slug,
       orderNumberPrefix: org.orderNumberPrefix,
       orderNumberNext: org.orderNumberNext,
+      orderItemColors: org.orderItemColors ?? [],
       orderNumberPreview: this.formatOrderNumberPreview(
         org.orderNumberPrefix,
         org.orderNumberNext,

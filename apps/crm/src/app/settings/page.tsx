@@ -16,6 +16,8 @@ import {
   Camera,
   Trash2,
   Palette,
+  Plus,
+  X,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +52,7 @@ type Organization = {
   orderNumberPrefix?: string;
   orderNumberNext?: number;
   orderNumberPreview?: string;
+  orderItemColors?: string[];
   branchCount: number;
   userCount: number;
 };
@@ -103,6 +106,8 @@ export default function SettingsPage() {
   const [orgSlug, setOrgSlug] = useState('');
   const [orderPrefix, setOrderPrefix] = useState('XC');
   const [orderNext, setOrderNext] = useState('1');
+  const [orderItemColors, setOrderItemColors] = useState<string[]>([]);
+  const [newItemColor, setNewItemColor] = useState('');
   const [notif, setNotif] = useState<NotifPrefs>(defaultNotif);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +173,7 @@ export default function SettingsPage() {
             setOrgSlug(o.slug);
             setOrderPrefix(o.orderNumberPrefix ?? 'XC');
             setOrderNext(String(o.orderNumberNext ?? 1));
+            setOrderItemColors(o.orderItemColors ?? []);
           } catch {
             setOrg(p.organization as Organization);
             setOrgName(p.organization.name);
@@ -225,11 +231,13 @@ export default function SettingsPage() {
           slug: orgSlug,
           orderNumberPrefix: orderPrefix,
           orderNumberNext: nextNum,
+          orderItemColors,
         }),
       });
       setOrg(updated);
       setOrderPrefix(updated.orderNumberPrefix ?? orderPrefix);
       setOrderNext(String(updated.orderNumberNext ?? nextNum));
+      setOrderItemColors(updated.orderItemColors ?? orderItemColors);
       toast.success(t('settings.toast.orgSaved'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Xatolik');
@@ -243,6 +251,25 @@ export default function SettingsPage() {
     const pad = Math.max(4, String(seq).length);
     return `${cleaned}-${String(seq).padStart(pad, '0')}`;
   })();
+
+  function addItemColor() {
+    const label = newItemColor.trim().slice(0, 40);
+    if (!label) return;
+    if (orderItemColors.some((c) => c.toLowerCase() === label.toLowerCase())) {
+      toast.error(t('settings.org.itemColorDuplicate'));
+      return;
+    }
+    if (orderItemColors.length >= 30) {
+      toast.error(t('settings.org.itemColorLimit'));
+      return;
+    }
+    setOrderItemColors((prev) => [...prev, label]);
+    setNewItemColor('');
+  }
+
+  function removeItemColor(index: number) {
+    setOrderItemColors((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function saveNotifications() {
     localStorage.setItem(NOTIF_KEY, JSON.stringify(notif));
@@ -551,6 +578,58 @@ export default function SettingsPage() {
                             {orderPreview}
                           </div>
                         </div>
+                      </div>
+
+                      <div className="rounded-lg border border-border p-4 space-y-4 bg-secondary/20">
+                        <div>
+                          <div className="font-medium text-sm">{t('settings.org.itemColorsTitle')}</div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('settings.org.itemColorsDesc')}
+                          </p>
+                        </div>
+                        {isSuperAdmin && (
+                          <div className="flex gap-2">
+                            <Input
+                              value={newItemColor}
+                              onChange={(e) => setNewItemColor(e.target.value.slice(0, 40))}
+                              placeholder={t('settings.org.itemColorPlaceholder')}
+                              className="flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addItemColor();
+                                }
+                              }}
+                            />
+                            <Button type="button" variant="secondary" onClick={addItemColor}>
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                        {orderItemColors.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">{t('settings.org.itemColorsEmpty')}</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {orderItemColors.map((color, index) => (
+                              <span
+                                key={`${color}-${index}`}
+                                className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium"
+                              >
+                                {color}
+                                {isSuperAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeItemColor(index)}
+                                    className="rounded-full p-0.5 hover:bg-secondary text-muted-foreground hover:text-foreground"
+                                    aria-label={t('common.delete')}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {isSuperAdmin && (

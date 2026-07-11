@@ -77,12 +77,15 @@ export function CreateOrderPos() {
   const [notes, setNotes] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [itemColors, setItemColors] = useState<Record<string, string>>({});
-  const [itemColorOtherOpen, setItemColorOtherOpen] = useState<Record<string, boolean>>({});
+  const [orgItemColors, setOrgItemColors] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState('all');
   const [serviceSearch, setServiceSearch] = useState('');
   const [phonePadOpen, setPhonePadOpen] = useState(true);
 
   useEffect(() => {
+    api<{ organization?: { orderItemColors?: string[] } }>('/settings/profile')
+      .then((p) => setOrgItemColors(p.organization?.orderItemColors ?? []))
+      .catch(() => setOrgItemColors([]));
     api<Branch[]>('/branches').then((all) => {
       setBranches(all);
       if (all.length === 1) setBranchId(all[0].id);
@@ -98,7 +101,6 @@ export function CreateOrderPos() {
     setPricesLoading(true);
     setQuantities({});
     setItemColors({});
-    setItemColorOtherOpen({});
     setCategoryId('all');
     setServiceSearch('');
     api<PriceRule[]>(`/services/prices/${branchId}`)
@@ -158,10 +160,6 @@ export function CreateOrderPos() {
           const { [serviceId]: __, ...cr } = c;
           return cr;
         });
-        setItemColorOtherOpen((o) => {
-          const { [serviceId]: __, ...or } = o;
-          return or;
-        });
         return rest;
       }
       return { ...prev, [serviceId]: next };
@@ -171,7 +169,6 @@ export function CreateOrderPos() {
   function clearCart() {
     setQuantities({});
     setItemColors({});
-    setItemColorOtherOpen({});
   }
 
   async function lookupCustomer(phoneArg?: string) {
@@ -609,28 +606,21 @@ export function CreateOrderPos() {
                       </button>
                     </div>
                   </div>
-                  <CartItemColorPicker
-                    value={itemColors[item.serviceId] ?? ''}
-                    otherOpen={itemColorOtherOpen[item.serviceId] ?? false}
-                    onChange={(color) =>
-                      setItemColors((prev) => {
-                        if (!color.trim()) {
-                          const { [item.serviceId]: _, ...rest } = prev;
-                          return rest;
-                        }
-                        return { ...prev, [item.serviceId]: color };
-                      })
-                    }
-                    onOtherOpenChange={(open) =>
-                      setItemColorOtherOpen((prev) => {
-                        if (!open) {
-                          const { [item.serviceId]: _, ...rest } = prev;
-                          return rest;
-                        }
-                        return { ...prev, [item.serviceId]: true };
-                      })
-                    }
-                  />
+                  {orgItemColors.length > 0 && (
+                    <CartItemColorPicker
+                      options={orgItemColors}
+                      value={itemColors[item.serviceId] ?? ''}
+                      onChange={(color) =>
+                        setItemColors((prev) => {
+                          if (!color.trim()) {
+                            const { [item.serviceId]: _, ...rest } = prev;
+                            return rest;
+                          }
+                          return { ...prev, [item.serviceId]: color };
+                        })
+                      }
+                    />
+                  )}
                 </div>
               ))
             )}

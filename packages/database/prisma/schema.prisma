@@ -68,6 +68,8 @@ model Organization {
   orderNumberPrefix String           @default("XC")
   /** Keyingi chek raqami (har yaratilganda +1), 4 xonali: 0001 */
   orderNumberNext   Int              @default(1)
+  /** POS buyurtmada tanlanadigan ranglar ro'yxati */
+  orderItemColors   String[]         @default([])
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   branches          Branch[]

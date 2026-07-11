@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
 import {
+  IsArray,
   IsEmail,
   IsInt,
   IsOptional,
@@ -35,6 +36,10 @@ class UpdateOrganizationDto {
   @Min(1)
   @Max(99999999)
   orderNumberNext?: number;
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  orderItemColors?: string[];
 }
 
 @Controller('settings')
