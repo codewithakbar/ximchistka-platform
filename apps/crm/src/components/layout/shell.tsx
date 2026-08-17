@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
-import { DemoExpiredLock } from './demo-expired-lock';
-import { api, ensureValidSession, getToken, getUser } from '@/lib/api';
+import { DemoExpiredLock, DemoExpiredContext } from './demo-expired-lock';
+import { api, ensureValidSession, getToken, getUser, updateStoredUser } from '@/lib/api';
 import { canAccessRoute } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/lib/i18n';
@@ -26,17 +26,24 @@ export function AppShell({
   const [ready, setReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [demoExpired, setDemoExpired] = useState(false);
+  const [demoLockOpen, setDemoLockOpen] = useState(false);
 
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileNavOpen || demoExpired ? 'hidden' : '';
+    if (demoExpired && pathname.startsWith('/orders/new')) {
+      router.replace('/orders');
+    }
+  }, [demoExpired, pathname, router]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileNavOpen || demoLockOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileNavOpen, demoExpired]);
+  }, [mobileNavOpen, demoLockOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,13 +74,15 @@ export function AppShell({
         }>('/settings/profile');
         if (cancelled) return;
         const org = p.organization;
-        setDemoExpired(
+        const expired =
           org?.demoExpired === true ||
-            org?.plan === 'expired' ||
-            (org?.plan === 'demo' &&
-              !!org.demoEndsAt &&
-              new Date(org.demoEndsAt).getTime() < Date.now()),
-        );
+          org?.plan === 'expired' ||
+          (org?.plan === 'demo' &&
+            !!org.demoEndsAt &&
+            new Date(org.demoEndsAt).getTime() < Date.now());
+        setDemoExpired(expired);
+        setDemoLockOpen(expired);
+        updateStoredUser({ demoExpired: expired });
       } catch {
         if (cancelled) return;
       }
@@ -102,11 +111,16 @@ export function AppShell({
   }
 
   return (
+    <DemoExpiredContext.Provider value={demoExpired}>
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Topbar title={title} onMenuClick={() => setMobileNavOpen(true)} />
-        {demoExpired && <DemoExpiredLock />}
+        <Topbar
+          title={title}
+          onMenuClick={() => setMobileNavOpen(true)}
+          demoExpired={demoExpired}
+        />
+        {demoLockOpen && <DemoExpiredLock onClose={() => setDemoLockOpen(false)} />}
         <main
           className={cn(
             'flex-1 animate-fade-in',
@@ -123,5 +137,6 @@ export function AppShell({
         </main>
       </div>
     </div>
+    </DemoExpiredContext.Provider>
   );
 }

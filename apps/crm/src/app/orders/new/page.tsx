@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/shell';
+import { useDemoExpired } from '@/components/layout/demo-expired-lock';
 import { CreateOrderPos } from '@/components/orders/create-order-pos';
 import { useClientRole } from '@/hooks/use-client-auth';
 import { canCreateOrders } from '@/lib/roles';
@@ -13,12 +14,13 @@ export default function NewOrderPage() {
   const { t } = useI18n();
   const router = useRouter();
   const role = useClientRole();
+  const demoExpired = useDemoExpired();
 
   useEffect(() => {
-    if (role !== null && !canCreateOrders(role)) {
+    if (demoExpired || (role !== null && !canCreateOrders(role))) {
       router.replace('/orders');
     }
-  }, [role, router]);
+  }, [role, router, demoExpired]);
 
   if (role === null) {
     return (

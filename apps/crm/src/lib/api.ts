@@ -111,6 +111,14 @@ export async function api<T>(
   options: RequestInit = {},
   retried = false,
 ): Promise<T> {
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (method === 'POST' && !path.startsWith('/auth/')) {
+    const sessionUser = getUser<{ demoExpired?: boolean }>();
+    if (sessionUser?.demoExpired) {
+      throw new Error('Demo muddati tugagan. Platforma admin bilan bog\'laning.');
+    }
+  }
+
   const token = getToken();
   const res = await fetch(`${apiUrl()}${path}`, {
     ...options,

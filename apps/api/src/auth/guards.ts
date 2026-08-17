@@ -89,6 +89,7 @@ export class DemoUsageGuard implements CanActivate {
       user?: { demoExpired?: boolean };
     }>();
     if (READ_METHODS.has((req.method ?? 'GET').toUpperCase())) return true;
+    if ((req.method ?? '').toUpperCase() !== 'POST') return true;
     if (!req.user?.demoExpired) return true;
 
     throw new ForbiddenException(

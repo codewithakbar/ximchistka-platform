@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Search, Filter, ClipboardList, ArrowRight, Eye, Plus, Printer } from 'lucide-react';
 import { useCanCreateOrders } from '@/hooks/use-client-auth';
 import { AppShell } from '@/components/layout/shell';
+import { useDemoExpired } from '@/components/layout/demo-expired-lock';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input, Select } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,8 @@ export default function OrdersPage() {
   const [pending, setPending] = useState<{ id: string; next: OrderStatus } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const canCreate = useCanCreateOrders();
+  const demoExpired = useDemoExpired();
+  const canCreateNew = canCreate && !demoExpired;
 
   async function load() {
     setOrders(null);
@@ -114,7 +117,7 @@ export default function OrdersPage() {
 
   return (
     <AppShell title={t('orders.title')}>
-      {canCreate && (
+      {canCreateNew && (
         <div className="flex justify-end mb-4">
           <Link href="/orders/new">
             <Button>
@@ -161,7 +164,7 @@ export default function OrdersPage() {
               title={t('orders.emptyTitle')}
               description={t('orders.emptyDescription')}
               action={
-                canCreate ? (
+                canCreateNew ? (
                   <Link href="/orders/new">
                     <Button>
                       <Plus className="h-4 w-4" />

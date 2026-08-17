@@ -18,7 +18,15 @@ type TopbarUser = {
   avatarUrl?: string | null;
 };
 
-export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: () => void }) {
+export function Topbar({
+  title,
+  onMenuClick,
+  demoExpired = false,
+}: {
+  title: string;
+  onMenuClick?: () => void;
+  demoExpired?: boolean;
+}) {
   const { t } = useI18n();
   const [user, setUser] = useState<TopbarUser | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
@@ -27,6 +35,10 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
 
   useEffect(() => {
     setUser(getUser<TopbarUser>());
+    if (demoExpired) {
+      setIsDemo(true);
+      setDemoRemainingDays(0);
+    }
     api<{
       fullName?: string;
       role?: string;
@@ -44,10 +56,12 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
 
         const org = p.organization;
         setOrgName(org?.name ?? null);
-        const demo = org?.plan === 'demo';
+        const demo = org?.plan === 'demo' || org?.plan === 'expired' || demoExpired;
         setIsDemo(demo);
 
-        if (demo && org?.demoEndsAt) {
+        if (org?.plan === 'expired' || demoExpired) {
+          setDemoRemainingDays(0);
+        } else if (demo && org?.demoEndsAt) {
           const endsAt = new Date(org.demoEndsAt).getTime();
           const days = Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000));
           setDemoRemainingDays(days);
@@ -68,7 +82,7 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
     }
     window.addEventListener('profile-updated', syncFromStore);
     return () => window.removeEventListener('profile-updated', syncFromStore);
-  }, []);
+  }, [demoExpired]);
 
   return (
     <div className="sticky top-0 z-20 shrink-0">
@@ -92,7 +106,9 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
                 </span>
                 {isDemo && demoRemainingDays !== null && (
                   <Badge variant="warning" className="px-1.5 py-0 text-[10px] font-semibold shrink-0">
-                    {t('topbar.demo')}: {demoRemainingDays} {t('topbar.days')}
+                    {demoExpired || demoRemainingDays === 0
+                      ? t('demoExpired.title')
+                      : `${t('topbar.demo')}: ${demoRemainingDays} ${t('topbar.days')}`}
                   </Badge>
                 )}
               </div>
@@ -125,11 +141,17 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick?: ()
             <p className="text-xs sm:text-sm text-amber-900 dark:text-amber-100 leading-snug">
               <span className="sm:hidden">
                 {orgName ? `${orgName} · ` : ''}
-                {demoRemainingDays !== null
-                  ? `${t('topbar.demo')}: ${demoRemainingDays} ${t('topbar.days')}`
-                  : t('topbar.demo')}
+                {demoExpired || demoRemainingDays === 0
+                  ? t('demoExpired.title')
+                  : demoRemainingDays !== null
+                    ? `${t('topbar.demo')}: ${demoRemainingDays} ${t('topbar.days')}`
+                    : t('topbar.demo')}
               </span>
-              <span className="hidden sm:inline">{t('topbar.demoSupportHint')}</span>
+              <span className="hidden sm:inline">
+                {demoExpired || demoRemainingDays === 0
+                  ? t('demoExpired.title')
+                  : t('topbar.demoSupportHint')}
+              </span>
             </p>
           </div>
           <a
