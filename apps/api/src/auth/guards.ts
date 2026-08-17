@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   SetMetadata,
 } from '@nestjs/common';
@@ -66,5 +67,32 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles?.length) return true;
     const { user } = context.switchToHttp().getRequest();
     return requiredRoles.includes(user.role);
+  }
+}
+
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/** Demo muddati tugagan tashkilot kirishi mumkin, lekin o'zgartirish mumkin emas */
+@Injectable()
+export class DemoUsageGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
+    const req = context.switchToHttp().getRequest<{
+      method?: string;
+      user?: { demoExpired?: boolean };
+    }>();
+    if (READ_METHODS.has((req.method ?? 'GET').toUpperCase())) return true;
+    if (!req.user?.demoExpired) return true;
+
+    throw new ForbiddenException(
+      'Demo muddati tugagan. Platforma admin bilan bog\'laning.',
+    );
   }
 }

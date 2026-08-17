@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { OrganizationPlan, UserRole } from '@prisma/client';
 import { JwtPayload } from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { isDemoPeriodExpired } from './demo-expiry';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -26,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
     if (!user || !user.isActive) return null;
 
+    let demoExpired = false;
     if (user.role !== UserRole.platform_admin && user.role !== UserRole.customer) {
       if (!user.organization) {
         throw new UnauthorizedException('Tashkilot topilmadi');
@@ -34,18 +36,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!org.isActive || org.plan === OrganizationPlan.suspended) {
         throw new UnauthorizedException('Tashkilot faol emas');
       }
-      if (
-        (org.plan === OrganizationPlan.demo || org.plan === OrganizationPlan.expired) &&
-        org.demoEndsAt &&
-        org.demoEndsAt < new Date()
-      ) {
+      if (isDemoPeriodExpired(org)) {
+        demoExpired = true;
         if (org.plan === OrganizationPlan.demo) {
           await this.prisma.organization.update({
             where: { id: org.id },
             data: { plan: OrganizationPlan.expired },
           });
         }
-        throw new UnauthorizedException('Demo muddati tugagan');
       }
     }
 
@@ -57,6 +55,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       customerProfileId: user.customerProfile?.id,
       fullName: user.fullName,
       phone: user.phone,
+      demoExpired,
     };
   }
 }

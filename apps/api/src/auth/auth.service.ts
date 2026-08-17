@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { OrganizationPlan, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { isDemoPeriodExpired } from './demo-expiry';
 
 @Injectable()
 export class AuthService {
@@ -166,18 +167,11 @@ export class AuthService {
     if (!org.isActive || org.plan === OrganizationPlan.suspended) {
       throw new UnauthorizedException('Tashkilot faol emas');
     }
-    if (
-      (org.plan === OrganizationPlan.demo || org.plan === OrganizationPlan.expired) &&
-      org.demoEndsAt &&
-      org.demoEndsAt < new Date()
-    ) {
-      if (org.plan === OrganizationPlan.demo) {
-        await this.prisma.organization.update({
-          where: { id: org.id },
-          data: { plan: OrganizationPlan.expired },
-        });
-      }
-      throw new UnauthorizedException('Demo muddati tugagan. Platforma admin bilan bog\'laning.');
+    if (isDemoPeriodExpired(org) && org.plan === OrganizationPlan.demo) {
+      await this.prisma.organization.update({
+        where: { id: org.id },
+        data: { plan: OrganizationPlan.expired },
+      });
     }
   }
 

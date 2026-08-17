@@ -7,6 +7,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isDemoPeriodExpired } from '../auth/demo-expiry';
 
 @Injectable()
 export class SettingsService {
@@ -36,6 +37,7 @@ export class SettingsService {
             slug: user.organization.slug,
             plan: user.organization.plan,
             demoEndsAt: user.organization.demoEndsAt,
+            demoExpired: isDemoPeriodExpired(user.organization),
             orderItemColors: user.organization.orderItemColors ?? [],
           }
         : null,

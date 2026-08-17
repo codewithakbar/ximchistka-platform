@@ -47,6 +47,9 @@ const uz: Record<string, string> = {
   'topbar.demo': 'Demo',
   'topbar.days': 'kun',
   'topbar.demoSupportHint': 'Savollaringiz bo\'lsa — Telegram orqali bog\'laning',
+  'demoExpired.title': 'Demo muddati tugagan',
+  'demoExpired.body':
+    'Tizimga kirdingiz, lekin hozir foydalanish yopiq. Davom etish uchun platforma admin bilan Telegram orqali bog\'laning.',
 
   // Dashboard
   'dash.title': 'Boshqaruv paneli',
@@ -89,7 +92,7 @@ const uz: Record<string, string> = {
   'login.password': 'Parol',
   'login.submit': 'Kirish',
   'login.noAccount': "Hali akkauntingiz yo'qmi?",
-  'login.getDemo': '14 kunlik demo olish',
+  'login.getDemo': '3 kunlik demo olish',
   'login.welcome': 'Xush kelibsiz',
   'login.error': 'Xatolik',
 
@@ -128,7 +131,7 @@ const uz: Record<string, string> = {
   'settings.currentTheme': 'Joriy mavzu',
 
   // Signup
-  'signup.brandTitle1': '14 kun bepul',
+  'signup.brandTitle1': '3 kun bepul',
   'signup.brandTitle2': 'demo sinab ko‘ring',
   'signup.brandSub':
     'Ro‘yxatdan o‘ting — CRM, buyurtmalar, mijozlar va hisobotlar darhol ishlaydi. Xizmatlar katalogini o‘zingiz sozlaysiz.',
@@ -191,6 +194,9 @@ const ru: Record<string, string> = {
   'topbar.demo': 'Демо',
   'topbar.days': 'дн.',
   'topbar.demoSupportHint': 'Если есть вопросы — напишите в Telegram',
+  'demoExpired.title': 'Демо-период закончился',
+  'demoExpired.body':
+    'Вы вошли в систему, но пользоваться платформой пока нельзя. Для продления свяжитесь с админом в Telegram.',
 
   // Dashboard
   'dash.title': 'Панель управления',
@@ -233,7 +239,7 @@ const ru: Record<string, string> = {
   'login.password': 'Пароль',
   'login.submit': 'Войти',
   'login.noAccount': 'Ещё нет аккаунта?',
-  'login.getDemo': 'Получить демо на 14 дней',
+  'login.getDemo': 'Получить демо на 3 дня',
   'login.welcome': 'Добро пожаловать',
   'login.error': 'Ошибка',
 
@@ -272,7 +278,7 @@ const ru: Record<string, string> = {
   'settings.currentTheme': 'Текущая тема',
 
   // Signup
-  'signup.brandTitle1': '14 дней бесплатно',
+  'signup.brandTitle1': '3 дня бесплатно',
   'signup.brandTitle2': 'попробуйте демо',
   'signup.brandSub':
     'Зарегистрируйтесь — CRM, заказы, клиенты и отчёты заработают сразу. Каталог услуг настраиваете сами.',

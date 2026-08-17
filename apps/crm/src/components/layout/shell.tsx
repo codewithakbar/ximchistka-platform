@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
-import { ensureValidSession, getToken, getUser } from '@/lib/api';
+import { DemoExpiredLock } from './demo-expired-lock';
+import { api, ensureValidSession, getToken, getUser } from '@/lib/api';
 import { canAccessRoute } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/lib/i18n';
@@ -24,17 +25,18 @@ export function AppShell({
   const { t } = useI18n();
   const [ready, setReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [demoExpired, setDemoExpired] = useState(false);
 
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileNavOpen ? 'hidden' : '';
+    document.body.style.overflow = mobileNavOpen || demoExpired ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileNavOpen]);
+  }, [mobileNavOpen, demoExpired]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +59,23 @@ export function AppShell({
       if (user?.role && !canAccessRoute(user.role, pathname)) {
         router.replace('/dashboard');
         return;
+      }
+
+      try {
+        const p = await api<{
+          organization?: { plan?: string; demoEndsAt?: string | null; demoExpired?: boolean };
+        }>('/settings/profile');
+        if (cancelled) return;
+        const org = p.organization;
+        setDemoExpired(
+          org?.demoExpired === true ||
+            org?.plan === 'expired' ||
+            (org?.plan === 'demo' &&
+              !!org.demoEndsAt &&
+              new Date(org.demoEndsAt).getTime() < Date.now()),
+        );
+      } catch {
+        if (cancelled) return;
       }
 
       setReady(true);
@@ -87,6 +106,7 @@ export function AppShell({
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar title={title} onMenuClick={() => setMobileNavOpen(true)} />
+        {demoExpired && <DemoExpiredLock />}
         <main
           className={cn(
             'flex-1 animate-fade-in',
