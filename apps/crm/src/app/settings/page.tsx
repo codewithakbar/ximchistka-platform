@@ -80,6 +80,7 @@ const defaultNotif: NotifPrefs = {
 const tabs = [
   { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   { id: 'profile', labelKey: 'settings.profile', icon: User },
+  { id: 'password', labelKey: 'settings.password.title', icon: Lock },
   { id: 'organization', labelKey: 'settings.organization', icon: Building2 },
   { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
   { id: 'system', labelKey: 'settings.system', icon: Server },
@@ -102,6 +103,8 @@ export default function SettingsPage() {
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [orgName, setOrgName] = useState('');
   const [orgSlug, setOrgSlug] = useState('');
   const [orderPrefix, setOrderPrefix] = useState('XC');
@@ -202,6 +205,11 @@ export default function SettingsPage() {
 
   async function savePassword(e: FormEvent) {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error(t('signup.passwordMismatch'));
+      return;
+    }
+    setPasswordSaving(true);
     try {
       await api('/settings/password', {
         method: 'PATCH',
@@ -212,6 +220,8 @@ export default function SettingsPage() {
       router.push('/login');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Xatolik');
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -447,8 +457,11 @@ export default function SettingsPage() {
                       </form>
                     </CardContent>
                   </Card>
+                </div>
+              )}
 
-                  <Card>
+              {tab === 'password' && (
+                <Card className="animate-fade-in">
                     <CardHeader>
                       <CardTitle>{t('settings.password.title')}</CardTitle>
                       <CardDescription>{t('settings.password.desc')}</CardDescription>
@@ -465,6 +478,7 @@ export default function SettingsPage() {
                               value={currentPassword}
                               onChange={(e) => setCurrentPassword(e.target.value)}
                               required
+                              autoComplete="current-password"
                             />
                           </div>
                         </div>
@@ -479,16 +493,33 @@ export default function SettingsPage() {
                               onChange={(e) => setNewPassword(e.target.value)}
                               minLength={6}
                               required
+                              autoComplete="new-password"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{t('settings.password.minHint')}</p>
+                        </div>
+                        <div>
+                          <Label>{t('settings.password.confirm')}</Label>
+                          <div className="relative">
+                            <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              className="pl-10"
+                              type="password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              minLength={6}
+                              required
+                              autoComplete="new-password"
                             />
                           </div>
                         </div>
-                        <Button type="submit" variant="outline">
+                        <Button type="submit" variant="outline" loading={passwordSaving}>
+                          <Lock className="h-4 w-4" />
                           {t('settings.password.submit')}
                         </Button>
                       </form>
                     </CardContent>
                   </Card>
-                </div>
               )}
 
               {tab === 'organization' && profile?.organization && (
