@@ -13,7 +13,7 @@ import { Type } from 'class-transformer';
 import { UserRole } from '@prisma/client';
 import { SettingsService } from './settings.service';
 import { CurrentUser } from '../auth/decorators';
-import { Roles } from '../auth/guards';
+import { AllowWhenDemoExpired, Roles } from '../auth/guards';
 
 class UpdateProfileDto {
   @IsOptional() @IsString() fullName?: string;
@@ -51,6 +51,7 @@ export class SettingsController {
     return this.settings.getProfile(user.id);
   }
 
+  @AllowWhenDemoExpired()
   @Patch('profile')
   updateProfile(
     @CurrentUser() user: { id: string },
@@ -59,6 +60,7 @@ export class SettingsController {
     return this.settings.updateProfile(user.id, dto);
   }
 
+  @AllowWhenDemoExpired()
   @Patch('password')
   changePassword(
     @CurrentUser() user: { id: string },

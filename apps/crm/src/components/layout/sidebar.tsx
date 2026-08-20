@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { LogOut, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { clearAuth, getUser } from '@/lib/api';
+import { disconnectSocket } from '@/lib/socket';
 import { getNavForRole, StaffRole } from '@/lib/roles';
 import { useI18n } from '@/lib/i18n';
 
@@ -76,6 +77,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
         <button
           onClick={() => {
+            disconnectSocket();
             clearAuth();
             router.push('/login');
           }}

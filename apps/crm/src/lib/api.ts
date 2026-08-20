@@ -12,6 +12,15 @@ type AuthResponse = {
 
 let refreshPromise: Promise<boolean> | null = null;
 
+const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
+
+/** Demo tugagan bo'lsa ham ruxsat etilgan yozish marshrutlari (API bilan bir xil) */
+const DEMO_ALLOWED_PATHS = ['/auth/', '/settings/profile', '/settings/password'];
+
+function isAllowedWhenDemoExpired(path: string) {
+  return DEMO_ALLOWED_PATHS.some((p) => path.startsWith(p));
+}
+
 export function getToken() {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
@@ -112,7 +121,7 @@ export async function api<T>(
   retried = false,
 ): Promise<T> {
   const method = (options.method ?? 'GET').toUpperCase();
-  if (method === 'POST' && !path.startsWith('/auth/')) {
+  if (MUTATING_METHODS.has(method) && !isAllowedWhenDemoExpired(path)) {
     const sessionUser = getUser<{ demoExpired?: boolean }>();
     if (sessionUser?.demoExpired) {
       throw new Error('Demo muddati tugagan. Platforma admin bilan bog\'laning.');

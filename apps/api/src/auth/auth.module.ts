@@ -30,6 +30,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: DemoUsageGuard },
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

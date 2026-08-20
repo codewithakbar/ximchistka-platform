@@ -16,6 +16,10 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
+/** Demo muddati tugagan bo'lsa ham ruxsat etilgan yozish amallari (profil, parol) */
+export const ALLOW_DEMO_EXPIRED_KEY = 'allowDemoExpired';
+export const AllowWhenDemoExpired = () => SetMetadata(ALLOW_DEMO_EXPIRED_KEY, true);
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private reflector: Reflector) {
@@ -84,12 +88,18 @@ export class DemoUsageGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
+    const allowed = this.reflector.getAllAndOverride<boolean>(ALLOW_DEMO_EXPIRED_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (allowed) return true;
+
     const req = context.switchToHttp().getRequest<{
       method?: string;
       user?: { demoExpired?: boolean };
     }>();
+    // O'qish ochiq, barcha o'zgartirishlar (POST/PATCH/PUT/DELETE) yopiq
     if (READ_METHODS.has((req.method ?? 'GET').toUpperCase())) return true;
-    if ((req.method ?? '').toUpperCase() !== 'POST') return true;
     if (!req.user?.demoExpired) return true;
 
     throw new ForbiddenException(

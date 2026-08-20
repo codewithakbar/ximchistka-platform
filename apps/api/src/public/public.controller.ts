@@ -1,4 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IsEmail, IsInt, IsOptional, IsString, MinLength } from 'class-validator';
 import { Public } from '../auth/guards';
 import { PlatformService } from '../platform/platform.service';
@@ -21,6 +22,7 @@ class TrialSignupDto {
 export class PublicController {
   constructor(private platform: PlatformService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
   @Public()
   @Post('trial-signup')
   trialSignup(@Body() dto: TrialSignupDto) {

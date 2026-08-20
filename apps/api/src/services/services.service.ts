@@ -72,19 +72,8 @@ export class ServicesCatalogService {
 
     const ruleByServiceId = new Map(rules.map((rule) => [rule.serviceId, rule]));
 
-    const missing = services.filter((service) => !ruleByServiceId.has(service.id));
-    if (missing.length > 0) {
-      await this.prisma.priceRule.createMany({
-        data: missing.map((service) => ({
-          branchId,
-          serviceId: service.id,
-          itemType: 'standart',
-          price: service.basePrice,
-        })),
-        skipDuplicates: true,
-      });
-    }
-
+    // Qoida topilmasa basePrice ishlatiladi — bu o'qish yo'li DB ga yozmaydi
+    // (endpoint ommaviy: mijoz veb/mobil narxlarni auth siz ko'radi).
     return services.map((service) => {
       const rule = ruleByServiceId.get(service.id);
       const listPrice = rule?.price ?? service.basePrice;

@@ -8,6 +8,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { isDemoPeriodExpired } from './demo-expiry';
 
+/** Bitta telefon raqamiga OTP so'rovlari orasidagi eng qisqa vaqt */
+const OTP_COOLDOWN_MS = 60_000;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -33,6 +36,8 @@ export class AuthService {
 
   async requestOtp(phone: string) {
     const normalized = this.normalizePhone(phone);
+    await this.assertOtpCooldown(normalized);
+
     const code = process.env.SMS_PROVIDER === 'mock' ? '123456' : this.generateOtp();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -172,6 +177,27 @@ export class AuthService {
         where: { id: org.id },
         data: { plan: OrganizationPlan.expired },
       });
+    }
+  }
+
+  /**
+   * Bitta raqamga ketma-ket SMS yuborishni cheklaydi. IP bo'yicha throttler
+   * yetarli emas: turli IP lardan bitta raqamni "bombardimon" qilish mumkin.
+   */
+  private async assertOtpCooldown(phone: string) {
+    const last = await this.prisma.otpCode.findFirst({
+      where: { phone },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    if (!last) return;
+
+    const elapsed = Date.now() - last.createdAt.getTime();
+    if (elapsed < OTP_COOLDOWN_MS) {
+      const wait = Math.ceil((OTP_COOLDOWN_MS - elapsed) / 1000);
+      throw new BadRequestException(
+        `Yangi kod so'rash uchun ${wait} soniya kuting`,
+      );
     }
   }
 

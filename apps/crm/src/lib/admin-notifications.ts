@@ -4,6 +4,7 @@ export type AdminRevenueNotification = {
   title: string;
   message: string;
   amount: number;
+  organizationId?: string;
   branchId: string;
   branchName: string;
   orderId: string;

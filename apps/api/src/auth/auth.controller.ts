@@ -1,4 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { Public } from './guards';
@@ -38,18 +39,21 @@ class RefreshDto {
 export class AuthController {
   constructor(private auth: AuthService) {}
 
+  @Throttle({ default: { limit: 10, ttl: 300_000 } })
   @Public()
   @Post('staff/login')
   staffLogin(@Body() dto: StaffLoginDto) {
     return this.auth.staffLogin(dto.phone, dto.password);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
   @Public()
   @Post('otp/request')
   requestOtp(@Body() dto: RequestOtpDto) {
     return this.auth.requestOtp(dto.phone);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 600_000 } })
   @Public()
   @Post('otp/verify')
   verifyOtp(@Body() dto: VerifyOtpDto) {

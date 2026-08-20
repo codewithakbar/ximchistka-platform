@@ -193,7 +193,7 @@ export class CourierService {
       },
     });
 
-    this.gateway.emitOrderUpdate(order.branchId, order);
+    this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, order);
     return order;
   }
 
@@ -225,7 +225,7 @@ export class CourierService {
       },
     });
 
-    this.gateway.emitOrderUpdate(order.branchId, order);
+    this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, order);
     return order;
   }
 }

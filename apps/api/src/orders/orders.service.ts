@@ -281,7 +281,7 @@ export class OrdersService {
       },
     });
 
-    this.gateway.emitOrderUpdate(order.branchId, order);
+    this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, order);
     if (order.totalAmount > 0) {
       this.adminNotify.orderCreated(order);
     }
@@ -326,7 +326,7 @@ export class OrdersService {
       label,
     );
 
-    this.gateway.emitOrderUpdate(updated.branchId, updated);
+    this.gateway.emitOrderUpdate(updated.branch.organizationId, updated.branchId, updated);
     if (updated.totalAmount > 0) {
       this.adminNotify.orderStatusChanged(updated);
     }

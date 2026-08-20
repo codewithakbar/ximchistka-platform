@@ -5,6 +5,7 @@ import { Send, LogOut, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { clearAuth, getUser } from '@/lib/api';
+import { disconnectSocket } from '@/lib/socket';
 import { useI18n } from '@/lib/i18n';
 
 export const DemoExpiredContext = createContext(false);
@@ -54,6 +55,7 @@ export function DemoExpiredLock({ onClose }: { onClose: () => void }) {
           variant="outline"
           className="w-full"
           onClick={() => {
+            disconnectSocket();
             clearAuth();
             router.replace('/login');
           }}
