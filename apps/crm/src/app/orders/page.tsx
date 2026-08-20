@@ -10,7 +10,7 @@ import { useDemoExpired } from '@/components/layout/demo-expired-lock';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input, Select } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { StatusBadge } from '@/components/ui/badge';
+import { Badge, StatusBadge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Empty } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,7 +29,15 @@ type Order = {
   createdAt: string;
   branch: { name: string };
   customer: { user: { fullName: string; phone: string } };
+  payments?: { status: string; amount: number }[];
 };
+
+/** Buyurtma bo'yicha to'langan summa (qaytarilganlar hisobga olinmaydi) */
+function paidAmountOf(order: Order) {
+  return (order.payments ?? [])
+    .filter((p) => p.status === 'paid')
+    .reduce((sum, p) => sum + p.amount, 0);
+}
 
 const ALL_STATUSES: OrderStatus[] = [
   'draft',
@@ -201,7 +209,27 @@ export default function OrdersPage() {
                         <div className="text-xs text-muted-foreground">{o.customer.user.phone}</div>
                       </td>
                       <td className="px-6 py-3 text-muted-foreground">{o.branch.name}</td>
-                      <td className="px-6 py-3 text-right font-semibold">{formatPrice(o.totalAmount)}</td>
+                      <td className="px-6 py-3 text-right">
+                        <div className="font-semibold">{formatPrice(o.totalAmount)}</div>
+                        {o.status !== 'cancelled' && o.totalAmount > 0 && (() => {
+                          const paid = paidAmountOf(o);
+                          if (paid >= o.totalAmount) {
+                            return (
+                              <Badge variant="success" className="mt-1 px-1.5 py-0 text-[10px]">
+                                {t('payments.status.paid')}
+                              </Badge>
+                            );
+                          }
+                          return (
+                            <Badge
+                              variant={paid > 0 ? 'warning' : 'secondary'}
+                              className="mt-1 px-1.5 py-0 text-[10px]"
+                            >
+                              {paid > 0 ? t('payments.partial') : t('payments.unpaid')}
+                            </Badge>
+                          );
+                        })()}
+                      </td>
                       <td className="px-6 py-3">
                         <StatusBadge status={o.status} label={statusLabel(o.status)} />
                       </td>

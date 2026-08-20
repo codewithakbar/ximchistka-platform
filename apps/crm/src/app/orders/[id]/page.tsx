@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice, getUser } from '@/lib/api';
 import { useFormatDate, useI18n, useOrderStatusLabel } from '@/lib/i18n';
 import { OrderReceipt } from '@/components/orders/order-receipt';
+import { OrderPaymentPanel } from '@/components/orders/order-payment-panel';
 import {
   OrderStatus,
   VALID_STATUS_TRANSITIONS,
@@ -229,6 +230,11 @@ export default function OrderDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+            <OrderPaymentPanel
+              orderId={params.id}
+              cancelled={order.status === 'cancelled'}
+            />
 
             <Card>
               <CardHeader>

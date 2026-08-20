@@ -20,6 +20,7 @@ import { Input, Select, Textarea } from '@/components/ui/input';
 import { PhoneInput, appendPhoneDigit, backspacePhone, normalizePhone } from '@/components/ui/phone-input';
 import { VirtualNumpad } from '@/components/ui/virtual-numpad';
 import { CartItemColorPicker } from '@/components/orders/cart-item-color-picker';
+import { PAYMENT_PROVIDERS, type PaymentProvider } from '@/components/orders/order-payment-panel';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
@@ -81,6 +82,7 @@ export function CreateOrderPos() {
   const [categoryId, setCategoryId] = useState('all');
   const [serviceSearch, setServiceSearch] = useState('');
   const [phonePadOpen, setPhonePadOpen] = useState(true);
+  const [payNow, setPayNow] = useState<'' | PaymentProvider>('');
 
   useEffect(() => {
     api<{ organization?: { orderItemColors?: string[] } }>('/settings/profile')
@@ -300,6 +302,20 @@ export function CreateOrderPos() {
         }),
       });
       toast.success(t('orders.create.toastCreated', { orderNumber: order.orderNumber }));
+
+      // Kassada darhol to'lov olingan bo'lsa — buyurtma bilan birga qayd etamiz.
+      // Xatolik bo'lsa buyurtma baribir yaratilgan, shuning uchun ogohlantiramiz.
+      if (payNow) {
+        try {
+          await api(`/payments/orders/${order.id}/record`, {
+            method: 'POST',
+            body: JSON.stringify({ provider: payNow, amount: total }),
+          });
+        } catch {
+          toast.warning(t('payments.toastRecordFailed'));
+        }
+      }
+
       window.open(`/orders/${order.id}/receipt?print=1`, '_blank');
       router.push(`/orders/${order.id}`);
     } catch (err) {
@@ -634,6 +650,23 @@ export function CreateOrderPos() {
               rows={2}
               className="resize-none"
             />
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 text-sm text-muted-foreground">
+                {t('payments.payNow')}
+              </span>
+              <Select
+                value={payNow}
+                onChange={(e) => setPayNow(e.target.value as '' | PaymentProvider)}
+                className="h-9 flex-1"
+              >
+                <option value="">{t('payments.later')}</option>
+                {PAYMENT_PROVIDERS.map((p) => (
+                  <option key={p} value={p}>
+                    {t(`payments.provider.${p}`)}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">
                 {t('orders.create.totalWithCount', { count: itemCount })}

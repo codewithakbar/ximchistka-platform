@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'crypto';
-import { PaymentProvider, PaymentStatus, Prisma, UserRole } from '@prisma/client';
+import { OrderStatus, PaymentProvider, PaymentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BranchesService } from '../branches/branches.service';
 import { AdminNotifyService } from '../orders/admin-notify.service';
@@ -31,6 +31,155 @@ export class PaymentsService {
     private adminNotify: AdminNotifyService,
   ) {}
 
+  /** Buyurtma bo'yicha to'lov holati: jami, to'langan, qoldiq */
+  async summaryForOrder(orderId: string, actor: PaymentActor) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { payments: { orderBy: { createdAt: 'desc' } } },
+    });
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+    await this.assertOrderAccess(actor, order);
+
+    return this.buildSummary(order, order.payments);
+  }
+
+  /**
+   * Xodim kassada qabul qilgan to'lovni yozib qo'yadi (naqd, karta, o'tkazma).
+   * Qisman to'lov qo'llab-quvvatlanadi — qoldiq keyin to'lanishi mumkin.
+   */
+  async record(
+    orderId: string,
+    data: { provider: PaymentProvider; amount: number; note?: string },
+    actor: PaymentActor,
+  ) {
+    if (actor.role === UserRole.customer) {
+      throw new ForbiddenException('To\'lovni faqat xodim qayd etadi');
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { payments: true, branch: true },
+    });
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+    await this.assertOrderAccess(actor, order);
+
+    if (order.status === OrderStatus.cancelled) {
+      throw new BadRequestException('Bekor qilingan buyurtmaga to\'lov qabul qilinmaydi');
+    }
+
+    const amount = Math.floor(Number(data.amount));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('To\'lov summasi 0 dan katta bo\'lishi kerak');
+    }
+
+    const outstanding = this.outstandingOf(order.totalAmount, order.payments);
+    if (outstanding <= 0) {
+      throw new BadRequestException('Bu buyurtma to\'liq to\'langan');
+    }
+    if (amount > outstanding) {
+      throw new BadRequestException(
+        `To'lov qoldiqdan oshmasligi kerak (qoldiq: ${outstanding})`,
+      );
+    }
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        orderId,
+        provider: data.provider,
+        amount,
+        status: PaymentStatus.paid,
+        externalId: `${data.provider}-${Date.now()}`,
+        metadata: {
+          recordedBy: actor.id,
+          ...(data.note?.trim() ? { note: data.note.trim().slice(0, 300) } : {}),
+        } as Prisma.InputJsonValue,
+      },
+    });
+
+    this.adminNotify.paymentReceived({
+      amount: payment.amount,
+      order: { ...order, branch: order.branch },
+    });
+
+    const payments = await this.prisma.payment.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return { payment, summary: this.buildSummary(order, payments) };
+  }
+
+  /** Xato qayd etilgan to'lovni qaytarish (refunded) — qoldiq qayta ochiladi */
+  async refund(paymentId: string, actor: PaymentActor) {
+    if (
+      actor.role !== UserRole.super_admin &&
+      actor.role !== UserRole.branch_manager
+    ) {
+      throw new ForbiddenException('To\'lovni faqat rahbar qaytara oladi');
+    }
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { order: { include: { payments: true } } },
+    });
+    if (!payment) throw new NotFoundException('To\'lov topilmadi');
+    await this.assertOrderAccess(actor, payment.order);
+
+    if (payment.status !== PaymentStatus.paid) {
+      throw new BadRequestException('Faqat to\'langan to\'lovni qaytarish mumkin');
+    }
+
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: PaymentStatus.refunded },
+    });
+
+    const payments = await this.prisma.payment.findMany({
+      where: { orderId: payment.orderId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return this.buildSummary(payment.order, payments);
+  }
+
+  private paidTotal(payments: { status: PaymentStatus; amount: number }[]) {
+    return payments
+      .filter((p) => p.status === PaymentStatus.paid)
+      .reduce((s, p) => s + p.amount, 0);
+  }
+
+  private outstandingOf(
+    total: number,
+    payments: { status: PaymentStatus; amount: number }[],
+  ) {
+    return Math.max(0, total - this.paidTotal(payments));
+  }
+
+  private buildSummary(
+    order: { id: string; totalAmount: number },
+    payments: {
+      id: string;
+      provider: PaymentProvider;
+      status: PaymentStatus;
+      amount: number;
+      createdAt: Date;
+    }[],
+  ) {
+    const paid = this.paidTotal(payments);
+    return {
+      orderId: order.id,
+      totalAmount: order.totalAmount,
+      paidAmount: paid,
+      outstanding: Math.max(0, order.totalAmount - paid),
+      fullyPaid: paid >= order.totalAmount && order.totalAmount > 0,
+      payments: payments.map((p) => ({
+        id: p.id,
+        provider: p.provider,
+        status: p.status,
+        amount: p.amount,
+        createdAt: p.createdAt.toISOString(),
+      })),
+    };
+  }
+
   async initiate(orderId: string, provider: PaymentProvider, actor: PaymentActor) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -40,10 +189,7 @@ export class PaymentsService {
 
     await this.assertOrderAccess(actor, order);
 
-    const paid = order.payments
-      .filter((p) => p.status === PaymentStatus.paid)
-      .reduce((s, p) => s + p.amount, 0);
-    const outstanding = order.totalAmount - paid;
+    const outstanding = this.outstandingOf(order.totalAmount, order.payments);
     if (outstanding <= 0) {
       throw new BadRequestException('Bu buyurtma to\'liq to\'langan');
     }

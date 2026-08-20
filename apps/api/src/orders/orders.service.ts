@@ -74,6 +74,7 @@ export class OrdersService {
           customer: { include: { user: true } },
           items: { include: { service: true } },
           pickupDelivery: true,
+          payments: { select: { status: true, amount: true } },
           statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
         },
         orderBy: { createdAt: 'desc' },
