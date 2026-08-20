@@ -55,23 +55,29 @@ enum PaymentStatus {
 }
 
 model Organization {
-  id                String           @id @default(cuid())
+  id                String            @id @default(cuid())
   name              String
-  slug              String           @unique
-  plan              OrganizationPlan @default(demo)
+  slug              String            @unique
+  plan              OrganizationPlan  @default(demo)
   demoStartedAt     DateTime?
   demoEndsAt        DateTime?
-  isActive          Boolean          @default(true)
+  isActive          Boolean           @default(true)
   contactPhone      String?
   contactEmail      String?
-  /** Chek raqami prefiksi, masalan XC → XC-10009 */
-  orderNumberPrefix String           @default("XC")
-  /** Keyingi chek raqami (har yaratilganda +1), 4 xonali: 0001 */
-  orderNumberNext   Int              @default(1)
-  /** POS buyurtmada tanlanadigan ranglar ro'yxati */
-  orderItemColors   String[]         @default([])
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  /**
+   * Chek raqami prefiksi, masalan XC → XC-10009
+   */
+  orderNumberPrefix String            @default("XC")
+  /**
+   * Keyingi chek raqami (har yaratilganda +1), 4 xonali: 0001
+   */
+  orderNumberNext   Int               @default(1)
+  /**
+   * POS buyurtmada tanlanadigan ranglar ro'yxati
+   */
+  orderItemColors   String[]          @default([])
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   branches          Branch[]
   users             User[]
   serviceCategories ServiceCategory[]
@@ -79,43 +85,48 @@ model Organization {
 }
 
 model Branch {
-  id             String           @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   name           String
   address        String
   phone          String
   latitude       Float?
   longitude      Float?
-  openTime       String           @default("09:00")
-  closeTime      String           @default("20:00")
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  openTime       String       @default("09:00")
+  closeTime      String       @default("20:00")
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   priceRules     PriceRule[]
   orders         Order[]
   userBranches   UserBranch[]
+
+  @@index([organizationId])
 }
 
 model User {
-  id                 String               @id @default(cuid())
-  organizationId     String?
-  email              String?              @unique
-  phone              String               @unique
-  passwordHash       String?
-  fullName           String
-  avatarUrl          String?
-  role               UserRole
-  isActive           Boolean              @default(true)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  organization       Organization?        @relation(fields: [organizationId], references: [id])
-  customerProfile    CustomerProfile?
-  userBranches       UserBranch[]
-  statusChanges      OrderStatusHistory[]
-  courierDeliveries  PickupDelivery[]     @relation("CourierDeliveries")
-  otpCodes           OtpCode[]
-  refreshTokens      RefreshToken[]
+  id                String               @id @default(cuid())
+  organizationId    String?
+  email             String?              @unique
+  phone             String               @unique
+  passwordHash      String?
+  fullName          String
+  avatarUrl         String?
+  role              UserRole
+  isActive          Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  organization      Organization?        @relation(fields: [organizationId], references: [id])
+  customerProfile   CustomerProfile?
+  userBranches      UserBranch[]
+  statusChanges     OrderStatusHistory[]
+  courierDeliveries PickupDelivery[]     @relation("CourierDeliveries")
+  otpCodes          OtpCode[]
+  refreshTokens     RefreshToken[]
+
+  @@index([organizationId])
+  @@index([organizationId, role])
 }
 
 model UserBranch {
@@ -140,15 +151,17 @@ model CustomerProfile {
 }
 
 model CustomerAddress {
-  id         String          @id @default(cuid())
-  profileId  String
-  label      String          @default("Uy")
-  address    String
-  latitude   Float?
-  longitude  Float?
-  isDefault  Boolean         @default(false)
-  createdAt  DateTime        @default(now())
-  profile    CustomerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id        String          @id @default(cuid())
+  profileId String
+  label     String          @default("Uy")
+  address   String
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  profile   CustomerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
 }
 
 model ServiceCategory {
@@ -182,6 +195,8 @@ model Service {
   category           ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   priceRules         PriceRule[]
   orderItems         OrderItem[]
+
+  @@index([categoryId])
 }
 
 model PriceRule {
@@ -196,27 +211,34 @@ model PriceRule {
   service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([branchId, serviceId, itemType])
+  @@index([branchId])
+  @@index([serviceId])
 }
 
 model Order {
-  id              String               @id @default(cuid())
-  orderNumber     String               @unique
-  branchId        String
-  customerId      String
-  status          OrderStatus          @default(submitted)
-  totalAmount     Int                  @default(0)
-  notes           String?
-  estimatedReady  DateTime?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  branch          Branch               @relation(fields: [branchId], references: [id])
-  customer        CustomerProfile      @relation(fields: [customerId], references: [id])
-  items           OrderItem[]
-  statusHistory   OrderStatusHistory[]
-  pickupDelivery  PickupDelivery?
-  payments        Payment[]
-  promoCode       String?
-  discountAmount  Int                  @default(0)
+  id             String               @id @default(cuid())
+  orderNumber    String               @unique
+  branchId       String
+  customerId     String
+  status         OrderStatus          @default(submitted)
+  totalAmount    Int                  @default(0)
+  notes          String?
+  estimatedReady DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  branch         Branch               @relation(fields: [branchId], references: [id])
+  customer       CustomerProfile      @relation(fields: [customerId], references: [id])
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
+  pickupDelivery PickupDelivery?
+  payments       Payment[]
+  promoCode      String?
+  discountAmount Int                  @default(0)
+
+  @@index([branchId, createdAt])
+  @@index([branchId, status])
+  @@index([customerId])
+  @@index([status, updatedAt])
 }
 
 model OrderItem {
@@ -232,6 +254,9 @@ model OrderItem {
   createdAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   service   Service  @relation(fields: [serviceId], references: [id])
+
+  @@index([orderId])
+  @@index([serviceId])
 }
 
 model OrderStatusHistory {
@@ -243,20 +268,25 @@ model OrderStatusHistory {
   createdAt DateTime    @default(now())
   order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   user      User?       @relation(fields: [changedBy], references: [id])
+
+  @@index([orderId, createdAt])
 }
 
 model PickupDelivery {
-  id              String       @id @default(cuid())
-  orderId         String       @unique
-  type            DeliveryType
-  scheduledAt     DateTime?
-  address         String?
-  courierId       String?
-  completedAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  courier         User?        @relation("CourierDeliveries", fields: [courierId], references: [id])
+  id          String       @id @default(cuid())
+  orderId     String       @unique
+  type        DeliveryType
+  scheduledAt DateTime?
+  address     String?
+  courierId   String?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  courier     User?        @relation("CourierDeliveries", fields: [courierId], references: [id])
+
+  @@index([courierId, completedAt])
+  @@index([completedAt])
 }
 
 model OtpCode {
@@ -268,6 +298,9 @@ model OtpCode {
   userId    String?
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([phone, createdAt])
+  @@index([expiresAt])
 }
 
 model RefreshToken {
@@ -277,24 +310,32 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Payment {
-  id            String          @id @default(cuid())
-  orderId       String
-  provider      PaymentProvider
-  status        PaymentStatus   @default(pending)
-  amount        Int
-  externalId    String?
-  metadata      Json?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  orderId    String
+  provider   PaymentProvider
+  status     PaymentStatus   @default(pending)
+  amount     Int
+  externalId String?
+  metadata   Json?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  order      Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status, createdAt])
 }
 
 model PromoCode {
   id             String        @id @default(cuid())
-  /** null bo'lsa — platforma bo'ylab umumiy kod */
+  /**
+   * null bo'lsa — platforma bo'ylab umumiy kod
+   */
   organizationId String?
   code           String
   discountType   String        @default("percent")
@@ -319,4 +360,7 @@ model SmsLog {
   status    String   @default("sent")
   provider  String   @default("mock")
   createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+  @@index([createdAt])
 }

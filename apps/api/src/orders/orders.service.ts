@@ -25,6 +25,9 @@ import { PromoService } from '../promo/promo.service';
 /** Tahrirlash tarixda shu izoh bilan qoladi */
 const ORDER_EDITED_NOTE = 'Buyurtma tahrirlandi';
 
+/** Bitta sahifada qaytariladigan eng ko'p buyurtma */
+const MAX_ORDER_PAGE_SIZE = 100;
+
 interface OrderItemInput {
   serviceId: string;
   itemType?: string;
@@ -55,8 +58,9 @@ export class OrdersService {
     },
     query: { branchId?: string; status?: OrderStatus; page?: number; limit?: number },
   ) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    // Cheklanmagan limit butun jadvalni bitta so'rovda tortib olishga imkon berardi
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(Math.max(1, query.limit ?? 20), MAX_ORDER_PAGE_SIZE);
     const where: Record<string, unknown> = {};
 
     if (user.role === UserRole.customer) {

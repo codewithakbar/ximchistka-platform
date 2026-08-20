@@ -68,14 +68,41 @@ Asosiy prefix: `http://localhost:3001/api/v1`
 - `GET /orders` — buyurtmalar (auth)
 - `POST /orders` — mijoz buyurtmasi
 - `GET /orders/track/:orderNumber` — ommaviy kuzatuv
+- `PATCH /orders/:id` — buyurtma tarkibini tahrirlash (xodim)
 - `GET /reports/dashboard` — CRM statistika
-- `POST /payments/orders/:id/initiate` — Click/Payme/naqd
+- `GET /health` — servis holati (nginx/pm2 uchun)
+
+### To‘lovlar
+
+- `GET /payments/orders/:id` — jami / to‘langan / qoldiq
+- `POST /payments/orders/:id/record` — kassada qabul qilingan to‘lov (qisman ham)
+- `POST /payments/:id/refund` — noto‘g‘ri to‘lovni qaytarish (rahbar)
+- `POST /payments/orders/:id/initiate` — Click/Payme havolasi
+
+### Promo-kodlar
+
+- `GET /promo-codes` — firma va platforma kodlari
+- `GET /promo-codes/preview?code=&amount=` — chegirmani oldindan hisoblash
+- `POST|PATCH|DELETE /promo-codes` — boshqarish (super admin)
 
 ## Integratsiyalar
 
 - **SMS:** `SMS_PROVIDER=mock` (dev) yoki `eskiz`
-- **To‘lov:** Click va Payme URL generator (`.env` da merchant ID lar)
+  (`ESKIZ_EMAIL`, `ESKIZ_PASSWORD`, `ESKIZ_FROM`)
+- **To‘lov:** Click va Payme URL generator (`.env` da merchant ID lar).
+  Webhook imzosi `CLICK_SECRET_KEY` / `PAYME_SECRET_KEY` bilan tekshiriladi —
+  kalit yo‘q bo‘lsa webhook rad etiladi (dev uchun
+  `PAYMENT_WEBHOOK_ALLOW_UNSIGNED=true`).
+- **Realtime:** WebSocket ulanishi JWT talab qiladi va faqat o‘z tashkiloti
+  buyurtmalarini oladi.
 - **PWA:** `client-web/public/sw.js` — offline cache
+
+## Testlar
+
+```bash
+npm test          # bir marta
+npm run test:watch
+```
 
 ## Mobil ilova
 

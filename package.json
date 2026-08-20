@@ -15,7 +15,9 @@
     "db:push": "npm run push -w @ximchistka/database",
     "dev:api": "npm run dev -w @ximchistka/api",
     "dev:crm": "npm run dev -w @ximchistka/crm",
-    "dev:client": "npm run dev -w @ximchistka/client-web"
+    "dev:client": "npm run dev -w @ximchistka/client-web",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "workspaces": [
     "apps/*",
@@ -27,12 +29,13 @@
   },
   "devDependencies": {
     "turbo": "^2.3.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.0",
-    "lightningcss-linux-x64-gnu": "1.32.0",
     "@tailwindcss/oxide-win32-x64-msvc": "4.3.0",
+    "lightningcss-linux-x64-gnu": "1.32.0",
     "lightningcss-win32-x64-msvc": "1.32.0"
   },
   "engines": {

@@ -55,6 +55,12 @@ class UpdateStatusDto {
   @IsOptional() @IsString() note?: string;
 }
 
+/** Query dan kelgan raqamni xavfsiz o'qiydi (NaN bo'lsa standart qiymat) */
+function toPositiveInt(value: string | undefined, fallback: number) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 @Controller('orders')
 export class OrdersController {
   constructor(private orders: OrdersService) {}
@@ -70,8 +76,8 @@ export class OrdersController {
     return this.orders.list(user, {
       branchId,
       status,
-      page: page ? parseInt(page) : 1,
-      limit: limit ? parseInt(limit) : 20,
+      page: toPositiveInt(page, 1),
+      limit: toPositiveInt(limit, 20),
     });
   }
 

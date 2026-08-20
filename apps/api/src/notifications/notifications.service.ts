@@ -1,24 +1,41 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EskizClient } from './eskiz.client';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eskiz: EskizClient,
+  ) {}
 
   async sendSms(phone: string, message: string) {
     const provider = process.env.SMS_PROVIDER ?? 'mock';
-    if (provider === 'mock') {
-      console.log(`[SMS mock] ${phone}: ${message}`);
-    } else if (provider === 'eskiz') {
-      // Eskiz API integration placeholder
-      console.log(`[SMS eskiz] ${phone}: ${message}`);
+
+    let sent = true;
+    let error: string | undefined;
+
+    if (provider === 'eskiz') {
+      const result = await this.eskiz.send(phone, message);
+      sent = result.sent;
+      error = result.error;
+    } else {
+      this.logger.log(`[SMS mock] ${phone}: ${message}`);
     }
+
+    // Log har doim yoziladi — yuborilmagan SMS ni ham keyin tekshirish mumkin
     await this.prisma.smsLog.create({
-      data: { phone, message, provider, status: 'sent' },
+      data: {
+        phone,
+        message,
+        provider,
+        status: sent ? 'sent' : `failed:${error ?? 'unknown'}`.slice(0, 60),
+      },
     });
-    return { sent: true };
+
+    return { sent };
   }
 
   async notifyOrderStatus(phone: string, orderNumber: string, statusLabel: string) {
