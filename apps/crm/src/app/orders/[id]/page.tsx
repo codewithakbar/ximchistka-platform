@@ -14,6 +14,7 @@ import {
   Calendar,
   CheckCircle2,
   Printer,
+  Pencil,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,9 @@ import { api, formatPrice, getUser } from '@/lib/api';
 import { useFormatDate, useI18n, useOrderStatusLabel } from '@/lib/i18n';
 import { OrderReceipt } from '@/components/orders/order-receipt';
 import { OrderPaymentPanel } from '@/components/orders/order-payment-panel';
+import { EditOrderDialog } from '@/components/orders/edit-order-dialog';
+import { useDemoExpired } from '@/components/layout/demo-expired-lock';
+import { useCanCreateOrders } from '@/hooks/use-client-auth';
 import {
   OrderStatus,
   VALID_STATUS_TRANSITIONS,
@@ -39,13 +43,14 @@ type OrderDetail = {
   notes: string | null;
   createdAt: string;
   estimatedReady: string | null;
-  branch: { name: string; address: string; phone: string };
+  branch: { id: string; name: string; address: string; phone: string };
   customer: {
     user: { fullName: string; phone: string };
     addresses: { address: string; isDefault: boolean }[];
   };
   items: {
     id: string;
+    serviceId: string;
     quantity: number;
     unitPrice: number;
     color?: string | null;
@@ -64,6 +69,9 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [pending, setPending] = useState<OrderStatus | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const demoExpired = useDemoExpired();
+  const canEditOrders = useCanCreateOrders();
 
   async function load() {
     const data = await api<OrderDetail>(`/orders/${params.id}`);
@@ -93,6 +101,12 @@ export default function OrderDetailPage() {
   }
 
   const allowedNext = order ? VALID_STATUS_TRANSITIONS[order.status] : [];
+  const canEdit =
+    canEditOrders &&
+    !demoExpired &&
+    !!order &&
+    order.status !== 'completed' &&
+    order.status !== 'cancelled';
   const orgName = getUser<{ organizationName?: string }>()?.organizationName;
 
   function printReceipt() {
@@ -125,10 +139,18 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <StatusBadge status={order.status} label={statusLabel(order.status)} />
-                    <Button size="sm" variant="outline" onClick={printReceipt}>
-                      <Printer className="h-4 w-4" />
-                      {t('orderDetail.printReceipt')}
-                    </Button>
+                    <div className="flex gap-2">
+                      {canEdit && (
+                        <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                          <Pencil className="h-4 w-4" />
+                          {t('common.edit')}
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={printReceipt}>
+                        <Printer className="h-4 w-4" />
+                        {t('orderDetail.printReceipt')}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -289,6 +311,22 @@ export default function OrderDetailPage() {
             </Card>
           </div>
         </div>
+      )}
+
+      {order && (
+        <EditOrderDialog
+          open={editing}
+          orderId={order.id}
+          branchId={order.branch.id}
+          items={order.items.map((i) => ({
+            serviceId: i.serviceId,
+            quantity: i.quantity,
+            color: i.color,
+          }))}
+          notes={order.notes}
+          onClose={() => setEditing(false)}
+          onSaved={load}
+        />
       )}
 
       <ConfirmDialog

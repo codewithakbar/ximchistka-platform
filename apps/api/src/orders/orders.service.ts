@@ -7,6 +7,7 @@ import {
 import {
   DeliveryType,
   OrderStatus,
+  PaymentStatus,
   UserRole,
 } from '@prisma/client';
 import {
@@ -19,6 +20,10 @@ import { BranchesService } from '../branches/branches.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersGateway } from './orders.gateway';
 import { AdminNotifyService } from './admin-notify.service';
+import { PromoService } from '../promo/promo.service';
+
+/** Tahrirlash tarixda shu izoh bilan qoladi */
+const ORDER_EDITED_NOTE = 'Buyurtma tahrirlandi';
 
 interface OrderItemInput {
   serviceId: string;
@@ -37,6 +42,7 @@ export class OrdersService {
     private notifications: NotificationsService,
     private gateway: OrdersGateway,
     private adminNotify: AdminNotifyService,
+    private promo: PromoService,
   ) {}
 
   async list(
@@ -148,6 +154,7 @@ export class OrdersService {
       deliveryType: DeliveryType;
       scheduledAt?: string;
       address?: string;
+      promoCode?: string;
     },
   ) {
     await this.branches.assertBranchAccess(user, data.branchId);
@@ -213,44 +220,24 @@ export class OrdersService {
       promoCode?: string;
     },
   ) {
-    const prices = await this.prisma.priceRule.findMany({
-      where: { branchId: data.branchId },
-      include: { service: true },
-    });
-    const priceMap = new Map(
-      prices.map((p) => [`${p.serviceId}:${p.itemType}`, { listPrice: p.price, service: p.service }]),
-    );
-
-    const serviceIds = [...new Set(data.items.map((i) => i.serviceId))];
-    const services = await this.prisma.service.findMany({
-      where: { id: { in: serviceIds } },
-    });
-    const serviceMap = new Map(services.map((s) => [s.id, s]));
-
-    let subtotal = 0;
-    let totalAmount = 0;
-    const itemsData = data.items.map((item) => {
-      const itemType = item.itemType ?? 'standart';
-      const entry = priceMap.get(`${item.serviceId}:${itemType}`);
-      const service = entry?.service ?? serviceMap.get(item.serviceId);
-      if (!service) {
-        throw new BadRequestException(`Xizmat topilmadi: ${item.serviceId}`);
-      }
-      const listPrice = entry?.listPrice ?? service.basePrice;
-      const unitPrice = applyServiceDiscount(listPrice, service);
-      subtotal += listPrice * item.quantity;
-      totalAmount += unitPrice * item.quantity;
-      const color = item.color?.trim().slice(0, 40) || undefined;
-      return { ...item, itemType, unitPrice, color };
-    });
-
-    const discountAmount = Math.max(0, subtotal - totalAmount);
-
     const branch = await this.prisma.branch.findUnique({
       where: { id: data.branchId },
       select: { organizationId: true },
     });
     if (!branch) throw new BadRequestException('Filial topilmadi');
+
+    const priced = await this.priceItems(data.branchId, data.items);
+    const promo = data.promoCode?.trim()
+      ? await this.promo.resolveForOrder(
+          data.promoCode,
+          branch.organizationId,
+          priced.totalAmount,
+        )
+      : null;
+
+    const totalAmount = Math.max(0, priced.totalAmount - (promo?.discountAmount ?? 0));
+    const discountAmount = Math.max(0, priced.subtotal - totalAmount);
+    const itemsData = priced.itemsData;
 
     const orderNumber = await this.generateOrderNumber(branch.organizationId);
 
@@ -262,7 +249,7 @@ export class OrdersService {
         status: OrderStatus.submitted,
         totalAmount,
         discountAmount,
-        promoCode: data.promoCode,
+        promoCode: promo?.code,
         notes: data.notes,
         estimatedReady: new Date(Date.now() + 48 * 3600000),
         items: { create: itemsData },
@@ -281,6 +268,10 @@ export class OrdersService {
         customer: { include: { user: true } },
       },
     });
+
+    if (promo) {
+      void this.promo.markUsed(promo.id);
+    }
 
     this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, order);
     if (order.totalAmount > 0) {
@@ -344,6 +335,189 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('Buyurtma topilmadi');
     return order;
+  }
+
+  /**
+   * Buyurtmani tahrirlash: xizmatlar ro'yxati to'liq almashtiriladi va summa
+   * qayta hisoblanadi. Yakunlangan/bekor qilingan buyurtma tahrirlanmaydi.
+   */
+  async updateOrder(
+    id: string,
+    user: { id: string; role: UserRole; organizationId?: string; branchIds: string[] },
+    data: {
+      items?: OrderItemInput[];
+      notes?: string | null;
+      deliveryType?: DeliveryType;
+      address?: string | null;
+      scheduledAt?: string | null;
+    },
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { branch: true, payments: true, pickupDelivery: true },
+    });
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+    await this.branches.assertBranchAccess(user, order.branchId);
+
+    if (
+      order.status === OrderStatus.completed ||
+      order.status === OrderStatus.cancelled
+    ) {
+      throw new BadRequestException(
+        'Yakunlangan yoki bekor qilingan buyurtmani tahrirlab bo\'lmaydi',
+      );
+    }
+
+    let itemsData: Awaited<ReturnType<typeof this.priceItems>>['itemsData'] | null = null;
+    let totalAmount = order.totalAmount;
+    let discountAmount = order.discountAmount;
+
+    if (data.items) {
+      const priced = await this.priceItems(order.branchId, data.items);
+
+      // Buyurtmadagi promo-kod qayta qo'llanadi, lekin ishlatilish soni oshmaydi.
+      // Kod muddati o'tgan bo'lsa chegirmasiz davom etamiz.
+      let promoDiscount = 0;
+      if (order.promoCode) {
+        try {
+          const promo = await this.promo.resolveForOrder(
+            order.promoCode,
+            order.branch.organizationId,
+            priced.totalAmount,
+          );
+          promoDiscount = promo.discountAmount;
+        } catch {
+          promoDiscount = 0;
+        }
+      }
+
+      totalAmount = Math.max(0, priced.totalAmount - promoDiscount);
+      discountAmount = Math.max(0, priced.subtotal - totalAmount);
+
+      const paid = order.payments
+        .filter((p) => p.status === PaymentStatus.paid)
+        .reduce((sum, p) => sum + p.amount, 0);
+      if (totalAmount < paid) {
+        throw new BadRequestException(
+          `Yangi summa to'langan summadan (${paid}) kam bo'lishi mumkin emas — avval to'lovni qaytaring`,
+        );
+      }
+
+      itemsData = priced.itemsData;
+    }
+
+    const touchesDelivery =
+      data.deliveryType !== undefined ||
+      data.address !== undefined ||
+      data.scheduledAt !== undefined;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (itemsData) {
+        await tx.orderItem.deleteMany({ where: { orderId: id } });
+        await tx.orderItem.createMany({
+          data: itemsData.map((item) => ({
+            orderId: id,
+            serviceId: item.serviceId,
+            itemType: item.itemType,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            notes: item.notes,
+            color: item.color,
+            photoUrl: item.photoUrl,
+          })),
+        });
+      }
+
+      if (order.pickupDelivery && touchesDelivery) {
+        await tx.pickupDelivery.update({
+          where: { orderId: id },
+          data: {
+            ...(data.deliveryType !== undefined ? { type: data.deliveryType } : {}),
+            ...(data.address !== undefined ? { address: data.address || null } : {}),
+            ...(data.scheduledAt !== undefined
+              ? { scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null }
+              : {}),
+          },
+        });
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          ...(itemsData ? { totalAmount, discountAmount } : {}),
+          ...(data.notes !== undefined ? { notes: data.notes || null } : {}),
+          statusHistory: {
+            create: {
+              status: order.status,
+              changedBy: user.id,
+              note: ORDER_EDITED_NOTE,
+            },
+          },
+        },
+        include: {
+          branch: true,
+          customer: { include: { user: true } },
+          items: { include: { service: true } },
+          pickupDelivery: true,
+        },
+      });
+    });
+
+    this.gateway.emitOrderUpdate(
+      updated.branch.organizationId,
+      updated.branchId,
+      updated,
+    );
+    return updated;
+  }
+
+  /** Filial narxlari + xizmat chegirmasi bo'yicha satrlarni hisoblaydi */
+  private async priceItems(branchId: string, items: OrderItemInput[]) {
+    if (!items.length) {
+      throw new BadRequestException('Kamida bitta xizmat tanlang');
+    }
+
+    const prices = await this.prisma.priceRule.findMany({
+      where: { branchId },
+      include: { service: true },
+    });
+    const priceMap = new Map(
+      prices.map((p) => [
+        `${p.serviceId}:${p.itemType}`,
+        { listPrice: p.price, service: p.service },
+      ]),
+    );
+
+    const serviceIds = [...new Set(items.map((i) => i.serviceId))];
+    const services = await this.prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+    });
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+    let subtotal = 0;
+    let totalAmount = 0;
+    const itemsData = items.map((item) => {
+      const quantity = Math.floor(Number(item.quantity));
+      if (!Number.isFinite(quantity) || quantity < 1) {
+        throw new BadRequestException('Xizmat miqdori kamida 1 bo\'lishi kerak');
+      }
+
+      const itemType = item.itemType ?? 'standart';
+      const entry = priceMap.get(`${item.serviceId}:${itemType}`);
+      const service = entry?.service ?? serviceMap.get(item.serviceId);
+      if (!service) {
+        throw new BadRequestException(`Xizmat topilmadi: ${item.serviceId}`);
+      }
+
+      const listPrice = entry?.listPrice ?? service.basePrice;
+      const unitPrice = applyServiceDiscount(listPrice, service);
+      subtotal += listPrice * quantity;
+      totalAmount += unitPrice * quantity;
+      const color = item.color?.trim().slice(0, 40) || undefined;
+      return { ...item, quantity, itemType, unitPrice, color };
+    });
+
+    return { itemsData, subtotal, totalAmount };
   }
 
   private async assertAccess(

@@ -15,6 +15,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { PlatformModule } from './platform/platform.module';
+import { PromoModule } from './promo/promo.module';
 import { PublicModule } from './public/public.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { PublicModule } from './public/public.module';
     NotificationsModule,
     SettingsModule,
     PlatformModule,
+    PromoModule,
     PublicModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

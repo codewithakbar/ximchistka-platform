@@ -162,9 +162,10 @@ async function main() {
   });
 
   await prisma.promoCode.upsert({
-    where: { code: 'WELCOME10' },
+    where: { organizationId_code: { organizationId: org.id, code: 'WELCOME10' } },
     update: {},
     create: {
+      organizationId: org.id,
       code: 'WELCOME10',
       discountType: 'percent',
       discountValue: 10,

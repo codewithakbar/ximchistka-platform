@@ -6,9 +6,10 @@ import { AdminNotifyService } from './admin-notify.service';
 import { AuthModule } from '../auth/auth.module';
 import { BranchesModule } from '../branches/branches.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PromoModule } from '../promo/promo.module';
 
 @Module({
-  imports: [AuthModule, BranchesModule, NotificationsModule],
+  imports: [AuthModule, BranchesModule, NotificationsModule, PromoModule],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersGateway, AdminNotifyService],
   exports: [OrdersService, OrdersGateway, AdminNotifyService],

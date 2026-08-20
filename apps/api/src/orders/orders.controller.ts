@@ -37,6 +37,19 @@ class StaffCreateOrderDto extends CreateOrderDto {
   @IsString() customerName!: string;
 }
 
+class UpdateOrderDto {
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items?: OrderItemDto[];
+
+  @IsOptional() @IsString() notes?: string | null;
+  @IsOptional() @IsEnum(DeliveryType) deliveryType?: DeliveryType;
+  @IsOptional() @IsString() address?: string | null;
+  @IsOptional() @IsString() scheduledAt?: string | null;
+}
+
 class UpdateStatusDto {
   @IsEnum(OrderStatus) status!: OrderStatus;
   @IsOptional() @IsString() note?: string;
@@ -92,6 +105,16 @@ export class OrdersController {
     @Body() dto: StaffCreateOrderDto,
   ) {
     return this.orders.createStaffOrder(user, dto);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateOrderDto,
+    @CurrentUser() user: { id: string; role: UserRole; branchIds: string[] },
+  ) {
+    return this.orders.updateOrder(id, user, dto);
   }
 
   @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator, UserRole.courier)

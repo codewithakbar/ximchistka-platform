@@ -13,6 +13,7 @@ import {
   UserCheck,
   UserPlus,
   Phone,
+  Ticket,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -83,6 +84,9 @@ export function CreateOrderPos() {
   const [serviceSearch, setServiceSearch] = useState('');
   const [phonePadOpen, setPhonePadOpen] = useState(true);
   const [payNow, setPayNow] = useState<'' | PaymentProvider>('');
+  const [promoInput, setPromoInput] = useState('');
+  const [promo, setPromo] = useState<{ code: string; discountAmount: number } | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
 
   useEffect(() => {
     api<{ organization?: { orderItemColors?: string[] } }>('/settings/profile')
@@ -152,6 +156,53 @@ export function CreateOrderPos() {
 
   const total = cartItems.reduce((sum, item) => sum + item.lineTotal, 0);
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const promoDiscount = Math.min(promo?.discountAmount ?? 0, total);
+  const payableTotal = Math.max(0, total - promoDiscount);
+
+  // Savat o'zgarsa chegirma qayta hisoblanadi (foizli kodlar uchun muhim)
+  useEffect(() => {
+    if (!promo || total <= 0) return;
+    let cancelled = false;
+    api<{ discountAmount: number }>(
+      `/promo-codes/preview?code=${encodeURIComponent(promo.code)}&amount=${total}`,
+    )
+      .then((res) => {
+        if (!cancelled) {
+          setPromo((prev) => (prev ? { ...prev, discountAmount: res.discountAmount } : prev));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPromo(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // promo.code o'zgarganda emas, savat summasi o'zgarganda qayta so'raymiz
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
+
+  async function applyPromo() {
+    const code = promoInput.trim();
+    if (!code) return;
+    if (total <= 0) {
+      toast.error(t('orders.create.toastServiceRequired'));
+      return;
+    }
+    setPromoChecking(true);
+    try {
+      const res = await api<{ code: string; discountAmount: number }>(
+        `/promo-codes/preview?code=${encodeURIComponent(code)}&amount=${total}`,
+      );
+      setPromo({ code: res.code, discountAmount: res.discountAmount });
+      setPromoInput('');
+      toast.success(t('promo.applied', { code: res.code }));
+    } catch (err) {
+      setPromo(null);
+      toast.error(err instanceof Error ? err.message : t('promo.invalid'));
+    } finally {
+      setPromoChecking(false);
+    }
+  }
 
   function setQty(serviceId: string, delta: number) {
     setQuantities((prev) => {
@@ -298,6 +349,7 @@ export function CreateOrderPos() {
           deliveryType,
           address: deliveryType === 'in_store' ? undefined : address || undefined,
           notes: notes || undefined,
+          promoCode: promo?.code,
           scheduledAt: new Date(Date.now() + 86400000).toISOString(),
         }),
       });
@@ -309,7 +361,7 @@ export function CreateOrderPos() {
         try {
           await api(`/payments/orders/${order.id}/record`, {
             method: 'POST',
-            body: JSON.stringify({ provider: payNow, amount: total }),
+            body: JSON.stringify({ provider: payNow, amount: payableTotal }),
           });
         } catch {
           toast.warning(t('payments.toastRecordFailed'));
@@ -650,6 +702,52 @@ export function CreateOrderPos() {
               rows={2}
               className="resize-none"
             />
+            {promo ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5">
+                <span className="flex min-w-0 items-center gap-1.5 text-sm">
+                  <Ticket className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span className="truncate font-mono font-semibold">{promo.code}</span>
+                  <span className="shrink-0 text-emerald-700">
+                    -{formatPrice(promoDiscount)}
+                  </span>
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPromo(null)}
+                >
+                  {t('promo.remove')}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void applyPromo();
+                    }
+                  }}
+                  placeholder={t('promo.placeholder')}
+                  className="h-9 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-9 shrink-0"
+                  loading={promoChecking}
+                  disabled={!promoInput.trim()}
+                  onClick={() => void applyPromo()}
+                >
+                  {t('promo.apply')}
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <span className="shrink-0 text-sm text-muted-foreground">
                 {t('payments.payNow')}
@@ -671,7 +769,16 @@ export function CreateOrderPos() {
               <span className="text-muted-foreground">
                 {t('orders.create.totalWithCount', { count: itemCount })}
               </span>
-              <span className="text-2xl font-bold text-primary">{formatPrice(total)}</span>
+              <span className="flex items-baseline gap-2">
+                {promoDiscount > 0 && (
+                  <span className="text-sm text-muted-foreground line-through">
+                    {formatPrice(total)}
+                  </span>
+                )}
+                <span className="text-2xl font-bold text-primary">
+                  {formatPrice(payableTotal)}
+                </span>
+              </span>
             </div>
             <Button
               type="submit"

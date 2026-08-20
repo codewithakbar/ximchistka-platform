@@ -75,6 +75,7 @@ model Organization {
   branches          Branch[]
   users             User[]
   serviceCategories ServiceCategory[]
+  promoCodes        PromoCode[]
 }
 
 model Branch {
@@ -292,16 +293,23 @@ model Payment {
 }
 
 model PromoCode {
-  id            String    @id @default(cuid())
-  code          String    @unique
-  discountType  String    @default("percent")
-  discountValue Int
-  maxUses       Int?
-  usedCount     Int       @default(0)
-  validFrom     DateTime  @default(now())
-  validUntil    DateTime?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
+  id             String        @id @default(cuid())
+  /** null bo'lsa — platforma bo'ylab umumiy kod */
+  organizationId String?
+  code           String
+  discountType   String        @default("percent")
+  discountValue  Int
+  maxUses        Int?
+  usedCount      Int           @default(0)
+  validFrom      DateTime      @default(now())
+  validUntil     DateTime?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
 }
 
 model SmsLog {

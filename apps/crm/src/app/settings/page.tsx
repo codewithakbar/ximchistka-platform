@@ -17,6 +17,7 @@ import {
   Trash2,
   Palette,
   Plus,
+  Ticket,
   X,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
@@ -27,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
 import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls';
+import { PromoCodesPanel } from '@/components/settings/promo-codes-panel';
 import { api, clearAuth, updateStoredUser } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
 import { cn } from '@/lib/utils';
@@ -82,6 +84,7 @@ const tabs = [
   { id: 'profile', labelKey: 'settings.profile', icon: User },
   { id: 'password', labelKey: 'settings.password.title', icon: Lock },
   { id: 'organization', labelKey: 'settings.organization', icon: Building2 },
+  { id: 'promo', labelKey: 'promo.panelTitle', icon: Ticket },
   { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
   { id: 'system', labelKey: 'settings.system', icon: Server },
 ] as const;
@@ -288,6 +291,12 @@ export default function SettingsPage() {
 
   const visibleTabs = tabs.filter((t) => {
     if (t.id === 'organization') return profile?.organization;
+    if (t.id === 'promo') {
+      return (
+        profile?.organization &&
+        (profile.role === 'super_admin' || profile.role === 'branch_manager')
+      );
+    }
     return true;
   });
 
@@ -672,6 +681,10 @@ export default function SettingsPage() {
                     </form>
                   </CardContent>
                 </Card>
+              )}
+
+              {tab === 'promo' && (
+                <PromoCodesPanel canManage={profile?.role === 'super_admin'} />
               )}
 
               {tab === 'notifications' && (
