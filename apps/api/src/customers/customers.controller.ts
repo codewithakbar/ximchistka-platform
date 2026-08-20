@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { CustomersService } from './customers.service';
@@ -31,16 +39,16 @@ export class CustomersController {
     return this.customers.search(q, user!);
   }
 
-  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
-  @Get(':id')
-  getById(@Param('id') id: string, @CurrentUser() user: TenantUser) {
-    return this.customers.getById(id, user);
-  }
-
   @Roles(UserRole.customer)
   @Get('me')
   me(@CurrentUser() user: { id: string }) {
     return this.customers.getProfile(user.id);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator)
+  @Get(':id')
+  getById(@Param('id') id: string, @CurrentUser() user: TenantUser) {
+    return this.customers.getById(id, user);
   }
 
   @Roles(UserRole.customer)
@@ -49,6 +57,9 @@ export class CustomersController {
     @CurrentUser() user: { id: string; customerProfileId?: string },
     @Body() dto: AddAddressDto,
   ) {
-    return this.customers.addAddress(user.customerProfileId!, dto);
+    if (!user.customerProfileId) {
+      throw new BadRequestException('Mijoz profili topilmadi');
+    }
+    return this.customers.addAddress(user.customerProfileId, dto);
   }
 }
