@@ -7,9 +7,11 @@ import {
 } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'crypto';
 import { OrderStatus, PaymentProvider, PaymentStatus, Prisma, UserRole } from '@prisma/client';
+import { VALID_STATUS_TRANSITIONS } from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { BranchesService } from '../branches/branches.service';
 import { AdminNotifyService } from '../orders/admin-notify.service';
+import { OrdersService } from '../orders/orders.service';
 
 export type PaymentPart = { provider: PaymentProvider; amount: number };
 
@@ -31,6 +33,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private branches: BranchesService,
     private adminNotify: AdminNotifyService,
+    private orders: OrdersService,
   ) {}
 
   /** Buyurtma bo'yicha to'lov holati: jami, to'langan, qoldiq */
@@ -126,6 +129,52 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
     return { payments: created, summary: this.buildSummary(order, payments) };
+  }
+
+  /**
+   * Buyurtmani topshirish: agar qoldiq bo'lsa avval to'lovni qayd etadi,
+   * so'ng buyurtmani yakunlaydi (completed). To'langan bo'lsa faqat yakunlaydi.
+   */
+  async handover(
+    orderId: string,
+    parts: PaymentPart[] | undefined,
+    actor: PaymentActor,
+  ) {
+    if (actor.role === UserRole.customer) {
+      throw new ForbiddenException('Buyurtmani xodim topshiradi');
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { payments: true, branch: true },
+    });
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+    await this.assertOrderAccess(actor, order);
+
+    const allowed =
+      VALID_STATUS_TRANSITIONS[order.status as keyof typeof VALID_STATUS_TRANSITIONS] ?? [];
+    if (!allowed.includes(OrderStatus.completed)) {
+      throw new BadRequestException('Bu buyurtmani hozir topshirib bo\'lmaydi');
+    }
+
+    // Qoldiq to'lovini qabul qilamiz (bo'lsa)
+    if (parts?.length) {
+      await this.record(orderId, { parts }, actor);
+    }
+
+    // Buyurtmani yakunlaymiz — updateStatus barcha tekshiruv, bildirishnoma
+    // va WebSocket yangilanishlarini bajaradi
+    const updated = await this.orders.updateStatus(
+      orderId,
+      OrderStatus.completed,
+      actor,
+    );
+
+    const payments = await this.prisma.payment.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return { order: updated, summary: this.buildSummary(order, payments) };
   }
 
   /** Xato qayd etilgan to'lovni qaytarish (refunded) — qoldiq qayta ochiladi */

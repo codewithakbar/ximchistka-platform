@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Printer,
   Pencil,
+  PackageCheck,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,8 @@ import {
   normalizeReceiptSettings,
   type ReceiptSettings,
 } from '@ximchistka/shared';
-import { OrderPaymentPanel } from '@/components/orders/order-payment-panel';
+import { OrderPaymentPanel, type PaymentSummary } from '@/components/orders/order-payment-panel';
+import { HandoverDialog } from '@/components/orders/handover-dialog';
 import { EditOrderDialog } from '@/components/orders/edit-order-dialog';
 import { useDemoExpired } from '@/components/layout/demo-expired-lock';
 import { useCanCreateOrders } from '@/hooks/use-client-auth';
@@ -81,6 +83,9 @@ export default function OrderDetailPage() {
   const [receiptSettings, setReceiptSettings] = useState<ReceiptSettings>(
     DEFAULT_RECEIPT_SETTINGS,
   );
+  const [paySummary, setPaySummary] = useState<PaymentSummary | null>(null);
+  const [handoverOpen, setHandoverOpen] = useState(false);
+  const [payReload, setPayReload] = useState(0);
   const demoExpired = useDemoExpired();
   const canEditOrders = useCanCreateOrders();
 
@@ -258,16 +263,28 @@ export default function OrderDetailPage() {
                   <CardTitle>{t('orderDetail.updateStatus')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {allowedNext.map((s) => (
-                    <Button
-                      key={s}
-                      variant={s === 'cancelled' ? 'destructive' : 'primary'}
-                      className="w-full"
-                      onClick={() => setPending(s)}
-                    >
-                      {statusLabel(s)}
-                    </Button>
-                  ))}
+                  {allowedNext.map((s) =>
+                    s === 'completed' ? (
+                      <Button
+                        key={s}
+                        variant="success"
+                        className="w-full"
+                        onClick={() => setHandoverOpen(true)}
+                      >
+                        <PackageCheck className="h-4 w-4" />
+                        {t('handover.action')}
+                      </Button>
+                    ) : (
+                      <Button
+                        key={s}
+                        variant={s === 'cancelled' ? 'destructive' : 'primary'}
+                        className="w-full"
+                        onClick={() => setPending(s)}
+                      >
+                        {s === 'ready' ? t('orders.actionReady') : statusLabel(s)}
+                      </Button>
+                    ),
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -275,6 +292,8 @@ export default function OrderDetailPage() {
             <OrderPaymentPanel
               orderId={params.id}
               cancelled={order.status === 'cancelled'}
+              reloadSignal={payReload}
+              onChange={setPaySummary}
             />
 
             <Card>
@@ -333,6 +352,19 @@ export default function OrderDetailPage() {
             </Card>
           </div>
         </div>
+      )}
+
+      {order && (
+        <HandoverDialog
+          open={handoverOpen}
+          orderId={order.id}
+          outstanding={paySummary?.outstanding ?? Math.max(0, order.totalAmount)}
+          onClose={() => setHandoverOpen(false)}
+          onDone={() => {
+            load();
+            setPayReload((n) => n + 1);
+          }}
+        />
       )}
 
       {order && (

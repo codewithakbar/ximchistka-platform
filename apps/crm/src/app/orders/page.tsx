@@ -50,13 +50,16 @@ const ALL_STATUSES: OrderStatus[] = [
   'cancelled',
 ];
 
+// To'lovsiz darhol o'tadigan holatlar (ready -> topshirish alohida)
 const nextActionKeys: Partial<Record<OrderStatus, string>> = {
-  submitted: 'orders.actionAccept',
+  draft: 'orders.actionProcess',
+  submitted: 'orders.actionProcess',
   received_at_branch: 'orders.actionProcess',
   in_processing: 'orders.actionReady',
-  ready: 'orders.actionDeliver',
-  out_for_delivery: 'orders.actionComplete',
 };
+
+// Topshirishni talab qiladigan holatlar (tafsilotdagi to'lov oynasi)
+const HANDOVER_STATUSES: OrderStatus[] = ['ready', 'out_for_delivery'];
 
 export default function OrdersPage() {
   const { t } = useI18n();
@@ -252,6 +255,13 @@ export default function OrdersPage() {
                               {t(nextActionKeys[o.status]!)}
                               <ArrowRight className="h-3 w-3" />
                             </Button>
+                          )}
+                          {HANDOVER_STATUSES.includes(o.status) && (
+                            <Link href={`/orders/${o.id}`}>
+                              <Button size="sm" variant="success">
+                                {t('handover.action')}
+                              </Button>
+                            </Link>
                           )}
                           <Link href={`/orders/${o.id}/receipt`} title={t('orders.viewReceipt')}>
                             <Button size="icon" variant="ghost">

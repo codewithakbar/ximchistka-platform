@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import {
   applyServiceDiscount,
+  INITIAL_ORDER_STATUS,
   ORDER_STATUS_LABELS,
   VALID_STATUS_TRANSITIONS,
 } from '@ximchistka/shared';
@@ -281,14 +282,14 @@ export class OrdersService {
           orderNumber,
           branchId: data.branchId,
           customerId,
-          status: OrderStatus.submitted,
+          status: INITIAL_ORDER_STATUS,
           totalAmount,
           discountAmount,
           promoCode: promo?.code,
           notes: data.notes,
           estimatedReady: new Date(Date.now() + 48 * 3600000),
           items: { create: itemsData },
-          statusHistory: { create: { status: OrderStatus.submitted, changedBy } },
+          statusHistory: { create: { status: INITIAL_ORDER_STATUS, changedBy } },
           pickupDelivery: {
             create: {
               type: data.deliveryType,

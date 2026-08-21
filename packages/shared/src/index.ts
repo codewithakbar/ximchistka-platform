@@ -46,16 +46,25 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: '#ef4444',
 };
 
+/**
+ * Soddalashtirilgan oqim: buyurtma olinishi bilan "ishlanmoqda" ga o'tadi,
+ * "Tayyor" bosilganda tayyor bo'ladi, "Topshirish" bilan yakunlanadi.
+ * Eski holatlar (submitted, received_at_branch, out_for_delivery) faqat
+ * mavjud buyurtmalarni yangi oqimga o'tkazish uchun qoldirilgan.
+ */
 export const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  draft: ['submitted', 'cancelled'],
-  submitted: ['received_at_branch', 'cancelled'],
+  draft: ['in_processing', 'cancelled'],
+  submitted: ['in_processing', 'cancelled'],
   received_at_branch: ['in_processing', 'cancelled'],
   in_processing: ['ready', 'cancelled'],
-  ready: ['out_for_delivery', 'completed', 'cancelled'],
+  ready: ['completed', 'cancelled'],
   out_for_delivery: ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
 };
+
+/** Buyurtma yaratilganda o'rnatiladigan boshlang'ich holat */
+export const INITIAL_ORDER_STATUS: OrderStatus = 'in_processing';
 
 export interface JwtPayload {
   sub: string;

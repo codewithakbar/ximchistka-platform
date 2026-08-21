@@ -142,10 +142,13 @@ export function PaymentPartsEditor({
 export function OrderPaymentPanel({
   orderId,
   cancelled = false,
+  reloadSignal = 0,
   onChange,
 }: {
   orderId: string;
   cancelled?: boolean;
+  /** Tashqi hodisadan keyin (masalan topshirish) qayta yuklash uchun */
+  reloadSignal?: number;
   onChange?: (summary: PaymentSummary) => void;
 }) {
   const { t } = useI18n();
@@ -178,7 +181,9 @@ export function OrderPaymentPanel({
 
   useEffect(() => {
     load();
-  }, [load]);
+    // reloadSignal o'zgarganda ham qayta yuklaymiz
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, reloadSignal]);
 
   function openForm() {
     if (!summary) return;

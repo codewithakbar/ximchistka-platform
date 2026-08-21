@@ -37,6 +37,16 @@ class PaymentPartDto {
   amount!: number;
 }
 
+class HandoverDto {
+  /** Qoldiq to'lovi (bo'lsa) — bir necha usul bo'lishi mumkin */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ValidateNested({ each: true })
+  @Type(() => PaymentPartDto)
+  parts?: PaymentPartDto[];
+}
+
 class RecordPaymentDto {
   /** Bitta usul (eski format) */
   @IsOptional() @IsEnum(PaymentProvider) provider?: PaymentProvider;
@@ -68,6 +78,16 @@ export class PaymentsController {
   @Get('orders/:orderId')
   summary(@Param('orderId') orderId: string, @CurrentUser() user: PaymentActor) {
     return this.payments.summaryForOrder(orderId, user);
+  }
+
+  @Roles(...STAFF_ROLES)
+  @Post('orders/:orderId/handover')
+  handover(
+    @Param('orderId') orderId: string,
+    @Body() dto: HandoverDto,
+    @CurrentUser() user: PaymentActor,
+  ) {
+    return this.payments.handover(orderId, dto.parts, user);
   }
 
   @Roles(...STAFF_ROLES)
