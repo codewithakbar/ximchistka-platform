@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Phone, Lock, ArrowRight } from 'lucide-react';
+import { Sparkles, Phone, Lock, ArrowRight, Send, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -19,25 +19,26 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'password' | 'telegram'>('password');
+  const [tgCode, setTgCode] = useState('');
+  const [tgCodeSent, setTgCodeSent] = useState(false);
+  const [tgSending, setTgSending] = useState(false);
+  const [botUsername, setBotUsername] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 12) {
-      toast.error(t('orders.create.toastPhoneIncomplete'));
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await api<{
-        accessToken: string;
-        refreshToken: string;
-        user: { id: string; role: string; fullName?: string; phone?: string; organizationId?: string; branchIds?: string[] };
-      }>('/auth/staff/login', {
-        method: 'POST',
-        body: JSON.stringify({ phone, password }),
-      });
-      saveAuth(data);
+  useEffect(() => {
+    api<{ configured: boolean; username: string | null }>('/auth/telegram/bot')
+      .then((info) => setBotUsername(info.configured ? info.username : null))
+      .catch(() => setBotUsername(null));
+  }, []);
+
+  type LoginResponse = {
+    accessToken: string;
+    refreshToken: string;
+    user: { id: string; role: string; fullName?: string; phone?: string; organizationId?: string; branchIds?: string[] };
+  };
+
+  async function finishLogin(data: LoginResponse) {
+    saveAuth(data);
       try {
         const profile = await api<{
           fullName: string;
@@ -62,9 +63,74 @@ export default function LoginPage() {
         /* profile optional on login */
       }
       toast.success(`${t('login.welcome')}${data.user.fullName ? `, ${data.user.fullName}` : ''}!`);
-      router.push('/dashboard');
+    router.push('/dashboard');
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 12) {
+      toast.error(t('orders.create.toastPhoneIncomplete'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await api<LoginResponse>('/auth/staff/login', {
+        method: 'POST',
+        body: JSON.stringify({ phone, password }),
+      });
+      await finishLogin(data);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('login.error'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function humanizeError(err: unknown): string {
+    const msg = err instanceof Error ? err.message : t('login.error');
+    if (msg.includes('Too Many Requests') || msg.includes('ThrottlerException')) {
+      return t('login.tg.tooMany');
+    }
+    return msg;
+  }
+
+  async function requestTelegramCode() {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 12) {
+      toast.error(t('orders.create.toastPhoneIncomplete'));
+      return;
+    }
+    setTgSending(true);
+    try {
+      await api('/auth/telegram/request', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+      setTgCodeSent(true);
+      toast.success(t('login.tg.codeSent'));
+    } catch (err) {
+      toast.error(humanizeError(err));
+    } finally {
+      setTgSending(false);
+    }
+  }
+
+  async function onTelegramSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (tgCode.trim().length < 4) {
+      toast.error(t('login.tg.enterCode'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await api<LoginResponse>('/auth/telegram/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, code: tgCode.trim() }),
+      });
+      await finishLogin(data);
+    } catch (err) {
+      toast.error(humanizeError(err));
     } finally {
       setLoading(false);
     }
@@ -120,7 +186,41 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold mb-2">{t('login.title')}</h1>
           <p className="text-muted-foreground mb-8">{t('login.subtitle')}</p>
 
-          <form onSubmit={onSubmit} className="space-y-4" autoComplete="off" noValidate>
+          {botUsername && (
+            <div className="mb-5 flex rounded-lg border border-border p-1 bg-card">
+              <button
+                type="button"
+                onClick={() => setMode('password')}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-colors ${
+                  mode === 'password'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Lock className="h-4 w-4" />
+                {t('login.tg.modePassword')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('telegram')}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-colors ${
+                  mode === 'telegram'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Send className="h-4 w-4" />
+                Telegram
+              </button>
+            </div>
+          )}
+
+          <form
+            onSubmit={mode === 'telegram' ? onTelegramSubmit : onSubmit}
+            className="space-y-4"
+            autoComplete="off"
+            noValidate
+          >
             <div>
               <Label>{t('login.phone')}</Label>
               <div className="relative">
@@ -133,21 +233,77 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            <div>
-              <Label>{t('login.password')}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-10"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
 
-            <Button type="submit" loading={loading} size="lg" className="w-full">
+            {mode === 'password' ? (
+              <div>
+                <Label>{t('login.password')}</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-10"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label>{t('login.tg.code')}</Label>
+                    <button
+                      type="button"
+                      onClick={requestTelegramCode}
+                      disabled={tgSending}
+                      className="text-xs text-primary hover:underline disabled:opacity-50"
+                    >
+                      {tgSending
+                        ? t('login.tg.sending')
+                        : tgCodeSent
+                          ? t('login.tg.resend')
+                          : t('login.tg.sendCode')}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-10 tracking-[0.3em] font-semibold"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={tgCode}
+                      onChange={(e) => setTgCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••••"
+                    />
+                  </div>
+                  {tgCodeSent && (
+                    <p className="mt-1.5 text-xs text-emerald-600">
+                      {t('login.tg.codeSent')}
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t('login.tg.hint')}{' '}
+                  <a
+                    href={`https://t.me/${botUsername}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary font-medium hover:underline"
+                  >
+                    @{botUsername}
+                  </a>{' '}
+                  {t('login.tg.hint2')}
+                </p>
+              </>
+            )}
+
+            <Button
+              type="submit"
+              loading={loading}
+              size="lg"
+              className="w-full"
+            >
               {t('login.submit')}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>

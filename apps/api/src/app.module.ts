@@ -17,6 +17,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { PlatformModule } from './platform/platform.module';
 import { PromoModule } from './promo/promo.module';
+import { TelegramModule } from './telegram/telegram.module';
+import { TelegramBotModule } from './telegram/telegram-bot.module';
 import { PublicModule } from './public/public.module';
 
 @Module({
@@ -43,6 +45,8 @@ import { PublicModule } from './public/public.module';
     SettingsModule,
     PlatformModule,
     PromoModule,
+    TelegramModule,
+    TelegramBotModule,
     PublicModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

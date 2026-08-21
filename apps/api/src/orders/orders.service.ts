@@ -22,6 +22,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersGateway } from './orders.gateway';
 import { AdminNotifyService } from './admin-notify.service';
 import { PromoService } from '../promo/promo.service';
+import { TelegramService } from '../telegram/telegram.service';
 
 /** Tahrirlash tarixda shu izoh bilan qoladi */
 const ORDER_EDITED_NOTE = 'Buyurtma tahrirlandi';
@@ -49,6 +50,7 @@ export class OrdersService {
     private gateway: OrdersGateway,
     private adminNotify: AdminNotifyService,
     private promo: PromoService,
+    private telegram: TelegramService,
   ) {}
 
   async list(
@@ -363,6 +365,7 @@ export class OrdersService {
       updated.orderNumber,
       label,
     );
+    void this.telegram.notifyCustomerOrderStatus(updated);
 
     this.gateway.emitOrderUpdate(updated.branch.organizationId, updated.branchId, updated);
     if (updated.totalAmount > 0) {

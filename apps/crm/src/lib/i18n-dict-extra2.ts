@@ -141,6 +141,18 @@ export const uzExtra2: Record<string, string> = {
   'payments.provider.click': 'Click',
   'payments.provider.payme': 'Payme',
   'payments.provider.uzum': 'Uzum',
+  // Telegram orqali kirish
+  'login.tg.modePassword': 'Parol',
+  'login.tg.sendCode': 'Kod olish',
+  'login.tg.code': 'Telegram kodi',
+  'login.tg.codeSent': 'Kod Telegramga yuborildi',
+  'login.tg.enterCode': 'Koddagi raqamlarni kiriting',
+  'login.tg.resend': 'Kodni qayta yuborish',
+  'login.tg.hint':
+    "Kod olish uchun avval botga /start yuborib, telefon raqamingizni ulang:",
+  'login.tg.hint2': "keyin \"Kod olish\" tugmasini bosing yoki botdan olgan kodni kiriting.",
+  'login.tg.sending': 'Yuborilmoqda...',
+  'login.tg.tooMany': "Juda ko'p urinish. Biroz kuting.",
   // POS: konstruktor xizmat va narx tahriri
   'pos.customTile': 'Narx kiritiladi',
   'pos.customServiceHint': "Konstruktor xizmat — nima ekanini va narxini kiriting",
@@ -386,6 +398,18 @@ export const ruExtra2: Record<string, string> = {
   'payments.provider.click': 'Click',
   'payments.provider.payme': 'Payme',
   'payments.provider.uzum': 'Uzum',
+  // Вход через Telegram
+  'login.tg.modePassword': 'Пароль',
+  'login.tg.sendCode': 'Получить код',
+  'login.tg.code': 'Код из Telegram',
+  'login.tg.codeSent': 'Код отправлен в Telegram',
+  'login.tg.enterCode': 'Введите цифры кода',
+  'login.tg.resend': 'Отправить код ещё раз',
+  'login.tg.hint':
+    'Чтобы получить код, сначала отправьте боту /start и привяжите свой номер:',
+  'login.tg.hint2': 'затем нажмите «Получить код» или введите код из бота.',
+  'login.tg.sending': 'Отправка...',
+  'login.tg.tooMany': 'Слишком много попыток. Подождите немного.',
   // POS: конструктор и цена
   'pos.customTile': 'Цена вводится',
   'pos.customServiceHint': 'Услуга-конструктор — укажите описание и цену',

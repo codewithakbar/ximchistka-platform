@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
@@ -35,6 +35,20 @@ class RefreshDto {
   refreshToken!: string;
 }
 
+class TelegramRequestDto {
+  @IsString()
+  phone!: string;
+}
+
+class TelegramVerifyDto {
+  @IsString()
+  phone!: string;
+
+  @IsString()
+  @MinLength(4)
+  code!: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
@@ -58,6 +72,26 @@ export class AuthController {
   @Post('otp/verify')
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.auth.verifyOtp(dto.phone, dto.code, dto.fullName);
+  }
+
+  @Public()
+  @Get('telegram/bot')
+  telegramBot() {
+    return this.auth.telegramBotInfo();
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
+  @Public()
+  @Post('telegram/request')
+  telegramRequest(@Body() dto: TelegramRequestDto) {
+    return this.auth.requestTelegramLogin(dto.phone);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 600_000 } })
+  @Public()
+  @Post('telegram/verify')
+  telegramVerify(@Body() dto: TelegramVerifyDto) {
+    return this.auth.verifyTelegramLogin(dto.phone, dto.code);
   }
 
   @Public()

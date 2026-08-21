@@ -3,6 +3,7 @@ import { DeliveryType, OrderStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantUser } from '../branches/tenant-scope';
 import { OrdersGateway } from '../orders/orders.gateway';
+import { TelegramService } from '../telegram/telegram.service';
 
 /** Kuryer xizmatini talab qiladigan yetkazish turlari (do'konda qabul kuryer talab qilmaydi). */
 const COURIER_DELIVERY_TYPES: DeliveryType[] = [DeliveryType.pickup, DeliveryType.delivery];
@@ -12,6 +13,7 @@ export class CourierService {
   constructor(
     private prisma: PrismaService,
     private gateway: OrdersGateway,
+    private telegram: TelegramService,
   ) {}
 
   /** Kuryerning o'ziga tayinlangan, hali tugallanmagan vazifalari. */
@@ -194,6 +196,7 @@ export class CourierService {
     });
 
     this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, order);
+    void this.telegram.notifyCustomerOrderStatus(order);
     return order;
   }
 
@@ -226,6 +229,7 @@ export class CourierService {
     });
 
     this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, order);
+    void this.telegram.notifyCustomerOrderStatus(order);
     return order;
   }
 }

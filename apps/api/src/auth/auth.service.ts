@@ -6,10 +6,18 @@ import { randomUUID } from 'crypto';
 import { OrganizationPlan, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { isDemoPeriodExpired } from './demo-expiry';
 
 /** Bitta telefon raqamiga OTP so'rovlari orasidagi eng qisqa vaqt */
 const OTP_COOLDOWN_MS = 60_000;
+
+/** Telegram kirish kodlari orasidagi eng qisqa vaqt */
+const TELEGRAM_CODE_COOLDOWN_MS = 60_000;
+
+/** Brute-force oynasi va shu oynadagi eng ko'p urinish (kod + noto'g'ri) */
+const TELEGRAM_CODE_WINDOW_MS = 5 * 60_000;
+const TELEGRAM_CODE_MAX_ATTEMPTS = 8;
 
 @Injectable()
 export class AuthService {
@@ -18,6 +26,7 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService,
     private notifications: NotificationsService,
+    private telegram: TelegramService,
   ) {}
 
   async staffLogin(phone: string, password: string) {
@@ -30,6 +39,129 @@ export class AuthService {
     }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');
+    await this.assertOrganizationActive(user);
+    return this.issueTokens(user);
+  }
+
+  /** Login sahifasi uchun bot ma'lumoti */
+  async telegramBotInfo() {
+    return {
+      configured: this.telegram.isConfigured(),
+      username: await this.telegram.getBotUsername(),
+    };
+  }
+
+  /**
+   * Telegram orqali kirish: bog'langan botga bir martalik kod yuboriladi.
+   * Xodimlar uchun (mijoz emas) — CRM kirish sahifasidan chaqiriladi.
+   */
+  async requestTelegramLogin(phone: string) {
+    if (!this.telegram.isConfigured()) {
+      throw new BadRequestException('Telegram bot sozlanmagan');
+    }
+
+    const normalized = this.normalizePhone(phone);
+    const user = await this.prisma.user.findUnique({
+      where: { phone: normalized },
+      include: { organization: true },
+    });
+    if (!user || !user.isActive || user.role === UserRole.customer) {
+      throw new BadRequestException('Bu raqam bilan xodim topilmadi');
+    }
+    await this.assertOrganizationActive(user);
+
+    const account = await this.telegram.findAccountByUserId(user.id);
+    const botUsername = await this.telegram.getBotUsername();
+    if (!account) {
+      throw new BadRequestException(
+        `Telegram ulanmagan. @${botUsername ?? 'bot'} ga /start yuborib, telefon raqamingizni ulang`,
+      );
+    }
+
+    // Spam himoyasi: bitta foydalanuvchiga 60 soniyada bitta kod
+    const lastAt = await this.telegram.lastLoginCodeAt(user.id);
+    if (lastAt && Date.now() - lastAt.getTime() < TELEGRAM_CODE_COOLDOWN_MS) {
+      const wait = Math.ceil(
+        (TELEGRAM_CODE_COOLDOWN_MS - (Date.now() - lastAt.getTime())) / 1000,
+      );
+      throw new BadRequestException(`Yangi kod so'rash uchun ${wait} soniya kuting`);
+    }
+
+    const created = await this.telegram.createLoginCodeRow(user.id);
+    const sent = await this.telegram.sendMessage(
+      account.chatId,
+      '🔐 CRM ga kirish kodi:\n\n' +
+        `<code>${created.code}</code>\n\n` +
+        'Kod <b>5 daqiqa</b> amal qiladi. Agar siz so\'ramagan bo\'lsangiz — e\'tiborsiz qoldiring.',
+    );
+    if (!sent) {
+      // Yuborilmagan kod cooldown/urinish hisobini band qilmasligi kerak
+      await this.telegram.deleteLoginCode(created.id);
+      throw new BadRequestException(
+        'Telegramga yuborib bo\'lmadi — botni bloklagan bo\'lishingiz mumkin',
+      );
+    }
+
+    return { message: 'Kod Telegramga yuborildi' };
+  }
+
+  /** Telegram kodi bilan kirish */
+  async verifyTelegramLogin(phone: string, code: string) {
+    const normalized = this.normalizePhone(phone);
+    const user = await this.prisma.user.findUnique({
+      where: { phone: normalized },
+      include: { userBranches: true, organization: true },
+    });
+    // Enumeration oracle bo'lmasligi uchun har doim bir xil xabar
+    const invalid = () =>
+      new UnauthorizedException('Telefon yoki kod noto\'g\'ri');
+    if (!user || !user.isActive || user.role === UserRole.customer) {
+      throw invalid();
+    }
+
+    // Brute-force himoyasi: oxirgi 5 daqiqada noto'g'ri urinishlar ko'p bo'lsa,
+    // barcha faol kodlarni kuydiramiz (900k fazoni sindirishga imkon bermaymiz)
+    const since = new Date(Date.now() - TELEGRAM_CODE_WINDOW_MS);
+    const recentAttempts = await this.prisma.telegramLoginCode.count({
+      where: { userId: user.id, createdAt: { gt: since } },
+    });
+    if (recentAttempts > TELEGRAM_CODE_MAX_ATTEMPTS) {
+      await this.prisma.telegramLoginCode.updateMany({
+        where: { userId: user.id, used: false },
+        data: { used: true },
+      });
+      throw new UnauthorizedException(
+        'Juda ko\'p urinish. Botdan yangi kod oling.',
+      );
+    }
+
+    const row = await this.prisma.telegramLoginCode.findFirst({
+      where: {
+        userId: user.id,
+        code: code.trim(),
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!row) {
+      // Noto'g'ri urinishni ham hisobga olamiz (kelgusi urinishlar cheklovi uchun)
+      await this.prisma.telegramLoginCode.create({
+        data: {
+          userId: user.id,
+          code: 'x',
+          used: true,
+          expiresAt: new Date(),
+        },
+      });
+      throw invalid();
+    }
+
+    await this.prisma.telegramLoginCode.update({
+      where: { id: row.id },
+      data: { used: true },
+    });
+
     await this.assertOrganizationActive(user);
     return this.issueTokens(user);
   }

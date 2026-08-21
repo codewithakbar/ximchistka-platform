@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { OrderStatus } from '@prisma/client';
 import { ORDER_STATUS_LABELS } from '@ximchistka/shared';
 import { OrdersGateway } from './orders.gateway';
+import { TelegramService } from '../telegram/telegram.service';
 
 export type AdminRevenueEventType =
   | 'order_created'
@@ -28,7 +29,10 @@ export type AdminRevenueNotification = {
 
 @Injectable()
 export class AdminNotifyService {
-  constructor(private gateway: OrdersGateway) {}
+  constructor(
+    private gateway: OrdersGateway,
+    private telegram: TelegramService,
+  ) {}
 
   notify(payload: Omit<AdminRevenueNotification, 'id' | 'createdAt' | 'statusLabel'> & {
     statusLabel?: string;
@@ -43,6 +47,17 @@ export class AdminNotifyService {
       createdAt: new Date().toISOString(),
     };
     this.gateway.emitAdminRevenueNotification(payload.organizationId, notification);
+
+    // Bog'langan egalarga Telegram orqali ham yuboramiz (bloklamaydi)
+    void this.telegram.notifyOrgAdmins(
+      payload.organizationId,
+      this.telegram.adminEventHtml({
+        title: notification.title,
+        message: notification.message,
+        amount: notification.amount,
+        orderNumber: notification.orderNumber,
+      }),
+    );
   }
 
   orderCreated(order: {
