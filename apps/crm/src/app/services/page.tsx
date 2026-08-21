@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Plus, Sparkles, Tag, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, Plus, Sparkles, Tag, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +37,15 @@ type Category = {
   services: ServiceItem[];
 };
 
+/** Massivda elementni ko'chirish (yangi nusxa qaytaradi) */
+function moveInArray<T>(arr: T[], index: number, dir: -1 | 1): T[] | null {
+  const target = index + dir;
+  if (target < 0 || target >= arr.length) return null;
+  const next = arr.slice();
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
+
 type Tab = 'catalog' | 'prices';
 
 export default function ServicesPage() {
@@ -50,6 +59,49 @@ export default function ServicesPage() {
   const [deletingCategory, setDeletingCategory] = useState(false);
 
   const canManageCatalog = useCanManageServicesCatalog();
+
+  // Kategoriyani yuqo/quyi ko'chirish (optimistik, xatoda qaytariladi)
+  async function moveCategory(index: number, dir: -1 | 1) {
+    if (!categories) return;
+    const next = moveInArray(categories, index, dir);
+    if (!next) return;
+    const prev = categories;
+    setCategories(next);
+    try {
+      await api('/services/categories/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ categoryIds: next.map((c) => c.id) }),
+      });
+    } catch (e) {
+      setCategories(prev);
+      toast.error(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
+  // Xizmatni kategoriya ichida ko'chirish
+  async function moveService(catIndex: number, svcIndex: number, dir: -1 | 1) {
+    if (!categories) return;
+    const cat = categories[catIndex];
+    const nextServices = moveInArray(cat.services, svcIndex, dir);
+    if (!nextServices) return;
+    const prev = categories;
+    const next = categories.slice();
+    next[catIndex] = { ...cat, services: nextServices };
+    setCategories(next);
+    try {
+      await api('/services/reorder', {
+        method: 'POST',
+        body: JSON.stringify({
+          categoryId: cat.id,
+          serviceIds: nextServices.map((svc) => svc.id),
+        }),
+      });
+    } catch (e) {
+      setCategories(prev);
+      toast.error(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
   const canEditPrices = useCanEditBranchPrices();
 
   const load = useCallback(() => {
@@ -158,7 +210,7 @@ export default function ServicesPage() {
         />
       ) : (
         <div className="space-y-6">
-          {categories.map((cat) => {
+          {categories.map((cat, catIndex) => {
             const visible = canManageCatalog
               ? cat.services
               : cat.services.filter((s) => s.isActive);
@@ -180,30 +232,54 @@ export default function ServicesPage() {
                     </div>
                   </div>
                   {canManageCatalog && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive shrink-0"
-                      onClick={() => setDeleteCategory(cat)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex flex-col">
+                        <button
+                          type="button"
+                          onClick={() => moveCategory(catIndex, -1)}
+                          disabled={catIndex === 0}
+                          title={t('services.moveUp')}
+                          className="h-5 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCategory(catIndex, 1)}
+                          disabled={catIndex === categories.length - 1}
+                          title={t('services.moveDown')}
+                          className="h-5 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteCategory(cat)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {visible.map((s) => (
+                  {visible.map((s, svcIndex) => (
                     <Card
                       key={s.id}
                       className={cn(
-                        'transition-shadow',
-                        canManageCatalog && 'hover:shadow-md cursor-pointer',
+                        'relative transition-shadow',
+                        canManageCatalog && 'hover:shadow-md',
                         !s.isActive && 'opacity-70',
                       )}
-                      onClick={() => canManageCatalog && setEditService(s)}
                     >
-                      <CardContent className="pt-4">
+                      <CardContent
+                        className={cn('pt-4', canManageCatalog && 'cursor-pointer')}
+                        onClick={() => canManageCatalog && setEditService(s)}
+                      >
                         <div className="flex justify-between items-start gap-2">
                           <div className="min-w-0">
                             <div className="font-medium truncate">{s.name}</div>
@@ -244,9 +320,37 @@ export default function ServicesPage() {
                           </div>
                         </div>
                         {canManageCatalog && (
-                          <div className="mt-3 pt-3 border-t border-border flex items-center gap-1 text-xs text-muted-foreground">
-                            <Pencil className="h-3 w-3" />
-                            {t('common.edit')}
+                          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Pencil className="h-3 w-3" />
+                              {t('common.edit')}
+                            </span>
+                            <span className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveService(catIndex, svcIndex, -1);
+                                }}
+                                disabled={svcIndex === 0}
+                                title={t('services.moveUp')}
+                                className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveService(catIndex, svcIndex, 1);
+                                }}
+                                disabled={svcIndex === visible.length - 1}
+                                title={t('services.moveDown')}
+                                className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </button>
+                            </span>
                           </div>
                         )}
                       </CardContent>

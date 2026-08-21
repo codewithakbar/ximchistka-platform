@@ -42,13 +42,17 @@ type PriceRule = {
   effectivePrice?: number;
   itemType: string;
   isCustom?: boolean;
+  sortOrder?: number;
+  categorySortOrder?: number;
   service: {
     id: string;
     name: string;
     unit: string;
     isCustom?: boolean;
+    sortOrder?: number;
     categoryId: string;
     categoryName: string;
+    categorySortOrder?: number;
   };
 };
 
@@ -137,25 +141,43 @@ export function CreateOrderPos() {
   );
 
   const categories = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, { id: string; name: string; order: number }>();
     for (const p of prices) {
-      map.set(p.service.categoryId, p.service.categoryName);
+      if (!map.has(p.service.categoryId)) {
+        map.set(p.service.categoryId, {
+          id: p.service.categoryId,
+          name: p.service.categoryName,
+          order: p.categorySortOrder ?? p.service.categorySortOrder ?? 0,
+        });
+      }
     }
-    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) =>
-      a.name.localeCompare(b.name, 'uz'),
+    // Admin belgilagan tartib; teng bo'lsa nom bo'yicha
+    return Array.from(map.values()).sort(
+      (a, b) => a.order - b.order || a.name.localeCompare(b.name, 'uz'),
     );
   }, [prices]);
 
+  // Katalog xizmatlari admin tartibida (API allaqachon shu tartibda qaytaradi,
+  // lekin filtrlashdan keyin ham barqaror bo'lishi uchun aniq saralaymiz)
+  const orderOf = (p: PriceRule) => p.sortOrder ?? p.service.sortOrder ?? 0;
+
   const filteredPrices = useMemo(() => {
     const q = serviceSearch.trim().toLowerCase();
-    return prices.filter((p) => {
-      if (categoryId !== 'all' && p.service.categoryId !== categoryId) return false;
-      if (!q) return true;
-      return (
-        p.service.name.toLowerCase().includes(q) ||
-        p.service.categoryName.toLowerCase().includes(q)
+    return prices
+      .filter((p) => {
+        if (categoryId !== 'all' && p.service.categoryId !== categoryId) return false;
+        if (!q) return true;
+        return (
+          p.service.name.toLowerCase().includes(q) ||
+          p.service.categoryName.toLowerCase().includes(q)
+        );
+      })
+      .sort(
+        (a, b) =>
+          (a.categorySortOrder ?? 0) - (b.categorySortOrder ?? 0) ||
+          orderOf(a) - orderOf(b) ||
+          a.service.name.localeCompare(b.service.name, 'uz'),
       );
-    });
   }, [prices, categoryId, serviceSearch]);
 
   const cartItems = useMemo(

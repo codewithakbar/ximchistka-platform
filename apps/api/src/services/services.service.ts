@@ -23,8 +23,13 @@ export class ServicesCatalogService {
     const organizationId = this.requireOrganizationId(user);
     return this.prisma.serviceCategory.findMany({
       where: { organizationId, isActive: true },
-      include: { services: { where: { isActive: true }, orderBy: { name: 'asc' } } },
-      orderBy: { sortOrder: 'asc' },
+      include: {
+        services: {
+          where: { isActive: true },
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
 
@@ -32,8 +37,8 @@ export class ServicesCatalogService {
     const organizationId = this.requireOrganizationId(user);
     return this.prisma.serviceCategory.findMany({
       where: { organizationId },
-      include: { services: { orderBy: { name: 'asc' } } },
-      orderBy: { sortOrder: 'asc' },
+      include: { services: { orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] } },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
 
@@ -69,7 +74,12 @@ export class ServicesCatalogService {
           category: { organizationId: branch.organizationId, isActive: true },
         },
         include: { category: true },
-        orderBy: { name: 'asc' },
+        orderBy: [
+          { category: { sortOrder: 'asc' } },
+          { category: { name: 'asc' } },
+          { sortOrder: 'asc' },
+          { name: 'asc' },
+        ],
       }),
     ]);
 
@@ -93,26 +103,79 @@ export class ServicesCatalogService {
         effectivePrice: applyServiceDiscount(listPrice, pricedService),
         itemType: rule?.itemType ?? 'standart',
         isCustom: service.isCustom,
+        sortOrder: service.sortOrder,
+        categorySortOrder: service.category.sortOrder,
         service: {
           id: service.id,
           name: service.name,
           unit: service.unit,
           isCustom: service.isCustom,
+          sortOrder: service.sortOrder,
           categoryId: service.categoryId,
           categoryName: service.category.name,
+          categorySortOrder: service.category.sortOrder,
         },
       };
     });
   }
 
-  createCategory(
+  async createCategory(
     user: TenantUser,
     data: { name: string; description?: string; sortOrder?: number },
   ) {
     const organizationId = this.requireOrganizationId(user);
+    let sortOrder = data.sortOrder;
+    if (sortOrder === undefined) {
+      const last = await this.prisma.serviceCategory.aggregate({
+        where: { organizationId },
+        _max: { sortOrder: true },
+      });
+      sortOrder = (last._max.sortOrder ?? -1) + 1;
+    }
     return this.prisma.serviceCategory.create({
-      data: { ...data, organizationId },
+      data: { ...data, sortOrder, organizationId },
     });
+  }
+
+  /** Kategoriyalarni berilgan ketma-ketlikda qayta tartiblaydi */
+  async reorderCategories(user: TenantUser, orderedIds: string[]) {
+    const organizationId = this.requireOrganizationId(user);
+    const owned = await this.prisma.serviceCategory.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
+    const ownedSet = new Set(owned.map((c) => c.id));
+    const ids = orderedIds.filter((id) => ownedSet.has(id));
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.serviceCategory.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+    return { reordered: ids.length };
+  }
+
+  /** Bitta kategoriya ichidagi xizmatlarni qayta tartiblaydi */
+  async reorderServices(user: TenantUser, categoryId: string, orderedIds: string[]) {
+    const organizationId = this.requireOrganizationId(user);
+    await this.ensureCategoryInOrg(categoryId, organizationId);
+    const owned = await this.prisma.service.findMany({
+      where: { categoryId },
+      select: { id: true },
+    });
+    const ownedSet = new Set(owned.map((svc) => svc.id));
+    const ids = orderedIds.filter((id) => ownedSet.has(id));
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.service.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+    return { reordered: ids.length };
   }
 
   async createService(
@@ -132,6 +195,10 @@ export class ServicesCatalogService {
     const organizationId = this.requireOrganizationId(user);
     await this.ensureCategoryInOrg(data.categoryId, organizationId);
     const discount = this.normalizeDiscount(data);
+    const last = await this.prisma.service.aggregate({
+      where: { categoryId: data.categoryId },
+      _max: { sortOrder: true },
+    });
     const service = await this.prisma.service.create({
       data: {
         categoryId: data.categoryId,
@@ -140,6 +207,7 @@ export class ServicesCatalogService {
         basePrice: data.basePrice,
         unit: data.unit,
         isCustom: data.isCustom ?? false,
+        sortOrder: (last._max.sortOrder ?? -1) + 1,
         ...discount,
       },
     });

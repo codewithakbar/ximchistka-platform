@@ -200,6 +200,8 @@ model Service {
   discountValidUntil DateTime?
   /// Konstruktor xizmat: narx va tavsif buyurtma paytida kiritiladi
   isCustom           Boolean         @default(false)
+  /// POS va katalogda ko'rsatish tartibi (kichik — oldinroq)
+  sortOrder          Int             @default(0)
   isActive           Boolean         @default(true)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt

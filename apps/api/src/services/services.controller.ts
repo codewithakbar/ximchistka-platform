@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { ServicesCatalogService } from './services.service';
 import { Public, Roles } from '../auth/guards';
@@ -22,6 +22,15 @@ class CreateServiceDto {
   @IsOptional() @IsString() discountType?: string;
   @IsOptional() @IsNumber() discountValue?: number;
   @IsOptional() @IsString() discountValidUntil?: string;
+}
+
+class ReorderCategoriesDto {
+  @IsArray() @ArrayNotEmpty() @IsString({ each: true }) categoryIds!: string[];
+}
+
+class ReorderServicesDto {
+  @IsString() categoryId!: string;
+  @IsArray() @ArrayNotEmpty() @IsString({ each: true }) serviceIds!: string[];
 }
 
 class PriceRuleDto {
@@ -88,6 +97,21 @@ export class ServicesController {
   @Post('categories')
   createCategory(@CurrentUser() user: TenantUser, @Body() dto: CreateCategoryDto) {
     return this.services.createCategory(user, dto);
+  }
+
+  @Roles(UserRole.super_admin)
+  @Post('categories/reorder')
+  reorderCategories(
+    @CurrentUser() user: TenantUser,
+    @Body() dto: ReorderCategoriesDto,
+  ) {
+    return this.services.reorderCategories(user, dto.categoryIds);
+  }
+
+  @Roles(UserRole.super_admin)
+  @Post('reorder')
+  reorderServices(@CurrentUser() user: TenantUser, @Body() dto: ReorderServicesDto) {
+    return this.services.reorderServices(user, dto.categoryId, dto.serviceIds);
   }
 
   @Roles(UserRole.super_admin)
