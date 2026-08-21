@@ -82,7 +82,7 @@ export function CreateOrderPos() {
   const [lookupAddresses, setLookupAddresses] = useState<CustomerLookup['addresses']>([]);
 
   const [branchId, setBranchId] = useState('');
-  const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery' | 'in_store'>('pickup');
+  const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery' | 'in_store'>('in_store');
   const [notes, setNotes] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [itemColors, setItemColors] = useState<Record<string, string>>({});
@@ -542,9 +542,9 @@ export function CreateOrderPos() {
           onChange={(e) => setDeliveryType(e.target.value as typeof deliveryType)}
           className="w-44 h-10"
         >
+          <option value="in_store">{t('orders.create.deliveryInStore')}</option>
           <option value="pickup">{t('orders.create.deliveryPickup')}</option>
           <option value="delivery">{t('orders.create.deliveryDelivery')}</option>
-          <option value="in_store">{t('orders.create.deliveryInStore')}</option>
         </Select>
       </div>
 
@@ -784,7 +784,18 @@ export function CreateOrderPos() {
                         </div>
                       )}
                     </div>
-                    <div className="font-semibold text-sm shrink-0">{formatPrice(item.lineTotal)}</div>
+                    <button
+                      type="button"
+                      onClick={() => setPriceDialogFor(item)}
+                      title={t('pos.editPrice')}
+                      className={cn(
+                        'shrink-0 rounded-md px-1.5 py-1 text-sm font-semibold transition-colors',
+                        'hover:bg-primary/10 hover:text-primary',
+                        priceOverrides[item.serviceId] !== undefined && 'text-primary',
+                      )}
+                    >
+                      {formatPrice(item.lineTotal)}
+                    </button>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
