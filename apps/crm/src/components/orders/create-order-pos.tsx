@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,6 +12,7 @@ import {
   Trash2,
   UserCheck,
   UserPlus,
+  Pencil,
   Phone,
   Ticket,
 } from 'lucide-react';
@@ -21,7 +22,11 @@ import { Input, Select, Textarea } from '@/components/ui/input';
 import { PhoneInput, appendPhoneDigit, backspacePhone, normalizePhone } from '@/components/ui/phone-input';
 import { VirtualNumpad } from '@/components/ui/virtual-numpad';
 import { CartItemColorPicker } from '@/components/orders/cart-item-color-picker';
-import { PAYMENT_PROVIDERS, type PaymentProvider } from '@/components/orders/order-payment-panel';
+import {
+  PaymentPartsEditor,
+  type PaymentPartInput,
+} from '@/components/orders/order-payment-panel';
+import { PriceOverrideDialog } from '@/components/orders/price-override-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice } from '@/lib/api';
@@ -36,10 +41,12 @@ type PriceRule = {
   listPrice?: number;
   effectivePrice?: number;
   itemType: string;
+  isCustom?: boolean;
   service: {
     id: string;
     name: string;
     unit: string;
+    isCustom?: boolean;
     categoryId: string;
     categoryName: string;
   };
@@ -83,7 +90,11 @@ export function CreateOrderPos() {
   const [categoryId, setCategoryId] = useState('all');
   const [serviceSearch, setServiceSearch] = useState('');
   const [phonePadOpen, setPhonePadOpen] = useState(true);
-  const [payNow, setPayNow] = useState<'' | PaymentProvider>('');
+  const [payNow, setPayNow] = useState(false);
+  const [payParts, setPayParts] = useState<PaymentPartInput[]>([]);
+  const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [priceDialogFor, setPriceDialogFor] = useState<PriceRule | null>(null);
   const [promoInput, setPromoInput] = useState('');
   const [promo, setPromo] = useState<{ code: string; discountAmount: number } | null>(null);
   const [promoChecking, setPromoChecking] = useState(false);
@@ -119,6 +130,11 @@ export function CreateOrderPos() {
   }, [branchId, t]);
 
   const unitPriceFor = (p: PriceRule) => p.effectivePrice ?? p.listPrice ?? p.price;
+  const isCustomService = (p: PriceRule) => p.isCustom ?? p.service.isCustom ?? false;
+  const linePriceFor = useCallback(
+    (p: PriceRule) => priceOverrides[p.serviceId] ?? unitPriceFor(p),
+    [priceOverrides],
+  );
 
   const categories = useMemo(() => {
     const map = new Map<string, string>();
@@ -149,15 +165,42 @@ export function CreateOrderPos() {
         .map((p) => ({
           ...p,
           quantity: quantities[p.serviceId],
-          lineTotal: unitPriceFor(p) * quantities[p.serviceId],
+          lineTotal: linePriceFor(p) * quantities[p.serviceId],
         })),
-    [prices, quantities],
+    [prices, quantities, linePriceFor],
   );
 
   const total = cartItems.reduce((sum, item) => sum + item.lineTotal, 0);
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const promoDiscount = Math.min(promo?.discountAmount ?? 0, total);
   const payableTotal = Math.max(0, total - promoDiscount);
+
+  // Bitta qismli to'lov summasi savatga ergashadi — lekin faqat xodim uni
+  // qo'lda o'zgartirmagan bo'lsa (qisman to'lov kiritilgan bo'lishi mumkin)
+  const lastAutoAmountRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!payNow) return;
+    setPayParts((prev) => {
+      if (prev.length !== 1) return prev;
+      const auto = lastAutoAmountRef.current;
+      if (auto !== null && prev[0].amount !== auto) return prev; // qo'lda kiritilgan
+      const next = payableTotal > 0 ? String(payableTotal) : '';
+      lastAutoAmountRef.current = next;
+      return prev[0].amount === next ? prev : [{ ...prev[0], amount: next }];
+    });
+  }, [payNow, payableTotal]);
+
+  function togglePayNow(next: boolean) {
+    setPayNow(next);
+    if (next) {
+      const amount = payableTotal > 0 ? String(payableTotal) : '';
+      lastAutoAmountRef.current = amount;
+      setPayParts([{ provider: 'cash', amount }]);
+    } else {
+      lastAutoAmountRef.current = null;
+      setPayParts([]);
+    }
+  }
 
   // Savat o'zgarsa chegirma qayta hisoblanadi (foizli kodlar uchun muhim)
   useEffect(() => {
@@ -213,15 +256,49 @@ export function CreateOrderPos() {
           const { [serviceId]: __, ...cr } = c;
           return cr;
         });
+        setPriceOverrides((c) => {
+          const { [serviceId]: __, ...cr } = c;
+          return cr;
+        });
+        setItemNotes((c) => {
+          const { [serviceId]: __, ...cr } = c;
+          return cr;
+        });
         return rest;
       }
       return { ...prev, [serviceId]: next };
     });
   }
 
+  /** Katalog kartasi bosilganda: konstruktor xizmatda avval narx so'raladi */
+  function onTileTap(p: PriceRule) {
+    const inCart = (quantities[p.serviceId] ?? 0) > 0;
+    if (isCustomService(p) && !inCart && priceOverrides[p.serviceId] === undefined) {
+      setPriceDialogFor(p);
+      return;
+    }
+    setQty(p.serviceId, 1);
+  }
+
+  function onPriceSaved(serviceId: string, price: number, note: string) {
+    setPriceOverrides((prev) => ({ ...prev, [serviceId]: price }));
+    setItemNotes((prev) => {
+      if (!note) {
+        const { [serviceId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [serviceId]: note };
+    });
+    setQuantities((prev) =>
+      (prev[serviceId] ?? 0) > 0 ? prev : { ...prev, [serviceId]: 1 },
+    );
+  }
+
   function clearCart() {
     setQuantities({});
     setItemColors({});
+    setPriceOverrides({});
+    setItemNotes({});
   }
 
   async function lookupCustomer(phoneArg?: string) {
@@ -329,6 +406,18 @@ export function CreateOrderPos() {
       toast.error(t('orders.create.toastServiceRequired'));
       return;
     }
+    if (payNow) {
+      const partsTotal = payParts.reduce(
+        (sum, part) => sum + (Math.floor(Number(part.amount)) || 0),
+        0,
+      );
+      if (partsTotal > payableTotal) {
+        // Buyurtma yaratilishidan OLDIN to'xtatamiz — aks holda buyurtma
+        // yaratilib, to'lov server tomonidan rad etilardi
+        toast.error(t('payments.maxHint', { amount: formatPrice(payableTotal) }));
+        return;
+      }
+    }
     setLoading(true);
     try {
       const items = Object.entries(quantities)
@@ -337,6 +426,8 @@ export function CreateOrderPos() {
           serviceId,
           quantity,
           color: itemColors[serviceId]?.trim() || undefined,
+          unitPrice: priceOverrides[serviceId],
+          notes: itemNotes[serviceId]?.trim() || undefined,
         }));
 
       const order = await api<{ id: string; orderNumber: string }>('/orders/staff', {
@@ -357,11 +448,19 @@ export function CreateOrderPos() {
 
       // Kassada darhol to'lov olingan bo'lsa — buyurtma bilan birga qayd etamiz.
       // Xatolik bo'lsa buyurtma baribir yaratilgan, shuning uchun ogohlantiramiz.
-      if (payNow) {
+      const paymentParts = payNow
+        ? payParts
+            .map((part) => ({
+              provider: part.provider,
+              amount: Math.floor(Number(part.amount)),
+            }))
+            .filter((part) => Number.isFinite(part.amount) && part.amount > 0)
+        : [];
+      if (paymentParts.length > 0) {
         try {
           await api(`/payments/orders/${order.id}/record`, {
             method: 'POST',
-            body: JSON.stringify({ provider: payNow, amount: payableTotal }),
+            body: JSON.stringify({ parts: paymentParts }),
           });
         } catch {
           toast.warning(t('payments.toastRecordFailed'));
@@ -378,6 +477,7 @@ export function CreateOrderPos() {
   }
 
   return (
+    <>
     <form onSubmit={onSubmit} className="flex flex-col h-full min-h-0">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border bg-card shrink-0">
@@ -538,12 +638,13 @@ export function CreateOrderPos() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
                     {filteredPrices.map((p) => {
                       const q = quantities[p.serviceId] ?? 0;
-                      const price = unitPriceFor(p);
+                      const custom = isCustomService(p);
+                      const price = linePriceFor(p);
                       return (
                         <button
                           key={p.serviceId}
                           type="button"
-                          onClick={() => setQty(p.serviceId, 1)}
+                          onClick={() => onTileTap(p)}
                           className={cn(
                             'relative flex flex-col items-start p-3 rounded-xl border-2 text-left transition-all active:scale-[0.97] min-h-[96px] touch-manipulation',
                             q > 0
@@ -563,8 +664,17 @@ export function CreateOrderPos() {
                             {p.service.name}
                           </span>
                           <span className="text-xs font-medium text-primary mt-2">
-                            {formatPrice(price)}
-                            <span className="text-muted-foreground font-normal"> / {p.service.unit}</span>
+                            {custom && priceOverrides[p.serviceId] === undefined ? (
+                              <span className="inline-flex items-center gap-1 text-amber-600">
+                                <Pencil className="h-3 w-3" />
+                                {t('pos.customTile')}
+                              </span>
+                            ) : (
+                              <>
+                                {formatPrice(price)}
+                                <span className="text-muted-foreground font-normal"> / {p.service.unit}</span>
+                              </>
+                            )}
                           </span>
                         </button>
                       );
@@ -651,9 +761,28 @@ export function CreateOrderPos() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{item.service.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatPrice(unitPriceFor(item))} × {item.quantity}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPriceDialogFor(item)}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                        title={t('pos.editPrice')}
+                      >
+                        <span
+                          className={cn(
+                            priceOverrides[item.serviceId] !== undefined &&
+                              'font-semibold text-primary',
+                          )}
+                        >
+                          {formatPrice(linePriceFor(item))}
+                        </span>
+                        × {item.quantity}
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      {itemNotes[item.serviceId] && (
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {itemNotes[item.serviceId]}
+                        </div>
+                      )}
                     </div>
                     <div className="font-semibold text-sm shrink-0">{formatPrice(item.lineTotal)}</div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -748,22 +877,45 @@ export function CreateOrderPos() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <span className="shrink-0 text-sm text-muted-foreground">
-                {t('payments.payNow')}
-              </span>
-              <Select
-                value={payNow}
-                onChange={(e) => setPayNow(e.target.value as '' | PaymentProvider)}
-                className="h-9 flex-1"
-              >
-                <option value="">{t('payments.later')}</option>
-                {PAYMENT_PROVIDERS.map((p) => (
-                  <option key={p} value={p}>
-                    {t(`payments.provider.${p}`)}
-                  </option>
-                ))}
-              </Select>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-sm text-muted-foreground">
+                  {t('payments.payNow')}
+                </span>
+                <div className="flex flex-1 rounded-lg border border-border p-0.5 bg-card">
+                  <button
+                    type="button"
+                    onClick={() => togglePayNow(false)}
+                    className={cn(
+                      'flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors',
+                      !payNow
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {t('payments.later')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => togglePayNow(true)}
+                    className={cn(
+                      'flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors',
+                      payNow
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {t('payments.now')}
+                  </button>
+                </div>
+              </div>
+              {payNow && (
+                <PaymentPartsEditor
+                  parts={payParts}
+                  onChange={setPayParts}
+                  outstanding={payableTotal}
+                />
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">
@@ -793,5 +945,21 @@ export function CreateOrderPos() {
         </div>
       </div>
     </form>
+
+      <PriceOverrideDialog
+        open={priceDialogFor !== null}
+        serviceName={priceDialogFor?.service.name ?? ''}
+        listPrice={priceDialogFor ? unitPriceFor(priceDialogFor) : undefined}
+        isCustom={priceDialogFor ? isCustomService(priceDialogFor) : false}
+        initialPrice={
+          priceDialogFor ? priceOverrides[priceDialogFor.serviceId] : undefined
+        }
+        initialNote={priceDialogFor ? itemNotes[priceDialogFor.serviceId] : undefined}
+        onClose={() => setPriceDialogFor(null)}
+        onSave={(price, note) => {
+          if (priceDialogFor) onPriceSaved(priceDialogFor.serviceId, price, note);
+        }}
+      />
+    </>
   );
 }

@@ -11,3 +11,4 @@ coverage
 apps/mobile/.expo
 apps/mobile/dist
 /.data
+*.tsbuildinfo

@@ -11,6 +11,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BranchesService } from '../branches/branches.service';
 import { AdminNotifyService } from '../orders/admin-notify.service';
 
+export type PaymentPart = { provider: PaymentProvider; amount: number };
+
 export type PaymentActor = {
   id: string;
   role: UserRole;
@@ -44,12 +46,13 @@ export class PaymentsService {
   }
 
   /**
-   * Xodim kassada qabul qilgan to'lovni yozib qo'yadi (naqd, karta, o'tkazma).
-   * Qisman to'lov qo'llab-quvvatlanadi — qoldiq keyin to'lanishi mumkin.
+   * Xodim kassada qabul qilgan to'lovni yozib qo'yadi. Bir buyurtma bir necha
+   * usulda to'lanishi mumkin (masalan, bir qismi naqd, bir qismi Click) —
+   * qismlar bitta tranzaksiyada saqlanadi. Qisman to'lov ham mumkin.
    */
   async record(
     orderId: string,
-    data: { provider: PaymentProvider; amount: number; note?: string },
+    data: { parts: PaymentPart[]; note?: string },
     actor: PaymentActor,
   ) {
     if (actor.role === UserRole.customer) {
@@ -67,37 +70,54 @@ export class PaymentsService {
       throw new BadRequestException('Bekor qilingan buyurtmaga to\'lov qabul qilinmaydi');
     }
 
-    const amount = Math.floor(Number(data.amount));
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new BadRequestException('To\'lov summasi 0 dan katta bo\'lishi kerak');
+    if (!data.parts?.length) {
+      throw new BadRequestException('Kamida bitta to\'lov qismi kiriting');
     }
+    if (data.parts.length > 5) {
+      throw new BadRequestException('Bitta to\'lovda 5 tagacha usul bo\'lishi mumkin');
+    }
+
+    const parts = data.parts.map((part) => {
+      const amount = Math.floor(Number(part.amount));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new BadRequestException('Har bir qism 0 dan katta bo\'lishi kerak');
+      }
+      return { provider: part.provider, amount };
+    });
+    const totalPartAmount = parts.reduce((sum, part) => sum + part.amount, 0);
 
     const outstanding = this.outstandingOf(order.totalAmount, order.payments);
     if (outstanding <= 0) {
       throw new BadRequestException('Bu buyurtma to\'liq to\'langan');
     }
-    if (amount > outstanding) {
+    if (totalPartAmount > outstanding) {
       throw new BadRequestException(
         `To'lov qoldiqdan oshmasligi kerak (qoldiq: ${outstanding})`,
       );
     }
 
-    const payment = await this.prisma.payment.create({
-      data: {
-        orderId,
-        provider: data.provider,
-        amount,
-        status: PaymentStatus.paid,
-        externalId: `${data.provider}-${Date.now()}`,
-        metadata: {
-          recordedBy: actor.id,
-          ...(data.note?.trim() ? { note: data.note.trim().slice(0, 300) } : {}),
-        } as Prisma.InputJsonValue,
-      },
-    });
+    const note = data.note?.trim() ? data.note.trim().slice(0, 300) : undefined;
+    const stamp = Date.now();
+    const created = await this.prisma.$transaction(
+      parts.map((part, i) =>
+        this.prisma.payment.create({
+          data: {
+            orderId,
+            provider: part.provider,
+            amount: part.amount,
+            status: PaymentStatus.paid,
+            externalId: `${part.provider}-${stamp}-${i}`,
+            metadata: {
+              recordedBy: actor.id,
+              ...(note ? { note } : {}),
+            } as Prisma.InputJsonValue,
+          },
+        }),
+      ),
+    );
 
     this.adminNotify.paymentReceived({
-      amount: payment.amount,
+      amount: totalPartAmount,
       order: { ...order, branch: order.branch },
     });
 
@@ -105,7 +125,7 @@ export class PaymentsService {
       where: { orderId },
       orderBy: { createdAt: 'desc' },
     });
-    return { payment, summary: this.buildSummary(order, payments) };
+    return { payments: created, summary: this.buildSummary(order, payments) };
   }
 
   /** Xato qayd etilgan to'lovni qaytarish (refunded) — qoldiq qayta ochiladi */

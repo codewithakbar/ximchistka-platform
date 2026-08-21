@@ -17,6 +17,7 @@ import {
   Trash2,
   Palette,
   Plus,
+  Printer,
   Ticket,
   X,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StaffAvatar } from '@/components/staff/staff-avatar';
 import { ThemeToggle, LanguageToggle } from '@/components/layout/prefs-controls';
 import { PromoCodesPanel } from '@/components/settings/promo-codes-panel';
+import { ReceiptSettingsPanel } from '@/components/settings/receipt-settings-panel';
 import { api, clearAuth, updateStoredUser } from '@/lib/api';
 import { fileToAvatarDataUrl } from '@/lib/image';
 import { cn } from '@/lib/utils';
@@ -85,6 +87,7 @@ const tabs = [
   { id: 'password', labelKey: 'settings.password.title', icon: Lock },
   { id: 'organization', labelKey: 'settings.organization', icon: Building2 },
   { id: 'promo', labelKey: 'promo.panelTitle', icon: Ticket },
+  { id: 'receipt', labelKey: 'receiptSettings.title', icon: Printer },
   { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
   { id: 'system', labelKey: 'settings.system', icon: Server },
 ] as const;
@@ -231,11 +234,7 @@ export default function SettingsPage() {
   async function saveOrganization(e: FormEvent) {
     e.preventDefault();
     if (!isSuperAdmin) return;
-    const nextNum = Number.parseInt(orderNext, 10);
-    if (!Number.isFinite(nextNum) || nextNum < 1) {
-      toast.error(t('settings.org.orderNextInvalid'));
-      return;
-    }
+
     try {
       const updated = await api<Organization>('/settings/organization', {
         method: 'PATCH',
@@ -243,27 +242,18 @@ export default function SettingsPage() {
           name: orgName,
           slug: orgSlug,
           orderNumberPrefix: orderPrefix,
-          orderNumberNext: nextNum,
           orderItemColors,
         }),
       });
       setOrg(updated);
       setOrderPrefix(updated.orderNumberPrefix ?? orderPrefix);
-      setOrderNext(String(updated.orderNumberNext ?? nextNum));
+      setOrderNext(String(updated.orderNumberNext ?? orderNext));
       setOrderItemColors(updated.orderItemColors ?? orderItemColors);
       toast.success(t('settings.toast.orgSaved'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Xatolik');
     }
   }
-
-  const orderPreview = (() => {
-    const cleaned = orderPrefix.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'XC';
-    const n = Number.parseInt(orderNext, 10);
-    const seq = Number.isFinite(n) && n > 0 ? n : 1;
-    const pad = Math.max(4, String(seq).length);
-    return `${cleaned}-${String(seq).padStart(pad, '0')}`;
-  })();
 
   function addItemColor() {
     const label = newItemColor.trim().slice(0, 40);
@@ -292,6 +282,12 @@ export default function SettingsPage() {
   const visibleTabs = tabs.filter((t) => {
     if (t.id === 'organization') return profile?.organization;
     if (t.id === 'promo') {
+      return (
+        profile?.organization &&
+        (profile.role === 'super_admin' || profile.role === 'branch_manager')
+      );
+    }
+    if (t.id === 'receipt') {
       return (
         profile?.organization &&
         (profile.role === 'super_admin' || profile.role === 'branch_manager')
@@ -581,42 +577,23 @@ export default function SettingsPage() {
                             {t('settings.org.orderNumberDesc')}
                           </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label>{t('settings.org.orderPrefix')}</Label>
-                            <Input
-                              value={orderPrefix}
-                              onChange={(e) =>
-                                setOrderPrefix(
-                                  e.target.value.toUpperCase().replace(/[^A-Z0-9]/gi, '').slice(0, 8),
-                                )
-                              }
-                              disabled={!isSuperAdmin}
-                              placeholder="XC"
-                              maxLength={8}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label>{t('settings.org.orderNext')}</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={99999999}
-                              value={orderNext}
-                              onChange={(e) => setOrderNext(e.target.value)}
-                              disabled={!isSuperAdmin}
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="rounded-md bg-card border border-border px-3 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            {t('settings.org.orderPreview')}
-                          </div>
-                          <div className="text-lg font-bold font-mono tracking-wide mt-0.5">
-                            {orderPreview}
-                          </div>
+                        <div>
+                          <Label>{t('settings.org.orderPrefix')}</Label>
+                          <Input
+                            value={orderPrefix}
+                            onChange={(e) =>
+                              setOrderPrefix(
+                                e.target.value.toUpperCase().replace(/[^A-Z0-9]/gi, '').slice(0, 8),
+                              )
+                            }
+                            disabled={!isSuperAdmin}
+                            placeholder="XC"
+                            maxLength={8}
+                            required
+                          />
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t('settings.org.orderPerBranchHint')}
+                          </p>
                         </div>
                       </div>
 
@@ -685,6 +662,13 @@ export default function SettingsPage() {
 
               {tab === 'promo' && (
                 <PromoCodesPanel canManage={profile?.role === 'super_admin'} />
+              )}
+
+              {tab === 'receipt' && (
+                <ReceiptSettingsPanel
+                  organizationName={profile?.organization?.name}
+                  canManage={profile?.role === 'super_admin'}
+                />
               )}
 
               {tab === 'notifications' && (

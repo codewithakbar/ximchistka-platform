@@ -45,7 +45,10 @@ export class ServicesCatalogService {
     });
   }
 
-  async getBranchPrices(branchId: string) {
+  async getBranchPrices(
+    branchId: string,
+    opts: { includeCustom: boolean } = { includeCustom: false },
+  ) {
     const branch = await this.prisma.branch.findUnique({
       where: { id: branchId },
       select: { organizationId: true },
@@ -72,9 +75,13 @@ export class ServicesCatalogService {
 
     const ruleByServiceId = new Map(rules.map((rule) => [rule.serviceId, rule]));
 
+    const visible = opts.includeCustom
+      ? services
+      : services.filter((service) => !service.isCustom);
+
     // Qoida topilmasa basePrice ishlatiladi — bu o'qish yo'li DB ga yozmaydi
     // (endpoint ommaviy: mijoz veb/mobil narxlarni auth siz ko'radi).
-    return services.map((service) => {
+    return visible.map((service) => {
       const rule = ruleByServiceId.get(service.id);
       const listPrice = rule?.price ?? service.basePrice;
       const pricedService = rule?.service ?? service;
@@ -85,10 +92,12 @@ export class ServicesCatalogService {
         listPrice,
         effectivePrice: applyServiceDiscount(listPrice, pricedService),
         itemType: rule?.itemType ?? 'standart',
+        isCustom: service.isCustom,
         service: {
           id: service.id,
           name: service.name,
           unit: service.unit,
+          isCustom: service.isCustom,
           categoryId: service.categoryId,
           categoryName: service.category.name,
         },
@@ -114,6 +123,7 @@ export class ServicesCatalogService {
       description?: string;
       basePrice: number;
       unit?: string;
+      isCustom?: boolean;
       discountType?: string | null;
       discountValue?: number | null;
       discountValidUntil?: string | null;
@@ -129,6 +139,7 @@ export class ServicesCatalogService {
         description: data.description,
         basePrice: data.basePrice,
         unit: data.unit,
+        isCustom: data.isCustom ?? false,
         ...discount,
       },
     });
@@ -192,6 +203,7 @@ export class ServicesCatalogService {
       unit: string;
       basePrice: number;
       isActive: boolean;
+      isCustom: boolean;
       discountType: string | null;
       discountValue: number | null;
       discountValidUntil: string | null;

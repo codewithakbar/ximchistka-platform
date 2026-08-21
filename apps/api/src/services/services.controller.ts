@@ -18,6 +18,7 @@ class CreateServiceDto {
   @IsOptional() @IsString() description?: string;
   @IsNumber() basePrice!: number;
   @IsOptional() @IsString() unit?: string;
+  @IsOptional() @IsBoolean() isCustom?: boolean;
   @IsOptional() @IsString() discountType?: string;
   @IsOptional() @IsNumber() discountValue?: number;
   @IsOptional() @IsString() discountValidUntil?: string;
@@ -36,6 +37,7 @@ class UpdateServiceDto {
   @IsOptional() @IsString() unit?: string;
   @IsOptional() @IsNumber() basePrice?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() isCustom?: boolean;
   @IsOptional() @IsString() discountType?: string | null;
   @IsOptional() @IsNumber() discountValue?: number | null;
   @IsOptional() @IsString() discountValidUntil?: string | null;
@@ -72,8 +74,14 @@ export class ServicesController {
 
   @Public()
   @Get('prices/:branchId')
-  branchPrices(@Param('branchId') branchId: string) {
-    return this.services.getBranchPrices(branchId);
+  branchPrices(
+    @Param('branchId') branchId: string,
+    @CurrentUser() user?: TenantUser,
+  ) {
+    // Konstruktor xizmatlar (narx buyurtmada kiritiladi) faqat xodim POS ida
+    // ko'rinadi — mijoz ularni "0 so'm" deb buyurtma qila olmasin
+    const includeCustom = Boolean(user && user.role !== UserRole.customer);
+    return this.services.getBranchPrices(branchId, { includeCustom });
   }
 
   @Roles(UserRole.super_admin)

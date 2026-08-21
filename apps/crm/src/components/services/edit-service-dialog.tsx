@@ -16,6 +16,7 @@ export type ServiceItem = {
   description: string | null;
   unit: string;
   basePrice: number;
+  isCustom?: boolean;
   discountType: string | null;
   discountValue: number | null;
   discountValidUntil: string | null;
@@ -42,6 +43,7 @@ export function EditServiceDialog({
   const [unit, setUnit] = useState('dona');
   const [basePrice, setBasePrice] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [isCustom, setIsCustom] = useState(false);
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState('');
@@ -54,6 +56,7 @@ export function EditServiceDialog({
       setUnit(service.unit);
       setBasePrice(String(service.basePrice));
       setIsActive(service.isActive);
+      setIsCustom(service.isCustom ?? false);
       const hasDiscount = Boolean(service.discountType && service.discountValue);
       setDiscountEnabled(hasDiscount);
       setDiscountType(
@@ -74,7 +77,7 @@ export function EditServiceDialog({
     e.preventDefault();
     if (!service) return;
     const serviceId = service.id;
-    const price = Number(basePrice);
+    const price = isCustom ? 0 : Number(basePrice);
     if (!Number.isFinite(price) || price < 0) {
       toast.error('Narx noto\'g\'ri');
       return;
@@ -89,8 +92,9 @@ export function EditServiceDialog({
           unit: unit.trim() || 'dona',
           basePrice: price,
           isActive,
-          discountType: discountEnabled ? discountType : null,
-          discountValue: discountEnabled ? Number(discountValue) : null,
+          isCustom,
+          discountType: discountEnabled && !isCustom ? discountType : null,
+          discountValue: discountEnabled && !isCustom ? Number(discountValue) : null,
           discountValidUntil: discountEnabled && discountValidUntil
             ? new Date(discountValidUntil).toISOString()
             : null,
@@ -146,22 +150,39 @@ export function EditServiceDialog({
             <Label>{t('common.description')}</Label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
+          <label className="flex items-start gap-2 text-sm cursor-pointer rounded-lg border border-border p-3">
+            <input
+              type="checkbox"
+              checked={isCustom}
+              onChange={(e) => setIsCustom(e.target.checked)}
+              className="accent-primary h-4 w-4 mt-0.5"
+            />
+            <span>
+              <span className="font-medium">{t('services.customService')}</span>
+              <span className="block text-xs text-muted-foreground">
+                {t('services.customServiceHint')}
+              </span>
+            </span>
+          </label>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>O&apos;lchov</Label>
               <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
             </div>
-            <div>
-              <Label>Asosiy narx</Label>
-              <Input
-                type="number"
-                min={0}
-                value={basePrice}
-                onChange={(e) => setBasePrice(e.target.value)}
-                required
-              />
-            </div>
+            {!isCustom && (
+              <div>
+                <Label>Asosiy narx</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={basePrice}
+                  onChange={(e) => setBasePrice(e.target.value)}
+                  required
+                />
+              </div>
+            )}
           </div>
+          {!isCustom && (
           <DiscountFields
             enabled={discountEnabled}
             onEnabledChange={setDiscountEnabled}
@@ -173,6 +194,7 @@ export function EditServiceDialog({
             onDiscountValidUntilChange={setDiscountValidUntil}
             previewBasePrice={Number(basePrice) || undefined}
           />
+          )}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"

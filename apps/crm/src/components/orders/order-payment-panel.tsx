@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Undo2, Wallet } from 'lucide-react';
+import { Plus, Trash2, Undo2, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +14,10 @@ import { useDemoExpired } from '@/components/layout/demo-expired-lock';
 import { useHasRole } from '@/hooks/use-client-auth';
 import { useFormatDate, useI18n } from '@/lib/i18n';
 
-export const PAYMENT_PROVIDERS = ['cash', 'click', 'payme', 'uzum'] as const;
+export const PAYMENT_PROVIDERS = ['cash', 'click', 'transfer', 'payme', 'uzum'] as const;
 export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
+
+export type PaymentPartInput = { provider: PaymentProvider; amount: string };
 
 type PaymentRow = {
   id: string;
@@ -41,6 +43,102 @@ const statusVariant = {
   refunded: 'secondary',
 } as const;
 
+/** Aralash to'lov qismlari editori — POS va buyurtma sahifasida ishlatiladi */
+export function PaymentPartsEditor({
+  parts,
+  onChange,
+  outstanding,
+}: {
+  parts: PaymentPartInput[];
+  onChange: (parts: PaymentPartInput[]) => void;
+  outstanding?: number;
+}) {
+  const { t } = useI18n();
+
+  const partsTotal = parts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  function setPart(index: number, patch: Partial<PaymentPartInput>) {
+    onChange(parts.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+  }
+
+  function addPart() {
+    if (parts.length >= 5) return;
+    // Yangi qism qoldiqni to'ldirishga taklif qilinadi
+    const remaining =
+      outstanding !== undefined ? Math.max(0, outstanding - partsTotal) : 0;
+    const used = new Set(parts.map((p) => p.provider));
+    const nextProvider =
+      PAYMENT_PROVIDERS.find((p) => !used.has(p)) ?? PAYMENT_PROVIDERS[0];
+    onChange([
+      ...parts,
+      { provider: nextProvider, amount: remaining > 0 ? String(remaining) : '' },
+    ]);
+  }
+
+  function removePart(index: number) {
+    onChange(parts.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div className="space-y-2">
+      {parts.map((part, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Select
+            value={part.provider}
+            onChange={(e) => setPart(i, { provider: e.target.value as PaymentProvider })}
+            className="h-9 w-32 shrink-0"
+          >
+            {PAYMENT_PROVIDERS.map((p) => (
+              <option key={p} value={p}>
+                {t(`payments.provider.${p}`)}
+              </option>
+            ))}
+          </Select>
+          <Input
+            type="number"
+            min={1}
+            step={1}
+            value={part.amount}
+            onChange={(e) => setPart(i, { amount: e.target.value })}
+            placeholder={t('payments.amount')}
+            className="h-9 flex-1 min-w-0"
+          />
+          {parts.length > 1 && (
+            <button
+              type="button"
+              onClick={() => removePart(i)}
+              className="h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-destructive"
+              aria-label={t('common.delete')}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      ))}
+
+      <div className="flex items-center justify-between gap-2">
+        {parts.length < 5 ? (
+          <button
+            type="button"
+            onClick={addPart}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {t('payments.addPart')}
+          </button>
+        ) : (
+          <span />
+        )}
+        {parts.length > 1 && (
+          <span className="text-xs text-muted-foreground">
+            {t('payments.partsTotal')}: <b>{formatPrice(partsTotal)}</b>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function OrderPaymentPanel({
   orderId,
   cancelled = false,
@@ -57,8 +155,7 @@ export function OrderPaymentPanel({
 
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [provider, setProvider] = useState<PaymentProvider>('cash');
-  const [amount, setAmount] = useState('');
+  const [parts, setParts] = useState<PaymentPartInput[]>([]);
   const [saving, setSaving] = useState(false);
   const [refunding, setRefunding] = useState<PaymentRow | null>(null);
   const [refundBusy, setRefundBusy] = useState(false);
@@ -85,30 +182,36 @@ export function OrderPaymentPanel({
 
   function openForm() {
     if (!summary) return;
-    setAmount(String(summary.outstanding));
-    setProvider('cash');
+    setParts([{ provider: 'cash', amount: String(summary.outstanding) }]);
     setFormOpen(true);
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
+    if (!summary) return;
+
+    const cleaned = parts
+      .map((p) => ({ provider: p.provider, amount: Math.floor(Number(p.amount)) }))
+      .filter((p) => Number.isFinite(p.amount) && p.amount > 0);
+    if (!cleaned.length) {
       toast.error(t('payments.invalidAmount'));
       return;
     }
+    const total = cleaned.reduce((sum, p) => sum + p.amount, 0);
+    if (total > summary.outstanding) {
+      toast.error(t('payments.maxHint', { amount: formatPrice(summary.outstanding) }));
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await api<{ summary: PaymentSummary }>(
         `/payments/orders/${orderId}/record`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ provider, amount: Math.floor(value) }),
-        },
+        { method: 'POST', body: JSON.stringify({ parts: cleaned }) },
       );
       apply(res.summary);
       setFormOpen(false);
-      toast.success(t('payments.toastRecorded', { amount: formatPrice(Math.floor(value)) }));
+      toast.success(t('payments.toastRecorded', { amount: formatPrice(total) }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
@@ -208,36 +311,15 @@ export function OrderPaymentPanel({
 
             {formOpen ? (
               <form onSubmit={onSubmit} className="space-y-3 border-t border-border pt-3">
-                <div>
-                  <Label htmlFor="payment-provider">{t('payments.method')}</Label>
-                  <Select
-                    id="payment-provider"
-                    value={provider}
-                    onChange={(e) => setProvider(e.target.value as PaymentProvider)}
-                  >
-                    {PAYMENT_PROVIDERS.map((p) => (
-                      <option key={p} value={p}>
-                        {t(`payments.provider.${p}`)}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="payment-amount">{t('payments.amount')}</Label>
-                  <Input
-                    id="payment-amount"
-                    type="number"
-                    min={1}
-                    max={summary.outstanding}
-                    step={1}
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t('payments.maxHint', { amount: formatPrice(summary.outstanding) })}
-                  </p>
-                </div>
+                <Label>{t('payments.method')}</Label>
+                <PaymentPartsEditor
+                  parts={parts}
+                  onChange={setParts}
+                  outstanding={summary.outstanding}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('payments.maxHint', { amount: formatPrice(summary.outstanding) })}
+                </p>
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1" loading={saving}>
                     {t('payments.record')}

@@ -3,6 +3,7 @@ import {
   IsArray,
   IsEmail,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -40,6 +41,11 @@ class UpdateOrganizationDto {
   @IsArray()
   @IsString({ each: true })
   orderItemColors?: string[];
+
+  /** Chek sozlamalari — servisda normallashtiriladi */
+  @IsOptional()
+  @IsObject()
+  receiptSettings?: Record<string, unknown>;
 }
 
 @Controller('settings')

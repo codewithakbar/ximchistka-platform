@@ -49,6 +49,8 @@ type BranchFinance = {
     openTime: string;
     closeTime: string;
     isActive: boolean;
+    orderNumberPrefix?: string | null;
+    orderNumberNext?: number;
   };
   summary: {
     totalOrders: number;
@@ -58,6 +60,10 @@ type BranchFinance = {
     totalPending: number;
     avgOrder: number;
     collectionRate: number;
+    kassa?: {
+      totalPaid: number;
+      byProvider: { provider: string; amount: number; count: number }[];
+    };
   };
   revenueByDay: { date: string; count: number; revenue: number }[];
   revenueHistory: {
@@ -241,6 +247,29 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
             <Stat label={t('branchDetail.pending')} value={formatPrice(data.summary.totalPending)} />
             <Stat label={t('branchDetail.collectionRate')} value={`${data.summary.collectionRate}%`} />
           </div>
+
+          {data.summary.kassa && data.summary.kassa.byProvider.length > 0 && (
+            <div className="mb-6 rounded-xl border border-border bg-card p-4">
+              <div className="text-sm font-semibold mb-0.5">{t('kassa.title')}</div>
+              <p className="text-xs text-muted-foreground mb-3">{t('kassa.desc')}</p>
+              <div className="flex flex-wrap gap-3">
+                {data.summary.kassa.byProvider.map((row) => (
+                  <div
+                    key={row.provider}
+                    className="rounded-lg border border-border px-3 py-2 min-w-[130px]"
+                  >
+                    <div className="text-xs text-muted-foreground">
+                      {t(`payments.provider.${row.provider}`, row.provider)}
+                    </div>
+                    <div className="font-semibold">{formatPrice(row.amount)}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {t('kassa.count', { count: row.count })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2 mb-4 border-b border-border pb-2">
             {visibleTabs.map((tabItem) => {

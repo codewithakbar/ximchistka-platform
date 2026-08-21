@@ -217,7 +217,9 @@ export default function ServicesPage() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            {isServiceDiscountActive(s) ? (
+                            {s.isCustom ? (
+                              <Badge variant="info">{t('services.customBadge')}</Badge>
+                            ) : isServiceDiscountActive(s) ? (
                               <>
                                 <div className="font-bold text-primary">
                                   {formatPrice(applyServiceDiscount(s.basePrice, s))}

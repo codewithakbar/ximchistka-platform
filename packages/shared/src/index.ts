@@ -122,3 +122,76 @@ export function discountLabel(service: ServiceDiscountFields): string | null {
 }
 
 export { resolveApiBaseUrl, resolveWsBaseUrl } from './api-url';
+
+/* ------------------------------------------------------------------ */
+/* Chek (termoprinter) sozlamalari                                     */
+/* ------------------------------------------------------------------ */
+
+export const RECEIPT_PAPER_WIDTHS = [58, 80] as const;
+export type ReceiptPaperWidth = (typeof RECEIPT_PAPER_WIDTHS)[number];
+
+export const RECEIPT_FONT_SCALES = ['compact', 'normal', 'large'] as const;
+export type ReceiptFontScale = (typeof RECEIPT_FONT_SCALES)[number];
+
+export type ReceiptSettings = {
+  /** Qog'oz eni, mm (XPrinter 58 yoki 80) */
+  paperWidth: ReceiptPaperWidth;
+  /** Shrift o'lchami */
+  fontScale: ReceiptFontScale;
+  /** Chek tepasida (firma nomi ostida) chiqadigan qo'shimcha matn */
+  headerText: string;
+  /** Chek oxirida chiqadigan qo'shimcha matn */
+  footerText: string;
+  /** Kuzatuv QR kodini chiqarish */
+  showQr: boolean;
+  /** Chekda buyurtma eslatmasini chiqarish */
+  showNotes: boolean;
+};
+
+export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
+  paperWidth: 80,
+  fontScale: 'normal',
+  headerText: '',
+  footerText: '',
+  showQr: true,
+  showNotes: true,
+};
+
+/** Chek shrift shkalasi -> asosiy px o'lchami (qolganlari em orqali) */
+export const RECEIPT_FONT_BASE_PX: Record<ReceiptFontScale, number> = {
+  compact: 9,
+  normal: 10.5,
+  large: 12,
+};
+
+/**
+ * Saqlangan (Json) chek sozlamalarini xavfsiz normallashtiradi:
+ * noto'g'ri qiymatlar standartga tushadi, matnlar cheklanadi.
+ */
+export function normalizeReceiptSettings(raw: unknown): ReceiptSettings {
+  const src = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+
+  const paperWidth = RECEIPT_PAPER_WIDTHS.includes(src.paperWidth as ReceiptPaperWidth)
+    ? (src.paperWidth as ReceiptPaperWidth)
+    : DEFAULT_RECEIPT_SETTINGS.paperWidth;
+
+  const fontScale = RECEIPT_FONT_SCALES.includes(src.fontScale as ReceiptFontScale)
+    ? (src.fontScale as ReceiptFontScale)
+    : DEFAULT_RECEIPT_SETTINGS.fontScale;
+
+  const text = (value: unknown, max: number) =>
+    typeof value === 'string' ? value.trim().slice(0, max) : '';
+
+  return {
+    paperWidth,
+    fontScale,
+    headerText: text(src.headerText, 200),
+    footerText: text(src.footerText, 300),
+    showQr:
+      typeof src.showQr === 'boolean' ? src.showQr : DEFAULT_RECEIPT_SETTINGS.showQr,
+    showNotes:
+      typeof src.showNotes === 'boolean'
+        ? src.showNotes
+        : DEFAULT_RECEIPT_SETTINGS.showNotes,
+  };
+}

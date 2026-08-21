@@ -17,6 +17,8 @@ export type BranchFormData = {
   openTime: string;
   closeTime: string;
   isActive: boolean;
+  orderNumberPrefix?: string | null;
+  orderNumberNext?: number;
 };
 
 export function EditBranchForm({
@@ -36,6 +38,8 @@ export function EditBranchForm({
   const [openTime, setOpenTime] = useState(branch.openTime);
   const [closeTime, setCloseTime] = useState(branch.closeTime);
   const [isActive, setIsActive] = useState(branch.isActive);
+  const [orderPrefix, setOrderPrefix] = useState(branch.orderNumberPrefix ?? '');
+  const [orderNext, setOrderNext] = useState(String(branch.orderNumberNext ?? 1));
 
   useEffect(() => {
     setName(branch.name);
@@ -44,6 +48,8 @@ export function EditBranchForm({
     setOpenTime(branch.openTime);
     setCloseTime(branch.closeTime);
     setIsActive(branch.isActive);
+    setOrderPrefix(branch.orderNumberPrefix ?? '');
+    setOrderNext(String(branch.orderNumberNext ?? 1));
   }, [branch]);
 
   async function onSubmit(e: FormEvent) {
@@ -58,7 +64,13 @@ export function EditBranchForm({
           phone: phone.trim(),
           openTime,
           closeTime,
-          ...(canManage ? { isActive } : {}),
+          ...(canManage
+            ? {
+                isActive,
+                orderNumberPrefix: orderPrefix.trim(),
+                orderNumberNext: Math.max(1, Math.floor(Number(orderNext)) || 1),
+              }
+            : {}),
         }),
       });
       toast.success(t('dialog.branch.toastSaved'));
@@ -94,6 +106,46 @@ export function EditBranchForm({
           <Input type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} required />
         </div>
       </div>
+      {canManage && (
+        <div className="rounded-lg border border-border p-3 space-y-3">
+          <div>
+            <div className="text-sm font-semibold">{t('branchNumbering.title')}</div>
+            <p className="text-xs text-muted-foreground">{t('branchNumbering.desc')}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{t('branchNumbering.prefix')}</Label>
+              <Input
+                value={orderPrefix}
+                onChange={(e) =>
+                  setOrderPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))
+                }
+                placeholder="CH"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('branchNumbering.prefixHint')}
+              </p>
+            </div>
+            <div>
+              <Label>{t('branchNumbering.next')}</Label>
+              <Input
+                type="number"
+                min={1}
+                value={orderNext}
+                onChange={(e) => setOrderNext(e.target.value)}
+              />
+              {orderPrefix && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('branchNumbering.preview')}:{' '}
+                  <b>
+                    {orderPrefix}-{String(Math.max(1, Number(orderNext) || 1)).padStart(4, '0')}
+                  </b>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {canManage && (
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input

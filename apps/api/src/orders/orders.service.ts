@@ -8,6 +8,7 @@ import {
   DeliveryType,
   OrderStatus,
   PaymentStatus,
+  Prisma,
   UserRole,
 } from '@prisma/client';
 import {
@@ -35,6 +36,8 @@ interface OrderItemInput {
   notes?: string;
   color?: string;
   photoUrl?: string;
+  /** Xodim kiritgan narx (konstruktor xizmat yoki kelishilgan chegirma) */
+  unitPrice?: number;
 }
 
 @Injectable()
@@ -56,7 +59,13 @@ export class OrdersService {
       branchIds: string[];
       customerProfileId?: string;
     },
-    query: { branchId?: string; status?: OrderStatus; page?: number; limit?: number },
+    query: {
+      branchId?: string;
+      status?: OrderStatus;
+      q?: string;
+      page?: number;
+      limit?: number;
+    },
   ) {
     // Cheklanmagan limit butun jadvalni bitta so'rovda tortib olishga imkon berardi
     const page = Math.max(1, query.page ?? 1);
@@ -75,6 +84,19 @@ export class OrdersService {
       where.branchId = query.branchId;
     }
     if (query.status) where.status = query.status;
+
+    const q = query.q?.trim();
+    if (q) {
+      // Chek raqami, mijoz ismi yoki telefoni bo'yicha qidiruv
+      const digits = q.replace(/\D/g, '');
+      where.OR = [
+        { orderNumber: { contains: q, mode: 'insensitive' } },
+        { customer: { user: { fullName: { contains: q, mode: 'insensitive' } } } },
+        ...(digits.length >= 4
+          ? [{ customer: { user: { phone: { contains: digits } } } }]
+          : []),
+      ];
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -144,7 +166,10 @@ export class OrdersService {
     }
     if (!customerId) throw new BadRequestException('Mijoz profili topilmadi');
 
-    return this.createOrderForCustomer(customerId, user.id, data);
+    // Mijoz o'zi narx belgilay olmaydi
+    return this.createOrderForCustomer(customerId, user.id, data, {
+      allowPriceOverride: false,
+    });
   }
 
   async createStaffOrder(
@@ -208,7 +233,9 @@ export class OrdersService {
     const profile = customerUser.customerProfile;
     if (!profile) throw new BadRequestException('Mijoz profili yaratilmadi');
 
-    return this.createOrderForCustomer(profile.id, user.id, data);
+    return this.createOrderForCustomer(profile.id, user.id, data, {
+      allowPriceOverride: true,
+    });
   }
 
   private async createOrderForCustomer(
@@ -223,6 +250,7 @@ export class OrdersService {
       address?: string;
       promoCode?: string;
     },
+    opts: { allowPriceOverride: boolean },
   ) {
     const branch = await this.prisma.branch.findUnique({
       where: { id: data.branchId },
@@ -230,7 +258,7 @@ export class OrdersService {
     });
     if (!branch) throw new BadRequestException('Filial topilmadi');
 
-    const priced = await this.priceItems(data.branchId, data.items);
+    const priced = await this.priceItems(data.branchId, data.items, opts);
     const promo = data.promoCode?.trim()
       ? await this.promo.resolveForOrder(
           data.promoCode,
@@ -243,35 +271,49 @@ export class OrdersService {
     const discountAmount = Math.max(0, priced.subtotal - totalAmount);
     const itemsData = priced.itemsData;
 
-    const orderNumber = await this.generateOrderNumber(branch.organizationId);
-
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber,
-        branchId: data.branchId,
-        customerId,
-        status: OrderStatus.submitted,
-        totalAmount,
-        discountAmount,
-        promoCode: promo?.code,
-        notes: data.notes,
-        estimatedReady: new Date(Date.now() + 48 * 3600000),
-        items: { create: itemsData },
-        statusHistory: { create: { status: OrderStatus.submitted, changedBy } },
-        pickupDelivery: {
-          create: {
-            type: data.deliveryType,
-            scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
-            address: data.address,
+    // Bir xil prefiksli filiallar bir vaqtda bir xil raqamni hisoblashi mumkin —
+    // unique to'qnashuvda (P2002) yangi raqam olib qayta urinamiz
+    const createWithNumber = (orderNumber: string) =>
+      this.prisma.order.create({
+        data: {
+          orderNumber,
+          branchId: data.branchId,
+          customerId,
+          status: OrderStatus.submitted,
+          totalAmount,
+          discountAmount,
+          promoCode: promo?.code,
+          notes: data.notes,
+          estimatedReady: new Date(Date.now() + 48 * 3600000),
+          items: { create: itemsData },
+          statusHistory: { create: { status: OrderStatus.submitted, changedBy } },
+          pickupDelivery: {
+            create: {
+              type: data.deliveryType,
+              scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
+              address: data.address,
+            },
           },
         },
-      },
-      include: {
-        branch: true,
-        items: { include: { service: true } },
-        customer: { include: { user: true } },
-      },
-    });
+        include: {
+          branch: true,
+          items: { include: { service: true } },
+          customer: { include: { user: true } },
+        },
+      });
+
+    let order: Awaited<ReturnType<typeof createWithNumber>> | null = null;
+    for (let attempt = 0; attempt < 3 && !order; attempt++) {
+      const orderNumber = await this.generateOrderNumber(data.branchId);
+      try {
+        order = await createWithNumber(orderNumber);
+      } catch (err) {
+        if (!this.isOrderNumberConflict(err) || attempt === 2) throw err;
+      }
+    }
+    if (!order) {
+      throw new BadRequestException('Chek raqami yaratilmadi — qayta urinib ko\'ring');
+    }
 
     if (promo) {
       void this.promo.markUsed(promo.id);
@@ -330,11 +372,20 @@ export class OrdersService {
   }
 
   async trackByNumber(orderNumber: string) {
+    // Endpoint ommaviy — faqat kuzatuvga kerakli maydonlar qaytadi
+    // (summa, eslatma, mijoz ma'lumotlari tashqariga chiqmaydi)
     const order = await this.prisma.order.findUnique({
       where: { orderNumber },
-      include: {
-        branch: true,
-        statusHistory: { orderBy: { createdAt: 'asc' } },
+      select: {
+        orderNumber: true,
+        status: true,
+        createdAt: true,
+        estimatedReady: true,
+        branch: { select: { name: true, address: true, phone: true } },
+        statusHistory: {
+          select: { status: true, createdAt: true },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
     if (!order) throw new NotFoundException('Buyurtma topilmadi');
@@ -377,22 +428,20 @@ export class OrdersService {
     let discountAmount = order.discountAmount;
 
     if (data.items) {
-      const priced = await this.priceItems(order.branchId, data.items);
+      const priced = await this.priceItems(order.branchId, data.items, {
+        allowPriceOverride: true,
+      });
 
-      // Buyurtmadagi promo-kod qayta qo'llanadi, lekin ishlatilish soni oshmaydi.
-      // Kod muddati o'tgan bo'lsa chegirmasiz davom etamiz.
+      // Buyurtmadagi promo-kod qayta qo'llanadi — kod limiti keyin tugagan
+      // bo'lsa ham buyurtma o'z chegirmasini yo'qotmaydi
       let promoDiscount = 0;
       if (order.promoCode) {
-        try {
-          const promo = await this.promo.resolveForOrder(
-            order.promoCode,
-            order.branch.organizationId,
-            priced.totalAmount,
-          );
-          promoDiscount = promo.discountAmount;
-        } catch {
-          promoDiscount = 0;
-        }
+        const promo = await this.promo.resolveForExistingOrder(
+          order.promoCode,
+          order.branch.organizationId,
+          priced.totalAmount,
+        );
+        promoDiscount = promo.discountAmount;
       }
 
       totalAmount = Math.max(0, priced.totalAmount - promoDiscount);
@@ -476,7 +525,11 @@ export class OrdersService {
   }
 
   /** Filial narxlari + xizmat chegirmasi bo'yicha satrlarni hisoblaydi */
-  private async priceItems(branchId: string, items: OrderItemInput[]) {
+  private async priceItems(
+    branchId: string,
+    items: OrderItemInput[],
+    opts: { allowPriceOverride: boolean } = { allowPriceOverride: false },
+  ) {
     if (!items.length) {
       throw new BadRequestException('Kamida bitta xizmat tanlang');
     }
@@ -514,11 +567,35 @@ export class OrdersService {
       }
 
       const listPrice = entry?.listPrice ?? service.basePrice;
-      const unitPrice = applyServiceDiscount(listPrice, service);
-      subtotal += listPrice * quantity;
+
+      // Xodim kelishilgan narxni kiritishi mumkin (kichik chegirma yoki
+      // konstruktor xizmat). Mijoz so'rovida ustunlik e'tiborga olinmaydi.
+      let unitPrice: number;
+      const override = opts.allowPriceOverride ? item.unitPrice : undefined;
+      if (override !== undefined && override !== null) {
+        const value = Math.floor(Number(override));
+        if (!Number.isFinite(value) || value < 0) {
+          throw new BadRequestException(
+            `${service.name}: narx 0 dan kichik bo'lmasligi kerak`,
+          );
+        }
+        unitPrice = value;
+      } else if (service.isCustom) {
+        throw new BadRequestException(
+          `${service.name} — konstruktor xizmat: narxini kiriting`,
+        );
+      } else {
+        unitPrice = applyServiceDiscount(listPrice, service);
+      }
+
+      // Konstruktor xizmatda ro'yxat narxi sifatida kiritilgan narx olinadi,
+      // aks holda "chegirma" deb noto'g'ri ko'rsatilardi
+      const effectiveList = service.isCustom ? unitPrice : listPrice;
+      subtotal += Math.max(effectiveList, unitPrice) * quantity;
       totalAmount += unitPrice * quantity;
       const color = item.color?.trim().slice(0, 40) || undefined;
-      return { ...item, quantity, itemType, unitPrice, color };
+      const { unitPrice: _ignored, ...rest } = item;
+      return { ...rest, quantity, itemType, unitPrice, color };
     });
 
     return { itemsData, subtotal, totalAmount };
@@ -556,17 +633,58 @@ export class OrdersService {
     return `${this.normalizeOrderPrefix(prefix)}-${String(sequence).padStart(pad, '0')}`;
   }
 
-  /** Firma sozlamasidagi prefiks + ketma-ket raqam (atomik) */
-  private async generateOrderNumber(organizationId: string) {
+  /** Chek raqami bo'yicha unique to'qnashuvmi? */
+  private isOrderNumberConflict(err: unknown) {
+    return (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002' &&
+      String(err.meta?.target ?? '').includes('orderNumber')
+    );
+  }
+
+  /**
+   * Chek raqami har bir filial uchun alohida yuritiladi (atomik hisoblagich).
+   * Filial prefiksi bo'lmasa tashkilot prefiksi ishlatiladi; raqam band bo'lsa
+   * hisoblagich bo'sh raqam topilguncha suriladi.
+   */
+  private async generateOrderNumber(branchId: string) {
     return this.prisma.$transaction(async (tx) => {
-      for (let attempt = 0; attempt < 30; attempt++) {
-        const org = await tx.organization.update({
-          where: { id: organizationId },
-          data: { orderNumberNext: { increment: 1 } },
-          select: { orderNumberPrefix: true, orderNumberNext: true },
+      // Davomiylik: filial hali chek chiqarmagan va o'z prefiksi yo'q bo'lsa,
+      // eski (tashkilot darajasidagi) hisoblagichdan davom etadi — aks holda
+      // mavjud buyurtma raqamlari bilan to'qnashib qolar edi.
+      const current = await tx.branch.findUniqueOrThrow({
+        where: { id: branchId },
+        select: {
+          orderNumberNext: true,
+          orderNumberPrefix: true,
+          organization: { select: { orderNumberNext: true } },
+        },
+      });
+      if (
+        current.orderNumberNext === 1 &&
+        current.orderNumberPrefix === null &&
+        current.organization.orderNumberNext > 1
+      ) {
+        await tx.branch.update({
+          where: { id: branchId },
+          data: { orderNumberNext: current.organization.orderNumberNext },
         });
-        const sequence = org.orderNumberNext - 1;
-        const orderNumber = this.formatOrderNumber(org.orderNumberPrefix, sequence);
+      }
+
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const branch = await tx.branch.update({
+          where: { id: branchId },
+          data: { orderNumberNext: { increment: 1 } },
+          select: {
+            orderNumberPrefix: true,
+            orderNumberNext: true,
+            organization: { select: { orderNumberPrefix: true } },
+          },
+        });
+        const prefix =
+          branch.orderNumberPrefix ?? branch.organization.orderNumberPrefix;
+        const sequence = branch.orderNumberNext - 1;
+        const orderNumber = this.formatOrderNumber(prefix, sequence);
         const exists = await tx.order.findUnique({
           where: { orderNumber },
           select: { id: true },

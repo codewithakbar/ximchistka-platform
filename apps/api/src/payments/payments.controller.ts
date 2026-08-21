@@ -1,5 +1,23 @@
-import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+} from '@nestjs/common';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentProvider, UserRole } from '@prisma/client';
 import { PaymentsService, type PaymentActor } from './payments.service';
@@ -10,13 +28,28 @@ class InitiatePaymentDto {
   @IsEnum(PaymentProvider) provider!: PaymentProvider;
 }
 
-class RecordPaymentDto {
+class PaymentPartDto {
   @IsEnum(PaymentProvider) provider!: PaymentProvider;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
   amount!: number;
+}
+
+class RecordPaymentDto {
+  /** Bitta usul (eski format) */
+  @IsOptional() @IsEnum(PaymentProvider) provider?: PaymentProvider;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) amount?: number;
+
+  /** Aralash to'lov: bir necha usul birga */
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(5)
+  @ValidateNested({ each: true })
+  @Type(() => PaymentPartDto)
+  parts?: PaymentPartDto[];
 
   @IsOptional() @IsString() note?: string;
 }
@@ -44,7 +77,15 @@ export class PaymentsController {
     @Body() dto: RecordPaymentDto,
     @CurrentUser() user: PaymentActor,
   ) {
-    return this.payments.record(orderId, dto, user);
+    const parts =
+      dto.parts ??
+      (dto.provider && dto.amount
+        ? [{ provider: dto.provider, amount: dto.amount }]
+        : []);
+    if (!parts.length) {
+      throw new BadRequestException('To\'lov usuli va summasini kiriting');
+    }
+    return this.payments.record(orderId, { parts, note: dto.note }, user);
   }
 
   @Roles(UserRole.super_admin, UserRole.branch_manager)

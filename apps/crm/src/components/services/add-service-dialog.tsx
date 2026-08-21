@@ -29,6 +29,7 @@ export function AddServiceDialog({
   const [description, setDescription] = useState('');
   const [unit, setUnit] = useState('dona');
   const [basePrice, setBasePrice] = useState('');
+  const [isCustom, setIsCustom] = useState(false);
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState('');
@@ -41,6 +42,7 @@ export function AddServiceDialog({
       setDescription('');
       setUnit('dona');
       setBasePrice('');
+      setIsCustom(false);
       setDiscountEnabled(false);
       setDiscountType('percent');
       setDiscountValue('');
@@ -52,7 +54,7 @@ export function AddServiceDialog({
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const price = Number(basePrice);
+    const price = isCustom ? 0 : Number(basePrice);
     if (!Number.isFinite(price) || price < 0) {
       toast.error('Narx noto\'g\'ri');
       return;
@@ -67,7 +69,8 @@ export function AddServiceDialog({
           description: description.trim() || undefined,
           unit: unit.trim() || 'dona',
           basePrice: price,
-          discountType: discountEnabled ? discountType : undefined,
+          isCustom,
+          discountType: discountEnabled && !isCustom ? discountType : undefined,
           discountValue: discountEnabled ? Number(discountValue) : undefined,
           discountValidUntil:
             discountEnabled && discountValidUntil
@@ -122,23 +125,40 @@ export function AddServiceDialog({
               placeholder="Oddiy press yoki kimyo"
             />
           </div>
+          <label className="flex items-start gap-2 text-sm cursor-pointer rounded-lg border border-border p-3">
+            <input
+              type="checkbox"
+              checked={isCustom}
+              onChange={(e) => setIsCustom(e.target.checked)}
+              className="accent-primary h-4 w-4 mt-0.5"
+            />
+            <span>
+              <span className="font-medium">{t('services.customService')}</span>
+              <span className="block text-xs text-muted-foreground">
+                {t('services.customServiceHint')}
+              </span>
+            </span>
+          </label>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>O&apos;lchov</Label>
               <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="dona" />
             </div>
-            <div>
-              <Label>Asosiy narx (so&apos;m)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={basePrice}
-                onChange={(e) => setBasePrice(e.target.value)}
-                required
-                placeholder="25000"
-              />
-            </div>
+            {!isCustom && (
+              <div>
+                <Label>Asosiy narx (so&apos;m)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={basePrice}
+                  onChange={(e) => setBasePrice(e.target.value)}
+                  required
+                  placeholder="25000"
+                />
+              </div>
+            )}
           </div>
+          {!isCustom && (
           <DiscountFields
             enabled={discountEnabled}
             onEnabledChange={setDiscountEnabled}
@@ -150,6 +170,7 @@ export function AddServiceDialog({
             onDiscountValidUntilChange={setDiscountValidUntil}
             previewBasePrice={Number(basePrice) || undefined}
           />
+          )}
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               {t('common.cancelShort')}

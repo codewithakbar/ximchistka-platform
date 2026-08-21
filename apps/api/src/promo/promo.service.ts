@@ -183,6 +183,22 @@ export class PromoService {
   }
 
   /**
+   * Buyurtma ALLAQACHON olgan kod uchun chegirmani qayta hisoblaydi.
+   * Limit/muddat tekshirilmaydi — kod keyin tugagani buyurtmani jazolamasin.
+   */
+  async resolveForExistingOrder(code: string, organizationId: string, amount: number) {
+    const normalized = this.normalizeCode(code);
+    const promo = await this.prisma.promoCode.findFirst({
+      where: {
+        code: normalized,
+        OR: [{ organizationId }, { organizationId: null }],
+      },
+    });
+    if (!promo) return { discountAmount: 0 };
+    return { discountAmount: this.discountFor(promo, amount) };
+  }
+
+  /**
    * Buyurtma muvaffaqiyatli yaratilgach chaqiriladi. maxUses shartli tekshiriladi,
    * shuning uchun bir vaqtda kelgan so'rovlar limitdan oshirib yubormaydi.
    */

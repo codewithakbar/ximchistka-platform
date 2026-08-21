@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
+import { normalizeReceiptSettings, type ReceiptSettings } from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { isDemoPeriodExpired } from '../auth/demo-expiry';
 
@@ -39,6 +40,7 @@ export class SettingsService {
             demoEndsAt: user.organization.demoEndsAt,
             demoExpired: isDemoPeriodExpired(user.organization),
             orderItemColors: user.organization.orderItemColors ?? [],
+            receiptSettings: normalizeReceiptSettings(user.organization.receiptSettings),
           }
         : null,
       branches: user.userBranches.map((ub) => ({
@@ -123,6 +125,7 @@ export class SettingsService {
       orderNumberPrefix?: string;
       orderNumberNext?: number;
       orderItemColors?: string[];
+      receiptSettings?: Record<string, unknown>;
     },
   ) {
     if (!organizationId) throw new ForbiddenException('Tashkilot yo\'q');
@@ -152,6 +155,11 @@ export class SettingsService {
       orderItemColors = this.normalizeOrderItemColors(data.orderItemColors);
     }
 
+    let receiptSettings: ReceiptSettings | undefined;
+    if (data.receiptSettings !== undefined) {
+      receiptSettings = normalizeReceiptSettings(data.receiptSettings);
+    }
+
     const org = await this.prisma.organization.update({
       where: { id: organizationId },
       data: {
@@ -160,6 +168,9 @@ export class SettingsService {
         ...(orderNumberPrefix !== undefined ? { orderNumberPrefix } : {}),
         ...(orderNumberNext !== undefined ? { orderNumberNext } : {}),
         ...(orderItemColors !== undefined ? { orderItemColors } : {}),
+        ...(receiptSettings !== undefined
+          ? { receiptSettings: receiptSettings as unknown as Prisma.InputJsonValue }
+          : {}),
       },
       include: { _count: { select: { branches: true, users: true } } },
     });
@@ -207,6 +218,7 @@ export class SettingsService {
     orderNumberPrefix: string;
     orderNumberNext: number;
     orderItemColors: string[];
+    receiptSettings?: unknown;
     createdAt: Date;
     _count: { branches: number; users: number };
   }) {
@@ -217,6 +229,7 @@ export class SettingsService {
       orderNumberPrefix: org.orderNumberPrefix,
       orderNumberNext: org.orderNumberNext,
       orderItemColors: org.orderItemColors ?? [],
+      receiptSettings: normalizeReceiptSettings(org.receiptSettings),
       orderNumberPreview: this.formatOrderNumberPreview(
         org.orderNumberPrefix,
         org.orderNumberNext,

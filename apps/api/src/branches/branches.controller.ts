@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { UserRole } from '@prisma/client';
 import { BranchesService } from './branches.service';
 import { CurrentUser } from '../auth/decorators';
@@ -25,6 +26,14 @@ class UpdateBranchDto {
   @IsOptional() @IsString() openTime?: string;
   @IsOptional() @IsString() closeTime?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** Bo'sh satr — tashkilot prefiksidan foydalanish */
+  @IsOptional() @IsString() orderNumberPrefix?: string | null;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(99999999)
+  orderNumberNext?: number;
 }
 
 @Controller('branches')

@@ -17,6 +17,8 @@ class OrderItemDto {
   @IsString() serviceId!: string;
   @IsOptional() @IsString() itemType?: string;
   @IsNumber() quantity!: number;
+  /** Xodim kiritgan narx (konstruktor xizmat / kelishilgan chegirma) */
+  @IsOptional() @IsNumber() unitPrice?: number;
   @IsOptional() @IsString() notes?: string;
   @IsOptional() @IsString() color?: string;
   @IsOptional() @IsString() photoUrl?: string;
@@ -70,12 +72,14 @@ export class OrdersController {
     @CurrentUser() user: { id: string; role: UserRole; branchIds: string[]; customerProfileId?: string },
     @Query('branchId') branchId?: string,
     @Query('status') status?: OrderStatus,
+    @Query('q') q?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.orders.list(user, {
       branchId,
       status,
+      q,
       page: toPositiveInt(page, 1),
       limit: toPositiveInt(limit, 20),
     });

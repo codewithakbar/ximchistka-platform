@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Search, Filter, ClipboardList, ArrowRight, Eye, Plus, Printer } from 'lucide-react';
@@ -71,13 +71,22 @@ export default function OrdersPage() {
   const demoExpired = useDemoExpired();
   const canCreateNew = canCreate && !demoExpired;
 
+  // Kech kelgan eski javob yangi natijani bosib qo'ymasligi uchun
+  const loadSeqRef = useRef(0);
+
   async function load() {
-    setOrders(null);
+    const seq = ++loadSeqRef.current;
+    // Qidiruv yangilanishida jadval bo'shatilmaydi — skeleton faqat birinchi
+    // yuklanishda ko'rinadi, yozish paytida eski natijalar turadi
     try {
-      const q = status ? `?status=${status}` : '';
-      const r = await api<{ data: Order[] }>(`/orders${q}`);
-      setOrders(r.data);
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      if (search.trim()) params.set('q', search.trim());
+      const qs = params.toString();
+      const r = await api<{ data: Order[] }>(`/orders${qs ? `?${qs}` : ''}`);
+      if (seq === loadSeqRef.current) setOrders(r.data);
     } catch (e) {
+      if (seq !== loadSeqRef.current) return;
       const msg = e instanceof Error ? e.message : t('common.error');
       if (!msg.includes('Sessiya tugadi')) {
         toast.error(msg);
@@ -87,8 +96,11 @@ export default function OrdersPage() {
   }
 
   useEffect(() => {
-    load();
-  }, [status]);
+    // Qidiruv serverda bajariladi — yozish tugagach 350ms kutamiz
+    const timer = window.setTimeout(load, search ? 350 : 0);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, search]);
 
   function requestAdvance(id: string, current: OrderStatus) {
     const next = VALID_STATUS_TRANSITIONS[current]?.[0];
@@ -116,12 +128,7 @@ export default function OrdersPage() {
     }
   }
 
-  const filtered = orders?.filter((o) =>
-    !search ? true :
-    o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-    o.customer.user.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    o.customer.user.phone.includes(search),
-  );
+  const filtered = orders;
 
   return (
     <AppShell title={t('orders.title')}>
@@ -140,7 +147,7 @@ export default function OrdersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('orders.searchPlaceholder')}
+              placeholder={t('orders.searchServer')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"

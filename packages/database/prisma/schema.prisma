@@ -45,6 +45,7 @@ enum PaymentProvider {
   click
   payme
   uzum
+  transfer
 }
 
 enum PaymentStatus {
@@ -76,6 +77,8 @@ model Organization {
    * POS buyurtmada tanlanadigan ranglar ro'yxati
    */
   orderItemColors   String[]          @default([])
+  /// Chek (termoprinter) sozlamalari: qog'oz eni, shrift, matnlar
+  receiptSettings   Json?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   branches          Branch[]
@@ -85,22 +88,26 @@ model Organization {
 }
 
 model Branch {
-  id             String       @id @default(cuid())
-  organizationId String
-  name           String
-  address        String
-  phone          String
-  latitude       Float?
-  longitude      Float?
-  openTime       String       @default("09:00")
-  closeTime      String       @default("20:00")
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  priceRules     PriceRule[]
-  orders         Order[]
-  userBranches   UserBranch[]
+  id                String       @id @default(cuid())
+  organizationId    String
+  name              String
+  address           String
+  phone             String
+  latitude          Float?
+  longitude         Float?
+  openTime          String       @default("09:00")
+  closeTime         String       @default("20:00")
+  isActive          Boolean      @default(true)
+  /// Chek prefiksi; null bo'lsa tashkilot prefiksi ishlatiladi
+  orderNumberPrefix String?
+  /// Shu filialning keyingi chek raqami
+  orderNumberNext   Int          @default(1)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  priceRules        PriceRule[]
+  orders            Order[]
+  userBranches      UserBranch[]
 
   @@index([organizationId])
 }
@@ -189,6 +196,8 @@ model Service {
   discountType       String?
   discountValue      Int?
   discountValidUntil DateTime?
+  /// Konstruktor xizmat: narx va tavsif buyurtma paytida kiritiladi
+  isCustom           Boolean         @default(false)
   isActive           Boolean         @default(true)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt

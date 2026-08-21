@@ -35,12 +35,18 @@ type BranchStat = {
   revenueSharePercent: number;
 };
 
+type KassaBreakdown = {
+  totalPaid: number;
+  byProvider: { provider: string; amount: number; count: number }[];
+};
+
 type Report = {
   totalOrders: number;
   totalRevenue: number;
   cancelledOrders: number;
   avgOrderAmount: number;
   branchCount: number;
+  kassa?: KassaBreakdown;
   byDay: { date: string; count: number; revenue: number }[];
   byBranch: BranchStat[];
 };
@@ -61,6 +67,7 @@ export default function ReportsPage() {
     cancelledOrders: 0,
     avgOrderAmount: 0,
     branchCount: 0,
+    kassa: { totalPaid: 0, byProvider: [] },
     byDay: [],
     byBranch: [],
   };
@@ -190,6 +197,46 @@ export default function ReportsPage() {
           color="bg-rose-500/10 text-rose-600"
         />
       </div>
+
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+            {t('kassa.title')}
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">{t('kassa.desc')}</p>
+        </CardHeader>
+        <CardContent>
+          {!report ? (
+            <Skeleton className="h-16 w-full" />
+          ) : !report.kassa || report.kassa.totalPaid === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('kassa.empty')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 min-w-[160px]">
+                <div className="text-xs text-muted-foreground">{t('kassa.totalPaid')}</div>
+                <div className="text-lg font-bold text-primary">
+                  {formatPrice(report.kassa.totalPaid)}
+                </div>
+              </div>
+              {report.kassa.byProvider.map((row) => (
+                <div
+                  key={row.provider}
+                  className="rounded-lg border border-border px-4 py-3 min-w-[140px]"
+                >
+                  <div className="text-xs text-muted-foreground">
+                    {t(`payments.provider.${row.provider}`, row.provider)}
+                  </div>
+                  <div className="text-lg font-semibold">{formatPrice(row.amount)}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {t('kassa.count', { count: row.count })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {!branchId && (
         <Card className="mb-6">

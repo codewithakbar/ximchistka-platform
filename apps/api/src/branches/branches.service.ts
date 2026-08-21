@@ -102,9 +102,31 @@ export class BranchesService {
     openTime: string;
     closeTime: string;
     isActive: boolean;
+    orderNumberPrefix: string | null;
+    orderNumberNext: number;
   }>) {
     await this.ensureExists(id);
-    return this.prisma.branch.update({ where: { id }, data });
+
+    const patch: Record<string, unknown> = { ...data };
+    if (data.orderNumberPrefix !== undefined) {
+      // Bo'sh qiymat — tashkilot prefiksiga qaytish
+      const cleaned = (data.orderNumberPrefix ?? '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .slice(0, 8);
+      patch.orderNumberPrefix = cleaned || null;
+    }
+    if (data.orderNumberNext !== undefined) {
+      const n = Math.floor(Number(data.orderNumberNext));
+      if (!Number.isFinite(n) || n < 1 || n > 99999999) {
+        throw new BadRequestException(
+          'Keyingi chek raqami 1 dan 99999999 gacha bo\'lishi kerak',
+        );
+      }
+      patch.orderNumberNext = n;
+    }
+
+    return this.prisma.branch.update({ where: { id }, data: patch });
   }
 
   async updateForUser(
@@ -119,12 +141,17 @@ export class BranchesService {
       openTime: string;
       closeTime: string;
       isActive: boolean;
+      orderNumberPrefix: string | null;
+      orderNumberNext: number;
     }>,
   ) {
     await this.assertBranchAccess(user, id);
     const patch = { ...data };
     if (user.role !== UserRole.super_admin) {
+      // Faollik va raqamlashni faqat super admin o'zgartiradi
       delete patch.isActive;
+      delete patch.orderNumberPrefix;
+      delete patch.orderNumberNext;
     }
     return this.update(id, patch);
   }

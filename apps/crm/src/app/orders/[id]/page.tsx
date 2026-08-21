@@ -25,6 +25,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { api, formatPrice, getUser } from '@/lib/api';
 import { useFormatDate, useI18n, useOrderStatusLabel } from '@/lib/i18n';
 import { OrderReceipt } from '@/components/orders/order-receipt';
+import {
+  DEFAULT_RECEIPT_SETTINGS,
+  normalizeReceiptSettings,
+  type ReceiptSettings,
+} from '@ximchistka/shared';
 import { OrderPaymentPanel } from '@/components/orders/order-payment-panel';
 import { EditOrderDialog } from '@/components/orders/edit-order-dialog';
 import { useDemoExpired } from '@/components/layout/demo-expired-lock';
@@ -40,6 +45,7 @@ type OrderDetail = {
   status: OrderStatus;
   totalAmount: number;
   discountAmount: number;
+  promoCode?: string | null;
   notes: string | null;
   createdAt: string;
   estimatedReady: string | null;
@@ -54,10 +60,12 @@ type OrderDetail = {
     quantity: number;
     unitPrice: number;
     color?: string | null;
+    notes?: string | null;
     service: { name: string; unit?: string };
   }[];
   pickupDelivery: { type: string; address: string | null; scheduledAt: string | null } | null;
   statusHistory: { status: OrderStatus; createdAt: string; user?: { fullName: string } | null }[];
+  payments?: { provider: string; status: string; amount: number }[];
 };
 
 export default function OrderDetailPage() {
@@ -70,6 +78,9 @@ export default function OrderDetailPage() {
   const [pending, setPending] = useState<OrderStatus | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [receiptSettings, setReceiptSettings] = useState<ReceiptSettings>(
+    DEFAULT_RECEIPT_SETTINGS,
+  );
   const demoExpired = useDemoExpired();
   const canEditOrders = useCanCreateOrders();
 
@@ -80,6 +91,14 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     load();
+    api<{ organization?: { receiptSettings?: unknown } }>('/settings/profile')
+      .then((p) =>
+        setReceiptSettings(normalizeReceiptSettings(p.organization?.receiptSettings)),
+      )
+      .catch(() => {
+        /* standart sozlamalar bilan davom etamiz */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   async function confirmAdvance() {
@@ -296,6 +315,7 @@ export default function OrderDetailPage() {
                       status: order.status,
                       totalAmount: order.totalAmount,
                       discountAmount: order.discountAmount ?? 0,
+                      promoCode: order.promoCode,
                       notes: order.notes,
                       createdAt: order.createdAt,
                       estimatedReady: order.estimatedReady,
@@ -303,8 +323,10 @@ export default function OrderDetailPage() {
                       customer: order.customer,
                       items: order.items,
                       pickupDelivery: order.pickupDelivery,
+                      payments: order.payments,
                     }}
                     organizationName={orgName}
+                    settings={receiptSettings}
                   />
                 </div>
               </CardContent>
@@ -321,7 +343,9 @@ export default function OrderDetailPage() {
           items={order.items.map((i) => ({
             serviceId: i.serviceId,
             quantity: i.quantity,
+            unitPrice: i.unitPrice,
             color: i.color,
+            notes: i.notes,
           }))}
           notes={order.notes}
           onClose={() => setEditing(false)}

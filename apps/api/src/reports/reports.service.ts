@@ -45,6 +45,40 @@ export class ReportsService {
     };
   }
 
+  /**
+   * Kassa: davr ichida QABUL QILINGAN to'lovlar (to'lov sanasi bo'yicha),
+   * usulga ajratilgan holda. Buyurtma qachon yaratilganidan qat'i nazar.
+   */
+  private async kassaBreakdown(
+    orderWhere: object,
+    fromDate: Date,
+    toDate: Date,
+  ) {
+    const groups = await this.prisma.payment.groupBy({
+      by: ['provider'],
+      where: {
+        status: PaymentStatus.paid,
+        createdAt: { gte: fromDate, lte: toDate },
+        order: orderWhere,
+      },
+      _sum: { amount: true },
+      _count: { _all: true },
+    });
+
+    const byProvider = groups
+      .map((g) => ({
+        provider: g.provider,
+        amount: g._sum.amount ?? 0,
+        count: g._count._all,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return {
+      totalPaid: byProvider.reduce((sum, g) => sum + g.amount, 0),
+      byProvider,
+    };
+  }
+
   /** Bekor qilingan buyurtma tushumga kirmaydi */
   private revenueOf(order: { status: OrderStatus; totalAmount: number }) {
     return order.status === OrderStatus.cancelled ? 0 : order.totalAmount;
@@ -104,11 +138,18 @@ export class ReportsService {
       await this.branches.assertBranchAccess(user, branchId);
     }
 
-    const allOrders = await this.prisma.order.findMany({
-      where: this.ordersInReportPeriod(orgScope, fromDate, toDate, branchId),
-      include: { branch: true },
-      orderBy: { createdAt: 'asc' },
-    });
+    const [allOrders, kassa] = await Promise.all([
+      this.prisma.order.findMany({
+        where: this.ordersInReportPeriod(orgScope, fromDate, toDate, branchId),
+        include: { branch: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.kassaBreakdown(
+        { ...orgScope, ...(branchId ? { branchId } : {}) },
+        fromDate,
+        toDate,
+      ),
+    ]);
 
     // Metrikalar faqat to'lovli (bekor qilinmagan) buyurtmalardan hisoblanadi
     const orders = allOrders.filter((o) => o.status !== OrderStatus.cancelled);
@@ -163,6 +204,7 @@ export class ReportsService {
       cancelledOrders: cancelled.length,
       avgOrderAmount: totalOrders ? Math.round(totalRevenue / totalOrders) : 0,
       branchCount: branches.length,
+      kassa,
       byDay: Object.entries(byDay)
         .map(([date, stats]) => ({
           date,
@@ -199,6 +241,8 @@ export class ReportsService {
     });
 
     const orderIds = orders.map((o) => o.id);
+
+    const kassa = await this.kassaBreakdown({ branchId }, fromDate, toDate);
 
     const payments = await this.prisma.payment.findMany({
       where: {
@@ -305,6 +349,8 @@ export class ReportsService {
         openTime: branch.openTime,
         closeTime: branch.closeTime,
         isActive: branch.isActive,
+        orderNumberPrefix: branch.orderNumberPrefix,
+        orderNumberNext: branch.orderNumberNext,
       },
       period: { from, to },
       summary: {
@@ -318,6 +364,7 @@ export class ReportsService {
         collectionRate: totalRevenue
           ? Math.round((totalPaid / totalRevenue) * 1000) / 10
           : 0,
+        kassa,
       },
       revenueByDay: Object.entries(revenueByDay)
         .map(([date, stats]) => ({ date, ...stats }))

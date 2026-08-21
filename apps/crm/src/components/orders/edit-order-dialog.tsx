@@ -2,11 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Minus, Plus, Search, X } from 'lucide-react';
+import { Minus, Pencil, Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CartItemColorPicker } from '@/components/orders/cart-item-color-picker';
+import { PriceOverrideDialog } from '@/components/orders/price-override-dialog';
 import { api, formatPrice } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -16,13 +17,16 @@ type PriceRule = {
   price: number;
   listPrice?: number;
   effectivePrice?: number;
-  service: { id: string; name: string; unit: string; categoryName: string };
+  isCustom?: boolean;
+  service: { id: string; name: string; unit: string; isCustom?: boolean; categoryName: string };
 };
 
 export type EditableOrderItem = {
   serviceId: string;
   quantity: number;
+  unitPrice?: number;
   color?: string | null;
+  notes?: string | null;
 };
 
 export function EditOrderDialog({
@@ -47,6 +51,9 @@ export function EditOrderDialog({
   const [prices, setPrices] = useState<PriceRule[] | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [colors, setColors] = useState<Record<string, string>>({});
+  const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [priceDialogFor, setPriceDialogFor] = useState<PriceRule | null>(null);
   const [orgColors, setOrgColors] = useState<string[]>([]);
   const [note, setNote] = useState(notes ?? '');
   const [search, setSearch] = useState('');
@@ -61,6 +68,20 @@ export function EditOrderDialog({
     setColors(
       Object.fromEntries(
         items.filter((i) => i.color).map((i) => [i.serviceId, i.color as string]),
+      ),
+    );
+    // Buyurtmadagi joriy narxlar saqlanadi — tahrirda ular qayta hisoblanib
+    // ketmasligi uchun har bir mavjud satr narxi ustunlik sifatida olinadi
+    setPriceOverrides(
+      Object.fromEntries(
+        items
+          .filter((i) => i.unitPrice !== undefined)
+          .map((i) => [i.serviceId, i.unitPrice as number]),
+      ),
+    );
+    setItemNotes(
+      Object.fromEntries(
+        items.filter((i) => i.notes).map((i) => [i.serviceId, i.notes as string]),
       ),
     );
     setNote(notes ?? '');
@@ -81,6 +102,8 @@ export function EditOrderDialog({
   }, [open, branchId, orderId]);
 
   const unitPriceFor = (p: PriceRule) => p.effectivePrice ?? p.listPrice ?? p.price;
+  const linePriceFor = (p: PriceRule) => priceOverrides[p.serviceId] ?? unitPriceFor(p);
+  const isCustomService = (p: PriceRule) => p.isCustom ?? p.service.isCustom ?? false;
 
   const cart = useMemo(
     () =>
@@ -89,9 +112,10 @@ export function EditOrderDialog({
         .map((p) => ({
           ...p,
           quantity: quantities[p.serviceId],
-          lineTotal: unitPriceFor(p) * quantities[p.serviceId],
+          lineTotal: linePriceFor(p) * quantities[p.serviceId],
         })),
-    [prices, quantities],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [prices, quantities, priceOverrides],
   );
 
   const total = cart.reduce((sum, i) => sum + i.lineTotal, 0);
@@ -118,6 +142,14 @@ export function EditOrderDialog({
           const { [serviceId]: _dropped, ...cr } = c;
           return cr;
         });
+        setPriceOverrides((c) => {
+          const { [serviceId]: _dropped, ...cr } = c;
+          return cr;
+        });
+        setItemNotes((c) => {
+          const { [serviceId]: _dropped, ...cr } = c;
+          return cr;
+        });
         return rest;
       }
       return { ...prev, [serviceId]: next };
@@ -139,6 +171,8 @@ export function EditOrderDialog({
             serviceId: i.serviceId,
             quantity: i.quantity,
             color: colors[i.serviceId]?.trim() || undefined,
+            unitPrice: priceOverrides[i.serviceId],
+            notes: itemNotes[i.serviceId]?.trim() || undefined,
           })),
           notes: note.trim() || null,
         }),
@@ -201,7 +235,15 @@ export function EditOrderDialog({
                           <button
                             type="button"
                             onClick={() => {
-                              setQty(p.serviceId, 1);
+                              if (
+                                isCustomService(p) &&
+                                (quantities[p.serviceId] ?? 0) === 0 &&
+                                priceOverrides[p.serviceId] === undefined
+                              ) {
+                                setPriceDialogFor(p);
+                              } else {
+                                setQty(p.serviceId, 1);
+                              }
                               setSearch('');
                             }}
                             className={cn(
@@ -231,9 +273,27 @@ export function EditOrderDialog({
                         <div className="flex items-center gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium">{item.service.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatPrice(unitPriceFor(item))} × {item.quantity}
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setPriceDialogFor(item)}
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                            >
+                              <span
+                                className={cn(
+                                  priceOverrides[item.serviceId] !== undefined &&
+                                    'font-semibold text-primary',
+                                )}
+                              >
+                                {formatPrice(linePriceFor(item))}
+                              </span>
+                              × {item.quantity}
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                            {itemNotes[item.serviceId] && (
+                              <div className="text-[11px] text-muted-foreground truncate">
+                                {itemNotes[item.serviceId]}
+                              </div>
+                            )}
                           </div>
                           <div className="shrink-0 text-sm font-semibold">
                             {formatPrice(item.lineTotal)}
@@ -308,6 +368,33 @@ export function EditOrderDialog({
           </div>
         </form>
       </div>
+
+      <PriceOverrideDialog
+        open={priceDialogFor !== null}
+        serviceName={priceDialogFor?.service.name ?? ''}
+        listPrice={priceDialogFor ? unitPriceFor(priceDialogFor) : undefined}
+        isCustom={priceDialogFor ? isCustomService(priceDialogFor) : false}
+        initialPrice={
+          priceDialogFor ? priceOverrides[priceDialogFor.serviceId] : undefined
+        }
+        initialNote={priceDialogFor ? itemNotes[priceDialogFor.serviceId] : undefined}
+        onClose={() => setPriceDialogFor(null)}
+        onSave={(price, note) => {
+          if (!priceDialogFor) return;
+          const serviceId = priceDialogFor.serviceId;
+          setPriceOverrides((prev) => ({ ...prev, [serviceId]: price }));
+          setItemNotes((prev) => {
+            if (!note) {
+              const { [serviceId]: _dropped, ...rest } = prev;
+              return rest;
+            }
+            return { ...prev, [serviceId]: note };
+          });
+          setQuantities((prev) =>
+            (prev[serviceId] ?? 0) > 0 ? prev : { ...prev, [serviceId]: 1 },
+          );
+        }}
+      />
     </div>
   );
 }
