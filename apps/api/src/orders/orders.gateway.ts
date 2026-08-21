@@ -64,12 +64,18 @@ export class OrdersGateway implements OnGatewayConnection {
       },
     });
 
-    if (!user?.isActive || !user.organization?.isActive || !user.organizationId) {
-      this.reject(client, 'Foydalanuvchi yoki tashkilot faol emas');
+    if (!user?.isActive) {
+      this.reject(client, 'Foydalanuvchi faol emas');
       return;
     }
+    // Rol tekshiruvi birinchi: mijozda organizationId yo'q, aks holda
+    // unga chalg'ituvchi "tashkilot faol emas" xabari ketardi
     if (user.role === UserRole.customer || user.role === UserRole.platform_admin) {
       this.reject(client, 'Realtime kanal faqat firma xodimlari uchun');
+      return;
+    }
+    if (!user.organizationId || !user.organization?.isActive) {
+      this.reject(client, 'Tashkilot faol emas');
       return;
     }
 

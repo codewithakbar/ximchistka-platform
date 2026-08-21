@@ -24,8 +24,8 @@
     "packages/*"
   ],
   "overrides": {
-    "@nestjs/common": "^11.1.24",
-    "@nestjs/core": "^11.1.24"
+    "@nestjs/common": "11.2.1",
+    "@nestjs/core": "11.2.1"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
