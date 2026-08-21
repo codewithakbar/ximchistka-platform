@@ -8,6 +8,7 @@ import {
   Truck,
   BarChart3,
   UserCog,
+  Receipt,
 } from 'lucide-react';
 
 export type StaffRole =
@@ -45,6 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/customers', label: 'Mijozlar', icon: Users, roles: ['super_admin', 'branch_manager', 'operator'] },
   { href: '/courier', label: 'Kuryer', icon: Truck, roles: ['super_admin', 'branch_manager', 'operator', 'courier'] },
   { href: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['super_admin'] },
+  { href: '/expenses', label: 'Xarajatlar', icon: Receipt, roles: ['super_admin', 'branch_manager'] },
   { href: '/staff', label: 'Xodimlar', icon: UserCog, roles: ['super_admin', 'branch_manager'] },
 ];
 

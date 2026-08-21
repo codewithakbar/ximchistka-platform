@@ -9,13 +9,13 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'CleanWay — Ximchistka biznesi uchun CRM platforma',
   description:
-    "Kimyoviy tozalash korxonalari uchun tayyor CRM: buyurtmalar, mijozlar, filiallar va moliya bitta panelda. 14 kun bepul sinov — karta talab qilinmaydi.",
+    "Kimyoviy tozalash korxonalari uchun tayyor CRM: buyurtmalar, mijozlar, filiallar va moliya bitta panelda. 3 kun bepul sinov — karta talab qilinmaydi.",
   keywords: ['ximchistka CRM', 'kimyo tozalash', 'dry cleaning CRM', 'CleanWay', 'biznes platforma'],
   manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'CleanWay', statusBarStyle: 'default' },
   openGraph: {
     title: 'CleanWay — Ximchistka biznesi uchun CRM platforma',
-    description: "Buyurtmalar, mijozlar va moliya bitta panelda. 14 kun bepul sinov — karta talab qilinmaydi.",
+    description: "Buyurtmalar, mijozlar va moliya bitta panelda. 3 kun bepul sinov — karta talab qilinmaydi.",
     url: 'https://cleanway.4mi.uz',
     siteName: 'CleanWay',
     locale: 'uz_UZ',

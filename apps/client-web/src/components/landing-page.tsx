@@ -27,6 +27,8 @@ import {
   TrendingUp,
   Wallet,
   MessageSquare,
+  Send,
+  Bot,
 } from 'lucide-react';
 
 const CRM_URL = process.env.NEXT_PUBLIC_CRM_URL ?? 'http://localhost:3000';
@@ -91,6 +93,13 @@ type Content = {
   advTitle2: string;
   advSub: string;
   advantages: { title: string; desc: string }[];
+  flagTag: string;
+  flagTitle1: string;
+  flagTitle2: string;
+  flagSub: string;
+  flagSoon: string;
+  telegram: { badge: string; title: string; desc: string; points: string[] };
+  ai: { badge: string; title: string; desc: string; points: string[] };
   stepTag: string;
   stepTitle1: string;
   stepTitle2: string;
@@ -140,9 +149,9 @@ const CONTENT: Record<Locale, Content> = {
       { href: '#aloqa', label: 'Aloqa' },
     ],
     login: 'Kirish',
-    freeTrial: '14 kun bepul',
+    freeTrial: '3 kun bepul',
     menu: 'Menyu',
-    heroBadge: '14 kun bepul sinov — karta talab qilinmaydi',
+    heroBadge: '3 kun bepul sinov — karta talab qilinmaydi',
     heroTitle1: 'Ximchistka biznesingizni',
     heroTitle2: 'raqamli boshqaring',
     heroSub:
@@ -159,6 +168,8 @@ const CONTENT: Record<Locale, Content> = {
     mockOrders: 'Buyurtmalar',
     marquee: [
       'CRM Dashboard',
+      'Telegram bot',
+      'AI tahlil',
       "Ko'p filial",
       'SMS xabarnoma',
       'Onlayn buyurtma',
@@ -168,7 +179,7 @@ const CONTENT: Record<Locale, Content> = {
       'Xodimlar rollari',
     ],
     stats: [
-      { end: 14, suffix: ' kun', label: 'bepul sinov muddati' },
+      { end: 3, suffix: ' kun', label: 'bepul sinov muddati' },
       { end: 1, suffix: ' daqiqa', label: "ro'yxatdan o'tish vaqti" },
       { end: 8, suffix: '+', label: 'tayyor CRM moduli' },
       { end: 24, suffix: '/7', label: 'onlayn buyurtma qabuli' },
@@ -187,6 +198,31 @@ const CONTENT: Record<Locale, Content> = {
       { title: "Click va Payme to'lovlar", desc: "Onlayn to'lovlarni qabul qiling — naqd pulga bog'lanib qolmaysiz." },
       { title: 'Xodimlar rollari', desc: "Operator, menejer, administrator — har kimga o'z huquqlari. Ma'lumotlaringiz xavfsiz." },
     ],
+    flagTag: 'Yangi imkoniyatlar',
+    flagTitle1: 'Telegram bot va',
+    flagTitle2: "sun'iy intellekt",
+    flagSub: "Biznesingizni istalgan joydan boshqaring — bot qo'lingizda, AI yoningizda",
+    flagSoon: 'Tez orada',
+    telegram: {
+      badge: 'Telegram bot',
+      title: "Telegram orqali to'liq boshqaruv",
+      desc: "Butun biznesni telefoningizdagi bot orqali qulay boshqaring — kompyuter shart emas. Buyurtma qidirish, holatini o'zgartirish va hisobotlar — hammasi bir joyda.",
+      points: [
+        'Parolsiz kirish — bir tugma bilan xavfsiz',
+        "Mijozga buyurtma tayyor bo'lganda avtomatik xabar",
+        'Egaga real-vaqt tushum va yangi buyurtma bildirishnomasi',
+      ],
+    },
+    ai: {
+      badge: 'AI integratsiya',
+      title: 'AI tahlil va biznes boshqaruvi',
+      desc: "Sun'iy intellekt biznesingizni to'liq tahlil qilib, o'sish yo'llarini ko'rsatadi. Raqamlarni o'zingiz hisoblab o'tirmaysiz — AI tayyor tavsiya beradi.",
+      points: [
+        'Sotuv va tushum bashorati',
+        'Mijoz xatti-harakati tahlili va tavsiyalar',
+        'Xarajatlarni optimallashtirish maslahatlari',
+      ],
+    },
     stepTag: 'Boshlash oson',
     stepTitle1: '3 qadamda',
     stepTitle2: 'ishga tushiring',
@@ -194,7 +230,7 @@ const CONTENT: Record<Locale, Content> = {
     steps: [
       { step: '01', title: "Ro'yxatdan o'ting", desc: "1 daqiqada hisob yarating. Karta yoki to'lov talab qilinmaydi — faqat telefon raqam." },
       { step: '02', title: 'Platformani sozlang', desc: 'Filial, xizmatlar va narxlaringizni kiriting. Tayyor xizmatlar katalogi bilan boshlaysiz.' },
-      { step: '03', title: 'Ishlashni boshlang', desc: 'Birinchi kundanoq buyurtmalarni qabul qiling. Barcha imkoniyatlar 14 kun bepul.' },
+      { step: '03', title: 'Ishlashni boshlang', desc: 'Birinchi kundanoq buyurtmalarni qabul qiling. Barcha imkoniyatlar 3 kun bepul.' },
     ],
     priceTag: 'Tariflar',
     priceTitle1: 'Oddiy va',
@@ -228,10 +264,10 @@ const CONTENT: Record<Locale, Content> = {
       "Yil davomida narx o'zgarmaydi",
       'Ustuvor texnik yordam',
     ],
-    priceCta: '14 kun bepul boshlash',
-    priceFootnote: "Avval 14 kun bepul sinab ko'rasiz — tarif faqat sinov tugagach tanlanadi",
+    priceCta: '3 kun bepul boshlash',
+    priceFootnote: "Avval 3 kun bepul sinab ko'rasiz — tarif faqat sinov tugagach tanlanadi",
     offerBadge: 'Maxsus taklif',
-    offerTitle: '14 kun mutlaqo bepul',
+    offerTitle: '3 kun mutlaqo bepul',
     offerSub:
       "Barcha imkoniyatlar ochiq. Karta ma'lumotlari talab qilinmaydi, hech qanday yashirin to'lovlar yo'q. Yoqmasa — shunchaki ishlatmaysiz.",
     offerFeatures: [
@@ -248,7 +284,7 @@ const CONTENT: Record<Locale, Content> = {
       'Kimyoviy tozalash korxonalari uchun zamonaviy CRM platforma. Biznesingizni raqamlashtiring va daromadingizni oshiring.',
     footerPlatform: 'Platforma',
     footerContact: 'Aloqa',
-    footerTrial: '14 kun bepul sinov',
+    footerTrial: '3 kun bepul sinov',
     footerCrm: 'CRM panelga kirish',
     footerAdvantages: 'Afzalliklar',
     footerPrice: 'Narx',
@@ -264,9 +300,9 @@ const CONTENT: Record<Locale, Content> = {
       { href: '#aloqa', label: 'Контакты' },
     ],
     login: 'Войти',
-    freeTrial: '14 дней бесплатно',
+    freeTrial: '3 дня бесплатно',
     menu: 'Меню',
-    heroBadge: '14 дней бесплатно — карта не требуется',
+    heroBadge: '3 дня бесплатно — карта не требуется',
     heroTitle1: 'Управляйте бизнесом',
     heroTitle2: 'химчистки в цифре',
     heroSub:
@@ -283,6 +319,8 @@ const CONTENT: Record<Locale, Content> = {
     mockOrders: 'Заказы',
     marquee: [
       'CRM Dashboard',
+      'Telegram-бот',
+      'AI-аналитика',
       'Много филиалов',
       'SMS-уведомления',
       'Онлайн-заказы',
@@ -292,7 +330,7 @@ const CONTENT: Record<Locale, Content> = {
       'Роли сотрудников',
     ],
     stats: [
-      { end: 14, suffix: ' дн.', label: 'бесплатный период' },
+      { end: 3, suffix: ' дн.', label: 'бесплатный период' },
       { end: 1, suffix: ' мин', label: 'время регистрации' },
       { end: 8, suffix: '+', label: 'готовых CRM-модулей' },
       { end: 24, suffix: '/7', label: 'приём онлайн-заказов' },
@@ -311,6 +349,31 @@ const CONTENT: Record<Locale, Content> = {
       { title: 'Оплата Click и Payme', desc: 'Принимайте онлайн-платежи — не зависите только от наличных.' },
       { title: 'Роли сотрудников', desc: 'Оператор, менеджер, администратор — у каждого свои права. Ваши данные под защитой.' },
     ],
+    flagTag: 'Новые возможности',
+    flagTitle1: 'Telegram-бот и',
+    flagTitle2: 'искусственный интеллект',
+    flagSub: 'Управляйте бизнесом откуда угодно — бот в руках, AI рядом',
+    flagSoon: 'Скоро',
+    telegram: {
+      badge: 'Telegram-бот',
+      title: 'Полное управление через Telegram',
+      desc: 'Управляйте всем бизнесом через бот в телефоне — компьютер не нужен. Поиск заказов, смена статуса и отчёты — всё в одном месте.',
+      points: [
+        'Вход без пароля — безопасно, в одно нажатие',
+        'Автоуведомление клиенту, когда заказ готов',
+        'Уведомления владельцу о выручке и новых заказах в реальном времени',
+      ],
+    },
+    ai: {
+      badge: 'AI-интеграция',
+      title: 'AI-аналитика и управление бизнесом',
+      desc: 'Искусственный интеллект полностью анализирует ваш бизнес и показывает точки роста. Не считайте цифры вручную — AI даёт готовые рекомендации.',
+      points: [
+        'Прогноз продаж и выручки',
+        'Анализ поведения клиентов и рекомендации',
+        'Советы по оптимизации расходов',
+      ],
+    },
     stepTag: 'Начать легко',
     stepTitle1: 'Запуск за',
     stepTitle2: '3 шага',
@@ -318,7 +381,7 @@ const CONTENT: Record<Locale, Content> = {
     steps: [
       { step: '01', title: 'Зарегистрируйтесь', desc: 'Создайте аккаунт за 1 минуту. Карта или оплата не нужны — только номер телефона.' },
       { step: '02', title: 'Настройте платформу', desc: 'Внесите филиал, услуги и цены. Начинаете с готовым каталогом услуг.' },
-      { step: '03', title: 'Начните работу', desc: 'Принимайте заказы с первого дня. Все возможности бесплатно 14 дней.' },
+      { step: '03', title: 'Начните работу', desc: 'Принимайте заказы с первого дня. Все возможности бесплатно 3 дня.' },
     ],
     priceTag: 'Тарифы',
     priceTitle1: 'Простые и',
@@ -352,10 +415,10 @@ const CONTENT: Record<Locale, Content> = {
       'Цена не меняется весь год',
       'Приоритетная поддержка',
     ],
-    priceCta: 'Начать бесплатно на 14 дней',
-    priceFootnote: 'Сначала 14 дней бесплатно — тариф выбирается только после пробного периода',
+    priceCta: 'Начать бесплатно на 3 дня',
+    priceFootnote: 'Сначала 3 дня бесплатно — тариф выбирается только после пробного периода',
     offerBadge: 'Специальное предложение',
-    offerTitle: '14 дней абсолютно бесплатно',
+    offerTitle: '3 дня абсолютно бесплатно',
     offerSub:
       'Все возможности открыты. Данные карты не требуются, никаких скрытых платежей. Не понравится — просто не пользуетесь.',
     offerFeatures: [
@@ -372,7 +435,7 @@ const CONTENT: Record<Locale, Content> = {
       'Современная CRM-платформа для предприятий химчистки. Оцифруйте бизнес и увеличьте доход.',
     footerPlatform: 'Платформа',
     footerContact: 'Контакты',
-    footerTrial: '14 дней бесплатно',
+    footerTrial: '3 дня бесплатно',
     footerCrm: 'Вход в CRM-панель',
     footerAdvantages: 'Преимущества',
     footerPrice: 'Цены',
@@ -463,9 +526,12 @@ export function LandingPage() {
       >
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 group-hover:shadow-indigo-500/60 transition-shadow">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-mark.png"
+              alt="CleanWay"
+              className="h-9 w-9 rounded-xl shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-shadow"
+            />
             <span className="font-bold text-lg tracking-tight">CleanWay</span>
           </a>
 
@@ -718,6 +784,83 @@ export function LandingPage() {
       </section>
 
       {/* ======= Advantages ======= */}
+      {/* Flagship: Telegram bot + AI */}
+      <section className="max-w-6xl mx-auto px-5 py-16">
+        <motion.div {...fadeUp} className="text-center max-w-2xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-fuchsia-300 mb-4">
+            <Sparkles className="h-3.5 w-3.5" />
+            {c.flagTag}
+          </div>
+          <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-4">
+            {c.flagTitle1}{' '}
+            <span className="bg-gradient-to-r from-sky-400 via-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">
+              {c.flagTitle2}
+            </span>
+          </h2>
+          <p className="text-slate-400">{c.flagSub}</p>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-5">
+          {[
+            {
+              data: c.telegram,
+              Icon: Send,
+              glow: 'from-sky-500/25 via-sky-500/5',
+              chip: 'bg-sky-500/15 border-sky-400/30 text-sky-300',
+              badgeCls: 'bg-sky-500/10 text-sky-300 border-sky-400/20',
+              dot: 'text-sky-400',
+              soon: false,
+            },
+            {
+              data: c.ai,
+              Icon: Bot,
+              glow: 'from-fuchsia-500/25 via-violet-500/5',
+              chip: 'bg-fuchsia-500/15 border-fuchsia-400/30 text-fuchsia-300',
+              badgeCls: 'bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-400/20',
+              dot: 'text-fuchsia-400',
+              soon: true,
+            },
+          ].map((f, i) => (
+            <motion.div
+              key={f.data.badge}
+              {...fadeUp}
+              transition={{ duration: 0.6, delay: i * 0.12 }}
+              className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 hover:border-white/25 transition-all duration-300"
+            >
+              <div
+                className={`pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br ${f.glow} to-transparent blur-2xl opacity-70 group-hover:opacity-100 transition-opacity`}
+                aria-hidden
+              />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className={`h-14 w-14 rounded-2xl border flex items-center justify-center ${f.chip}`}>
+                    <f.Icon className="h-7 w-7" />
+                  </div>
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-widest ${f.badgeCls}`}>
+                    {f.data.badge}
+                  </span>
+                  {f.soon && (
+                    <span className="inline-flex items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300">
+                      {c.flagSoon}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-2xl font-black tracking-tight mb-3">{f.data.title}</h3>
+                <p className="text-slate-400 leading-relaxed mb-6">{f.data.desc}</p>
+                <ul className="space-y-2.5">
+                  {f.data.points.map((pt) => (
+                    <li key={pt} className="flex items-start gap-2.5 text-sm text-slate-200">
+                      <CheckCircle2 className={`h-5 w-5 shrink-0 mt-0.5 ${f.dot}`} />
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       <section id="afzalliklar" className="max-w-6xl mx-auto px-5 py-16 scroll-mt-20">
         <motion.div {...fadeUp} className="text-center max-w-2xl mx-auto mb-14">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-300 mb-4">
@@ -947,9 +1090,8 @@ export function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-mark.png" alt="CleanWay" className="h-9 w-9 rounded-xl" />
                 <span className="font-bold text-lg">CleanWay</span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">{c.footerAbout}</p>

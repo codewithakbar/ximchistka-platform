@@ -60,6 +60,8 @@ type BranchFinance = {
     totalPending: number;
     avgOrder: number;
     collectionRate: number;
+    expenses?: number;
+    netProfit?: number;
     kassa?: {
       totalPaid: number;
       byProvider: { provider: string; amount: number; count: number }[];
@@ -246,6 +248,12 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
             <Stat label={t('common.paid')} value={formatPrice(data.summary.totalPaid)} highlight />
             <Stat label={t('branchDetail.pending')} value={formatPrice(data.summary.totalPending)} />
             <Stat label={t('branchDetail.collectionRate')} value={`${data.summary.collectionRate}%`} />
+            <Stat label={t('reports.expenses')} value={formatPrice(data.summary.expenses ?? 0)} />
+            <Stat
+              label={t('reports.netProfit')}
+              value={formatPrice(data.summary.netProfit ?? 0)}
+              highlight={(data.summary.netProfit ?? 0) >= 0}
+            />
           </div>
 
           {data.summary.kassa && data.summary.kassa.byProvider.length > 0 && (

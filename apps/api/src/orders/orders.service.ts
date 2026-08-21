@@ -375,6 +375,43 @@ export class OrdersService {
     return updated;
   }
 
+  /**
+   * Buyurtmani butunlay o'chirish (xato kiritilgan buyurtma uchun).
+   * Bog'liq satrlar, to'lovlar, yetkazish va tarix kaskad o'chadi.
+   * Faqat super admin va filial menejeri (o'z filiali).
+   */
+  async deleteOrder(
+    id: string,
+    user: { id: string; role: UserRole; organizationId?: string; branchIds: string[] },
+  ) {
+    if (user.role !== UserRole.super_admin && user.role !== UserRole.branch_manager) {
+      throw new ForbiddenException('Buyurtmani faqat rahbar o\'chira oladi');
+    }
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      select: { id: true, branchId: true, orderNumber: true, branch: { select: { organizationId: true } } },
+    });
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+    await this.branches.assertBranchAccess(user, order.branchId);
+    // Menejer faqat O'ZIGA biriktirilgan filial buyurtmasini o'chira oladi
+    // (filialsiz menejer org bo'ylab o'chira olmasligi kerak)
+    if (
+      user.role !== UserRole.super_admin &&
+      !(user.branchIds ?? []).includes(order.branchId)
+    ) {
+      throw new ForbiddenException('Bu filial buyurtmasini o\'chirishga ruxsat yo\'q');
+    }
+
+    await this.prisma.order.delete({ where: { id } });
+
+    // Real-vaqt ro'yxatlar yangilanishi uchun signal
+    this.gateway.emitOrderUpdate(order.branch.organizationId, order.branchId, {
+      id: order.id,
+      deleted: true,
+    });
+    return { deleted: true, id, orderNumber: order.orderNumber };
+  }
+
   async trackByNumber(orderNumber: string) {
     // Endpoint ommaviy — faqat kuzatuvga kerakli maydonlar qaytadi
     // (summa, eslatma, mijoz ma'lumotlari tashqariga chiqmaydi)

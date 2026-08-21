@@ -26,9 +26,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-card">
       <div className="flex h-16 items-center gap-2 border-b border-border px-6 shrink-0">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-          X
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo-mark.png"
+          alt="CleanWay"
+          className="h-8 w-8 rounded-lg shrink-0"
+        />
         <div>
           <div className="font-semibold text-sm">CleanWay</div>
           <div className="text-xs text-muted-foreground">{t(`role.${role}`)}</div>

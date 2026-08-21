@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   IsArray,
   IsEnum,
@@ -125,6 +125,15 @@ export class OrdersController {
     @CurrentUser() user: { id: string; role: UserRole; branchIds: string[] },
   ) {
     return this.orders.updateOrder(id, user, dto);
+  }
+
+  @Roles(UserRole.super_admin, UserRole.branch_manager)
+  @Delete(':id')
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: UserRole; branchIds: string[] },
+  ) {
+    return this.orders.deleteOrder(id, user);
   }
 
   @Roles(UserRole.super_admin, UserRole.branch_manager, UserRole.operator, UserRole.courier)

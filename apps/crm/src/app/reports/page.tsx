@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { Download, TrendingUp, ClipboardList, Wallet, Building2, BarChart3, XCircle } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, ClipboardList, Wallet, Building2, BarChart3, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ResponsiveContainer,
@@ -47,6 +47,8 @@ type Report = {
   avgOrderAmount: number;
   branchCount: number;
   kassa?: KassaBreakdown;
+  expenses?: { total: number; byCategory: { category: string; amount: number }[] };
+  netProfit?: number;
   byDay: { date: string; count: number; revenue: number }[];
   byBranch: BranchStat[];
 };
@@ -68,6 +70,8 @@ export default function ReportsPage() {
     avgOrderAmount: 0,
     branchCount: 0,
     kassa: { totalPaid: 0, byProvider: [] },
+    expenses: { total: 0, byCategory: [] },
+    netProfit: 0,
     byDay: [],
     byBranch: [],
   };
@@ -195,6 +199,25 @@ export default function ReportsPage() {
           label={t('reports.cancelled')}
           value={report ? String(report.cancelledOrders) : undefined}
           color="bg-rose-500/10 text-rose-600"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <SummaryCard
+          icon={TrendingDown}
+          label={t('reports.expenses')}
+          value={report ? formatPrice(report.expenses?.total ?? 0) : undefined}
+          color="bg-rose-500/10 text-rose-600"
+        />
+        <SummaryCard
+          icon={(report?.netProfit ?? 0) >= 0 ? TrendingUp : TrendingDown}
+          label={t('reports.netProfit')}
+          value={report ? formatPrice(report.netProfit ?? 0) : undefined}
+          color={
+            (report?.netProfit ?? 0) >= 0
+              ? 'bg-emerald-500/10 text-emerald-600'
+              : 'bg-rose-500/10 text-rose-600'
+          }
         />
       </div>
 

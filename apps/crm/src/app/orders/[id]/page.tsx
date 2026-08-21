@@ -16,6 +16,7 @@ import {
   Printer,
   Pencil,
   PackageCheck,
+  Trash2,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +36,7 @@ import { OrderPaymentPanel, type PaymentSummary } from '@/components/orders/orde
 import { HandoverDialog } from '@/components/orders/handover-dialog';
 import { EditOrderDialog } from '@/components/orders/edit-order-dialog';
 import { useDemoExpired } from '@/components/layout/demo-expired-lock';
-import { useCanCreateOrders } from '@/hooks/use-client-auth';
+import { useCanCreateOrders, useHasRole } from '@/hooks/use-client-auth';
 import {
   OrderStatus,
   VALID_STATUS_TRANSITIONS,
@@ -86,8 +87,12 @@ export default function OrderDetailPage() {
   const [paySummary, setPaySummary] = useState<PaymentSummary | null>(null);
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [payReload, setPayReload] = useState(0);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const canDeleteRole = useHasRole('super_admin', 'branch_manager');
   const demoExpired = useDemoExpired();
   const canEditOrders = useCanCreateOrders();
+  const canDelete = canDeleteRole && !demoExpired;
 
   async function load() {
     const data = await api<OrderDetail>(`/orders/${params.id}`);
@@ -124,6 +129,18 @@ export default function OrderDetailPage() {
     }
   }
 
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await api(`/orders/${params.id}`, { method: 'DELETE' });
+      toast.success(t('orderDetail.toastDeleted'));
+      router.push('/orders');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('common.error'));
+      setDeleting(false);
+    }
+  }
+
   const allowedNext = order ? VALID_STATUS_TRANSITIONS[order.status] : [];
   const canEdit =
     canEditOrders &&
@@ -139,10 +156,23 @@ export default function OrderDetailPage() {
 
   return (
     <AppShell title={order ? order.orderNumber : t('orderDetail.title')}>
-      <Button variant="ghost" size="sm" onClick={() => router.back()} className="mb-4">
-        <ArrowLeft className="h-4 w-4" />
-        {t('common.back')}
-      </Button>
+      <div className="mb-4 flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+          {t('common.back')}
+        </Button>
+        {canDelete && order && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            {t('orderDetail.deleteOrder')}
+          </Button>
+        )}
+      </div>
 
       {!order ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -353,6 +383,19 @@ export default function OrderDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        variant="destructive"
+        title={t('orderDetail.deleteTitle')}
+        description={
+          order ? t('orderDetail.deleteBody', { order: order.orderNumber }) : null
+        }
+        confirmLabel={t('orderDetail.deleteOrder')}
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
 
       {order && (
         <HandoverDialog
