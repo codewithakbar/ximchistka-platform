@@ -4,7 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Phone, ArrowLeft, Shield, User } from 'lucide-react';
+import { ArrowRight, Phone, ArrowLeft, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -77,9 +77,8 @@ export function LoginForm() {
 
         <div className="relative max-w-md mx-auto">
           <div className="flex items-center gap-2 mb-12">
-            <div className="h-9 w-9 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.png" alt="CleanWay" className="h-9 w-9 rounded-2xl shadow-sm" />
             <span className="font-semibold">CleanWay</span>
           </div>
 

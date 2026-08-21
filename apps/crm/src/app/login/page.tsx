@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Phone, Lock, ArrowRight, Send, KeyRound } from 'lucide-react';
+import { Phone, Lock, ArrowRight, Send, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -142,9 +142,8 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_50%)]" />
         <div className="relative">
           <a href={LANDING_URL} className="inline-flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.png" alt="CleanWay" className="h-10 w-10 rounded-xl shadow-sm" />
             <span className="font-semibold text-lg">CleanWay CRM</span>
           </a>
         </div>
@@ -177,9 +176,8 @@ export default function LoginPage() {
         </div>
         <div className="w-full max-w-md">
           <a href={LANDING_URL} className="lg:hidden flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.png" alt="CleanWay" className="h-10 w-10 rounded-xl shadow-sm" />
             <span className="font-semibold text-lg">CleanWay CRM</span>
           </a>
 

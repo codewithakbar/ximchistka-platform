@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const DEMO_DAYS = 14;
-const PUBLIC_TRIAL_DAYS = 14;
+const PUBLIC_TRIAL_DAYS = 3;
 
 type BranchWithCount = {
   id: string;

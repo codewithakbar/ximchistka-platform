@@ -140,9 +140,9 @@ const CONTENT: Record<Locale, Content> = {
       { href: '#aloqa', label: 'Aloqa' },
     ],
     login: 'Kirish',
-    freeTrial: '14 kun bepul',
+    freeTrial: '3 kun bepul',
     menu: 'Menyu',
-    heroBadge: '14 kun bepul sinov — karta talab qilinmaydi',
+    heroBadge: '3 kun bepul sinov — karta talab qilinmaydi',
     heroTitle1: 'Ximchistka biznesingizni',
     heroTitle2: 'raqamli boshqaring',
     heroSub:
@@ -168,7 +168,7 @@ const CONTENT: Record<Locale, Content> = {
       'Xodimlar rollari',
     ],
     stats: [
-      { end: 14, suffix: ' kun', label: 'bepul sinov muddati' },
+      { end: 3, suffix: ' kun', label: 'bepul sinov muddati' },
       { end: 1, suffix: ' daqiqa', label: "ro'yxatdan o'tish vaqti" },
       { end: 8, suffix: '+', label: 'tayyor CRM moduli' },
       { end: 24, suffix: '/7', label: 'onlayn buyurtma qabuli' },
@@ -194,7 +194,7 @@ const CONTENT: Record<Locale, Content> = {
     steps: [
       { step: '01', title: "Ro'yxatdan o'ting", desc: "1 daqiqada hisob yarating. Karta yoki to'lov talab qilinmaydi — faqat telefon raqam." },
       { step: '02', title: 'Platformani sozlang', desc: 'Filial, xizmatlar va narxlaringizni kiriting. Tayyor xizmatlar katalogi bilan boshlaysiz.' },
-      { step: '03', title: 'Ishlashni boshlang', desc: 'Birinchi kundanoq buyurtmalarni qabul qiling. Barcha imkoniyatlar 14 kun bepul.' },
+      { step: '03', title: 'Ishlashni boshlang', desc: 'Birinchi kundanoq buyurtmalarni qabul qiling. Barcha imkoniyatlar 3 kun bepul.' },
     ],
     priceTag: 'Tariflar',
     priceTitle1: 'Oddiy va',
@@ -228,10 +228,10 @@ const CONTENT: Record<Locale, Content> = {
       "Yil davomida narx o'zgarmaydi",
       'Ustuvor texnik yordam',
     ],
-    priceCta: '14 kun bepul boshlash',
-    priceFootnote: "Avval 14 kun bepul sinab ko'rasiz — tarif faqat sinov tugagach tanlanadi",
+    priceCta: '3 kun bepul boshlash',
+    priceFootnote: "Avval 3 kun bepul sinab ko'rasiz — tarif faqat sinov tugagach tanlanadi",
     offerBadge: 'Maxsus taklif',
-    offerTitle: '14 kun mutlaqo bepul',
+    offerTitle: '3 kun mutlaqo bepul',
     offerSub:
       "Barcha imkoniyatlar ochiq. Karta ma'lumotlari talab qilinmaydi, hech qanday yashirin to'lovlar yo'q. Yoqmasa — shunchaki ishlatmaysiz.",
     offerFeatures: [
@@ -248,7 +248,7 @@ const CONTENT: Record<Locale, Content> = {
       'Kimyoviy tozalash korxonalari uchun zamonaviy CRM platforma. Biznesingizni raqamlashtiring va daromadingizni oshiring.',
     footerPlatform: 'Platforma',
     footerContact: 'Aloqa',
-    footerTrial: '14 kun bepul sinov',
+    footerTrial: '3 kun bepul sinov',
     footerCrm: 'CRM panelga kirish',
     footerAdvantages: 'Afzalliklar',
     footerPrice: 'Narx',
@@ -264,9 +264,9 @@ const CONTENT: Record<Locale, Content> = {
       { href: '#aloqa', label: 'Контакты' },
     ],
     login: 'Войти',
-    freeTrial: '14 дней бесплатно',
+    freeTrial: '3 дня бесплатно',
     menu: 'Меню',
-    heroBadge: '14 дней бесплатно — карта не требуется',
+    heroBadge: '3 дня бесплатно — карта не требуется',
     heroTitle1: 'Управляйте бизнесом',
     heroTitle2: 'химчистки в цифре',
     heroSub:
@@ -292,7 +292,7 @@ const CONTENT: Record<Locale, Content> = {
       'Роли сотрудников',
     ],
     stats: [
-      { end: 14, suffix: ' дн.', label: 'бесплатный период' },
+      { end: 3, suffix: ' дн.', label: 'бесплатный период' },
       { end: 1, suffix: ' мин', label: 'время регистрации' },
       { end: 8, suffix: '+', label: 'готовых CRM-модулей' },
       { end: 24, suffix: '/7', label: 'приём онлайн-заказов' },
@@ -318,7 +318,7 @@ const CONTENT: Record<Locale, Content> = {
     steps: [
       { step: '01', title: 'Зарегистрируйтесь', desc: 'Создайте аккаунт за 1 минуту. Карта или оплата не нужны — только номер телефона.' },
       { step: '02', title: 'Настройте платформу', desc: 'Внесите филиал, услуги и цены. Начинаете с готовым каталогом услуг.' },
-      { step: '03', title: 'Начните работу', desc: 'Принимайте заказы с первого дня. Все возможности бесплатно 14 дней.' },
+      { step: '03', title: 'Начните работу', desc: 'Принимайте заказы с первого дня. Все возможности бесплатно 3 дня.' },
     ],
     priceTag: 'Тарифы',
     priceTitle1: 'Простые и',
@@ -352,10 +352,10 @@ const CONTENT: Record<Locale, Content> = {
       'Цена не меняется весь год',
       'Приоритетная поддержка',
     ],
-    priceCta: 'Начать бесплатно на 14 дней',
-    priceFootnote: 'Сначала 14 дней бесплатно — тариф выбирается только после пробного периода',
+    priceCta: 'Начать бесплатно на 3 дня',
+    priceFootnote: 'Сначала 3 дня бесплатно — тариф выбирается только после пробного периода',
     offerBadge: 'Специальное предложение',
-    offerTitle: '14 дней абсолютно бесплатно',
+    offerTitle: '3 дня абсолютно бесплатно',
     offerSub:
       'Все возможности открыты. Данные карты не требуются, никаких скрытых платежей. Не понравится — просто не пользуетесь.',
     offerFeatures: [
@@ -372,7 +372,7 @@ const CONTENT: Record<Locale, Content> = {
       'Современная CRM-платформа для предприятий химчистки. Оцифруйте бизнес и увеличьте доход.',
     footerPlatform: 'Платформа',
     footerContact: 'Контакты',
-    footerTrial: '14 дней бесплатно',
+    footerTrial: '3 дня бесплатно',
     footerCrm: 'Вход в CRM-панель',
     footerAdvantages: 'Преимущества',
     footerPrice: 'Цены',
@@ -463,9 +463,12 @@ export function LandingPage() {
       >
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 group-hover:shadow-indigo-500/60 transition-shadow">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-mark.png"
+              alt="CleanWay"
+              className="h-9 w-9 rounded-xl shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-shadow"
+            />
             <span className="font-bold text-lg tracking-tight">CleanWay</span>
           </a>
 
@@ -947,9 +950,8 @@ export function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-mark.png" alt="CleanWay" className="h-9 w-9 rounded-xl" />
                 <span className="font-bold text-lg">CleanWay</span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">{c.footerAbout}</p>
