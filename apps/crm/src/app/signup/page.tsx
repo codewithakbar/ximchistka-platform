@@ -11,7 +11,6 @@ import {
   Copy,
   Lock,
   MapPin,
-  Sparkles,
   User,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -164,9 +163,8 @@ export default function SignupPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_50%)]" />
         <div className="relative">
           <a href={LANDING_URL} className="inline-flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.png" alt="CleanWay" className="h-10 w-10 rounded-xl shadow-sm" />
             <span className="font-semibold text-lg">CleanWay</span>
           </a>
         </div>

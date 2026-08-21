@@ -3,12 +3,14 @@ import { OrderStatus, PaymentStatus, UserRole } from '@prisma/client';
 import { ORDER_STATUS_LABELS } from '@ximchistka/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { BranchesService } from '../branches/branches.service';
+import { ExpensesService } from '../expenses/expenses.service';
 
 @Injectable()
 export class ReportsService {
   constructor(
     private prisma: PrismaService,
     private branches: BranchesService,
+    private expenses: ExpensesService,
   ) {}
 
   /** Sana oralig'i — UTC kun chegaralari (CRM date input bilan mos) */
@@ -151,6 +153,11 @@ export class ReportsService {
       ),
     ]);
 
+    const organizationId = user.organizationId;
+    const expenses = organizationId
+      ? await this.expenses.totalForReport(organizationId, fromDate, toDate, branchId)
+      : { total: 0, byCategory: [] as { category: string; amount: number }[] };
+
     // Metrikalar faqat to'lovli (bekor qilinmagan) buyurtmalardan hisoblanadi
     const orders = allOrders.filter((o) => o.status !== OrderStatus.cancelled);
     const cancelled = allOrders.filter((o) => o.status === OrderStatus.cancelled);
@@ -205,6 +212,8 @@ export class ReportsService {
       avgOrderAmount: totalOrders ? Math.round(totalRevenue / totalOrders) : 0,
       branchCount: branches.length,
       kassa,
+      expenses,
+      netProfit: totalRevenue - expenses.total,
       byDay: Object.entries(byDay)
         .map(([date, stats]) => ({
           date,
@@ -243,6 +252,12 @@ export class ReportsService {
     const orderIds = orders.map((o) => o.id);
 
     const kassa = await this.kassaBreakdown({ branchId }, fromDate, toDate);
+    const expenses = await this.expenses.totalForReport(
+      branch.organizationId,
+      fromDate,
+      toDate,
+      branchId,
+    );
 
     const payments = await this.prisma.payment.findMany({
       where: {
@@ -365,6 +380,8 @@ export class ReportsService {
           ? Math.round((totalPaid / totalRevenue) * 1000) / 10
           : 0,
         kassa,
+        expenses: expenses.total,
+        netProfit: totalRevenue - expenses.total,
       },
       revenueByDay: Object.entries(revenueByDay)
         .map(([date, stats]) => ({ date, ...stats }))
