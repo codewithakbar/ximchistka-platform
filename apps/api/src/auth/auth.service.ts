@@ -37,6 +37,11 @@ export class AuthService {
     if (!user || !user.passwordHash || user.role === UserRole.customer) {
       throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');
     }
+    if (user.role === UserRole.platform_admin) {
+      throw new UnauthorizedException(
+        'Platforma admin CRM ga kira olmaydi. Admin panelni ishlating: cleanway.4mi.uz/platform',
+      );
+    }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');
     await this.assertOrganizationActive(user);
@@ -67,6 +72,11 @@ export class AuthService {
     });
     if (!user || !user.isActive || user.role === UserRole.customer) {
       throw new BadRequestException('Bu raqam bilan xodim topilmadi');
+    }
+    if (user.role === UserRole.platform_admin) {
+      throw new BadRequestException(
+        'Platforma admin CRM ga kira olmaydi. Admin panelni ishlating.',
+      );
     }
     await this.assertOrganizationActive(user);
 

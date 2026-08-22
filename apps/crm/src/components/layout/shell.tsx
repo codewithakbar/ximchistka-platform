@@ -5,11 +5,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
 import { DemoExpiredLock, DemoExpiredContext } from './demo-expired-lock';
-import { api, ensureValidSession, getToken, getUser, updateStoredUser } from '@/lib/api';
+import { api, clearAuth, ensureValidSession, getToken, getUser, updateStoredUser } from '@/lib/api';
 import { canAccessRoute } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+
+const PLATFORM_URL =
+  process.env.NEXT_PUBLIC_MERCHANT_URL ?? 'https://cleanway.4mi.uz/platform';
 
 export function AppShell({
   title,
@@ -63,8 +66,22 @@ export function AppShell({
       }
 
       const user = getUser<{ role?: string }>();
+
+      // Platforma admin CRM marshrutlariga kira olmaydi — admin panelga yo'naltiramiz
+      if (user?.role === 'platform_admin') {
+        clearAuth();
+        window.location.href = `${PLATFORM_URL.replace(/\/$/, '')}/dashboard`;
+        return;
+      }
+
       if (user?.role && !canAccessRoute(user.role, pathname)) {
-        router.replace('/dashboard');
+        if (pathname !== '/dashboard') {
+          router.replace('/dashboard');
+          return;
+        }
+        // Dashboard ham yopiq (noma'lum rol) — qayta login
+        clearAuth();
+        router.replace('/login');
         return;
       }
 
