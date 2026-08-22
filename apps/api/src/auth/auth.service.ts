@@ -128,6 +128,9 @@ export class AuthService {
     if (!user || !user.isActive || user.role === UserRole.customer) {
       throw invalid();
     }
+    if (user.role === UserRole.platform_admin) {
+      throw invalid();
+    }
 
     // Brute-force himoyasi: oxirgi 5 daqiqada noto'g'ri urinishlar ko'p bo'lsa,
     // barcha faol kodlarni kuydiramiz (900k fazoni sindirishga imkon bermaymiz)
