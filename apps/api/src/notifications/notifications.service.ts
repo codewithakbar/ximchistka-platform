@@ -46,17 +46,19 @@ export class NotificationsService {
   }
 
   async sendTelegram(message: string) {
+    // Eski bot — faqat platforma adminiga xabar (trial signup va hokazo)
     const tokens = [
-      process.env.TELEGRAM_BOT_TOKEN,
+      process.env.TELEGRAM_ADMIN_BOT_TOKEN,
       process.env.TELEGRAM_BOT_TOKEN_2,
-      ...(process.env.TELEGRAM_BOT_TOKENS ?? '').split(','),
     ]
       .map((t) => (t ?? '').trim())
       .filter(Boolean);
     const unique = [...new Set(tokens)];
     const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
     if (!unique.length || !chatId) {
-      this.logger.warn('Telegram sozlanmagan (TELEGRAM_BOT_TOKEN / TELEGRAM_ADMIN_CHAT_ID)');
+      this.logger.warn(
+        'Admin Telegram sozlanmagan (TELEGRAM_ADMIN_BOT_TOKEN / TELEGRAM_ADMIN_CHAT_ID)',
+      );
       return { sent: false };
     }
 

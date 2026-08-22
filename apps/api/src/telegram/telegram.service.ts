@@ -32,7 +32,8 @@ type CallOpts = {
  * va bog'langan hisoblarga bildirishnoma tarqatish. Bot suhbat mantiqi
  * alohida — telegram-bot.service.ts da.
  *
- * Bir nechta bot tokeni qo'llab-quvvatlanadi (TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_TOKEN_2).
+ * TELEGRAM_BOT_TOKEN — asosiy interaktiv bot (polling, login, mijoz xabarlari).
+ * TELEGRAM_ADMIN_BOT_TOKEN — faqat platforma adminiga xabar (eski bot).
  */
 @Injectable()
 export class TelegramService {
@@ -43,16 +44,10 @@ export class TelegramService {
 
   constructor(private prisma: PrismaService) {}
 
-  /** Barcha sozlangan bot tokenlari (takrorlarsiz) */
-  getTokens(): string[] {
-    const raw = [
-      process.env.TELEGRAM_BOT_TOKEN,
-      process.env.TELEGRAM_BOT_TOKEN_2,
-      ...(process.env.TELEGRAM_BOT_TOKENS ?? '').split(','),
-    ];
+  private dedupe(tokens: Array<string | undefined | null>): string[] {
     const seen = new Set<string>();
     const out: string[] = [];
-    for (const t of raw) {
+    for (const t of tokens) {
       const token = (t ?? '').trim();
       if (!token || seen.has(token)) continue;
       seen.add(token);
@@ -61,12 +56,34 @@ export class TelegramService {
     return out;
   }
 
+  /** Asosiy interaktiv bot */
+  getPrimaryToken(): string | null {
+    return this.dedupe([process.env.TELEGRAM_BOT_TOKEN])[0] ?? null;
+  }
+
+  /**
+   * Faqat admin chatga platforma xabarlari (trial signup va hokazo).
+   * TELEGRAM_ADMIN_BOT_TOKEN; eski TELEGRAM_BOT_TOKEN_2 ham qabul qilinadi.
+   */
+  getAdminNotifyTokens(): string[] {
+    return this.dedupe([
+      process.env.TELEGRAM_ADMIN_BOT_TOKEN,
+      process.env.TELEGRAM_BOT_TOKEN_2,
+    ]);
+  }
+
+  /** Polling uchun tokenlar — faqat asosiy bot */
+  getTokens(): string[] {
+    const primary = this.getPrimaryToken();
+    return primary ? [primary] : [];
+  }
+
   get token(): string | null {
-    return this.activeToken ?? this.getTokens()[0] ?? null;
+    return this.activeToken ?? this.getPrimaryToken();
   }
 
   isConfigured() {
-    return this.getTokens().length > 0;
+    return !!this.getPrimaryToken();
   }
 
   /** Handler/polling uchun token kontekstini o'rnatadi */
@@ -120,8 +137,7 @@ export class TelegramService {
   }
 
   /**
-   * Xabarni yuboradi. Token berilmasa: faol kontekst → aks holda barcha botlar
-   * bo'yicha ketma-ket urinadi (foydalanuvchi qaysi botga yozgan bo'lsa, o'sha ishlaydi).
+   * Xabarni yuboradi. Token berilmasa: faol kontekst → asosiy bot.
    */
   async sendMessage(chatId: string, html: string, opts: SendOptions = {}) {
     const payload = {
@@ -132,32 +148,23 @@ export class TelegramService {
       ...(opts.replyMarkup ? { reply_markup: opts.replyMarkup } : {}),
     };
 
-    if (opts.token || this.activeToken) {
-      return this.call<{ message_id: number }>('sendMessage', payload, {
-        token: opts.token,
-        silent: true,
-      });
+    const token = opts.token || this.activeToken || this.getPrimaryToken();
+    if (!token) {
+      this.logger.warn(`Telegram sendMessage: token yo'q (chat ${chatId})`);
+      return null;
     }
-
-    for (const token of this.getTokens()) {
-      const result = await this.call<{ message_id: number }>('sendMessage', payload, {
-        token,
-        silent: true,
-      });
-      if (result) return result;
-    }
-    this.logger.warn(`Telegram sendMessage muvaffaqiyatsiz (chat ${chatId})`);
-    return null;
+    return this.call<{ message_id: number }>('sendMessage', payload, {
+      token,
+      silent: true,
+    });
   }
 
-  /** Barcha botlar orqali bir xil xabarni yuboradi (admin broadcast) */
-  async sendMessageAll(chatId: string, html: string, opts: SendOptions = {}) {
-    const tokens = this.getTokens();
+  /** Platforma admin chatiga (eski bot orqali) */
+  async sendAdminNotify(chatId: string, html: string) {
+    const tokens = this.getAdminNotifyTokens();
     if (!tokens.length) return { sent: 0 };
     const results = await Promise.all(
-      tokens.map((token) =>
-        this.sendMessage(chatId, html, { ...opts, token }),
-      ),
+      tokens.map((token) => this.sendMessage(chatId, html, { token })),
     );
     return { sent: results.filter(Boolean).length };
   }
@@ -180,11 +187,11 @@ export class TelegramService {
     }, { token, silent: true });
   }
 
-  /** Bot username (login sahifasida ko'rsatish uchun, keshlangan — birinchi bot) */
+  /** Asosiy bot username (login sahifasida ko'rsatish uchun) */
   async getBotUsername(): Promise<string | null> {
-    if (!this.isConfigured()) return null;
+    const primary = this.getPrimaryToken();
+    if (!primary) return null;
     if (this.botUsername) return this.botUsername;
-    const primary = this.getTokens()[0];
     const me = await this.call<{ username?: string }>('getMe', {}, { token: primary });
     this.botUsername = me?.username ?? null;
     return this.botUsername;

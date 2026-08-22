@@ -97,7 +97,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       this.offsets.set(token, 0);
       void this.pollLoop(token);
     }
-    this.logger.log(`Telegram bot long-polling: ${tokens.length} ta bot`);
+    this.logger.log('Telegram bot long-polling: asosiy bot ishga tushdi');
   }
 
   onModuleDestroy() {
