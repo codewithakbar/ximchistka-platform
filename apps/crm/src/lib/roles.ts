@@ -9,6 +9,7 @@ import {
   BarChart3,
   UserCog,
   Receipt,
+  BookOpen,
 } from 'lucide-react';
 
 export type StaffRole =
@@ -48,6 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['super_admin'] },
   { href: '/expenses', label: 'Xarajatlar', icon: Receipt, roles: ['super_admin', 'branch_manager'] },
   { href: '/staff', label: 'Xodimlar', icon: UserCog, roles: ['super_admin', 'branch_manager'] },
+  { href: '/help', label: 'Yordam', icon: BookOpen, roles: ['super_admin', 'branch_manager', 'operator', 'courier'] },
 ];
 
 export function getNavForRole(role: string) {

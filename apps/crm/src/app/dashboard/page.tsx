@@ -30,6 +30,7 @@ import { canCreateOrders, StaffRole } from '@/lib/roles';
 import { useI18n, useOrderStatusLabel } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 import { AppShell } from '@/components/layout/shell';
+import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/badge';
@@ -169,6 +170,8 @@ export default function DashboardPage() {
 
   return (
     <AppShell title={title}>
+      {role === 'super_admin' && <SetupChecklist />}
+
       <Card className="mb-6 bg-gradient-to-r from-primary/10 to-transparent border-primary/20">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

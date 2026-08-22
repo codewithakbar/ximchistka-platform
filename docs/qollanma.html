@@ -1,0 +1,1215 @@
+<title>CleanWay Xodim Qo'llanmasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+
+<style>
+  /* ---------------------------------------------------------------
+     Tokenlar — yorug' palitra to'liq shu yerda
+     --------------------------------------------------------------- */
+  :root {
+    --ground:      #f5f8fb;
+    --surface:     #ffffff;
+    --surface-alt: #eef3f8;
+    --ink:         #12212e;
+    --ink-soft:    #4a5f72;
+    --ink-faint:   #7d90a1;
+    --line:        #d9e3ec;
+    --line-soft:   #e8eef4;
+
+    --accent:      #0f5fa6;
+    --accent-deep: #0a4478;
+    --accent-soft: #e2eef9;
+    --accent-ink:  #0a4478;
+    --on-accent:   #ffffff;
+
+    --warn:        #9a5100;
+    --warn-bg:     #fdf1e0;
+    --warn-line:   #f0cf9e;
+
+    --tip:         #0c6b62;
+    --tip-bg:      #e2f3f0;
+    --tip-line:    #a8d8d1;
+
+    --danger:      #a32b2b;
+    --danger-bg:   #fbeaea;
+    --danger-line: #eec2c2;
+
+    --shadow: 0 1px 2px rgba(18, 33, 46, .06), 0 8px 24px -12px rgba(18, 33, 46, .18);
+
+    --display: "Golos Text", "Segoe UI", system-ui, sans-serif;
+    --body:    "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --measure: 66ch;
+  }
+
+  /* Tizim sozlamasi qorong'i, lekin foydalanuvchi yorug'ni tanlamagan */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0d151d;
+      --surface:     #131f2a;
+      --surface-alt: #18262f;
+      --ink:         #e6eef5;
+      --ink-soft:    #a3b6c6;
+      --ink-faint:   #758998;
+      --line:        #263947;
+      --line-soft:   #1e2f3b;
+
+      --accent:      #6cb6f0;
+      --accent-deep: #a9d4f8;
+      --accent-soft: #14293c;
+      --accent-ink:  #a9d4f8;
+      --on-accent:   #0d151d;
+
+      --warn:        #f0b968;
+      --warn-bg:     #2b2010;
+      --warn-line:   #4d3a1a;
+
+      --tip:         #6fd2c4;
+      --tip-bg:      #102a28;
+      --tip-line:    #1e4a45;
+
+      --danger:      #f09090;
+      --danger-bg:   #2d1618;
+      --danger-line: #4d2427;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+    }
+  }
+
+  /* Foydalanuvchi qorong'ini aniq tanlagan */
+  :root[data-theme="dark"] {
+    --ground:      #0d151d;
+    --surface:     #131f2a;
+    --surface-alt: #18262f;
+    --ink:         #e6eef5;
+    --ink-soft:    #a3b6c6;
+    --ink-faint:   #758998;
+    --line:        #263947;
+    --line-soft:   #1e2f3b;
+
+    --accent:      #6cb6f0;
+    --accent-deep: #a9d4f8;
+    --accent-soft: #14293c;
+    --accent-ink:  #a9d4f8;
+    --on-accent:   #0d151d;
+
+    --warn:        #f0b968;
+    --warn-bg:     #2b2010;
+    --warn-line:   #4d3a1a;
+
+    --tip:         #6fd2c4;
+    --tip-bg:      #102a28;
+    --tip-line:    #1e4a45;
+
+    --danger:      #f09090;
+    --danger-bg:   #2d1618;
+    --danger-line: #4d2427;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+  }
+
+  /* ---------------------------------------------------------------
+     Asos
+     --------------------------------------------------------------- */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -.015em;
+  }
+
+  p { margin: 0; }
+  a { color: var(--accent); }
+
+  /* Til almashtirish */
+  :root[data-guide-lang="uz"] .l-ru { display: none !important; }
+  :root[data-guide-lang="ru"] .l-uz { display: none !important; }
+
+  /* ---------------------------------------------------------------
+     Sarlavha
+     --------------------------------------------------------------- */
+  .masthead {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .masthead-in {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 28px 24px 30px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .brand-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .masthead h1 {
+    font-size: clamp(28px, 4.6vw, 42px);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .masthead .lede {
+    color: var(--ink-soft);
+    margin-top: 10px;
+    max-width: 48ch;
+    font-size: 15px;
+  }
+
+  /* Til tugmasi */
+  .langs {
+    display: inline-flex;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .langs button {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    padding: 7px 15px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .langs button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .langs button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------------------------------------------------------------
+     Maket
+     --------------------------------------------------------------- */
+  .shell {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 32px 24px 96px;
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; gap: 8px; padding-top: 16px; }
+  }
+
+  /* Yon navigatsiya */
+  .toc {
+    position: sticky;
+    top: 24px;
+  }
+
+  .toc-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0 10px 10px;
+    display: block;
+  }
+
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .toc a {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: background .13s, color .13s;
+  }
+
+  .toc a:hover { background: var(--surface-alt); color: var(--ink); }
+  .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  @media (max-width: 900px) {
+    .toc {
+      position: static;
+      overflow-x: auto;
+      margin: 0 -24px 16px;
+      padding: 0 24px 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .toc-label { display: none; }
+    .toc ol { flex-direction: row; gap: 6px; width: max-content; }
+    .toc a {
+      white-space: nowrap;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+    }
+  }
+
+  /* ---------------------------------------------------------------
+     Bo'limlar
+     --------------------------------------------------------------- */
+  .doc { max-width: var(--measure); }
+
+  section {
+    scroll-margin-top: 20px;
+    padding: 30px 0 34px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  section:first-of-type { border-top: 0; padding-top: 6px; }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 9px;
+  }
+
+  section h2 {
+    font-size: clamp(21px, 3vw, 26px);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .sub {
+    color: var(--ink-faint);
+    font-size: 14.5px;
+    margin-bottom: 20px;
+  }
+
+  section p + p { margin-top: 14px; }
+  .doc p { color: var(--ink-soft); }
+  .doc p strong { color: var(--ink); font-weight: 600; }
+
+  /* Ketma-ket amallar — raqam bu yerda haqiqiy tartibni bildiradi */
+  ol.steps {
+    list-style: none;
+    counter-reset: s;
+    margin: 20px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  ol.steps li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 27px minmax(0, 1fr);
+    gap: 13px;
+    align-items: start;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+
+  ol.steps li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 6px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  /* Eslatma qutilari */
+  .note {
+    margin-top: 20px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .note strong { font-weight: 600; }
+
+  .note.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn); }
+  .note.tip  { background: var(--tip-bg);  border-color: var(--tip-line);  color: var(--tip); }
+
+  .note-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
+    opacity: .85;
+  }
+
+  /* Jadval */
+  .tw {
+    margin-top: 20px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: var(--surface);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 11px 15px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  tr:last-child td { border-bottom: 0; }
+
+  th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--surface-alt);
+    white-space: nowrap;
+  }
+
+  td:first-child { font-weight: 600; color: var(--ink); }
+  td:last-child { color: var(--ink-soft); }
+
+  /* Uch tugma — og'irligi ortib boruvchi tartibda */
+  .triad {
+    margin-top: 20px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 16px 18px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--sev, var(--accent));
+  }
+
+  .card h3 {
+    font-size: 15.5px;
+    font-weight: 700;
+    margin-bottom: 7px;
+    color: var(--sev, var(--accent));
+  }
+
+  .card p { font-size: 14px; line-height: 1.55; }
+
+  .sev-1 { --sev: var(--tip); }
+  .sev-2 { --sev: var(--warn); }
+  .sev-3 { --sev: var(--danger); }
+
+  .card .verdict {
+    display: block;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* Oqim zanjiri */
+  .flow {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .pill.is-start { border-color: var(--warn-line); background: var(--warn-bg); color: var(--warn); }
+  .pill.is-mid   { border-color: var(--tip-line);  background: var(--tip-bg);  color: var(--tip); }
+  .pill.is-end   { border-color: var(--accent);    background: var(--accent-soft); color: var(--accent-ink); }
+
+  .arrow { color: var(--ink-faint); font-size: 14px; }
+
+  /* Yakun */
+  .closer {
+    margin-top: 40px;
+    padding: 22px 24px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+
+  .closer h2 { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+  .closer p { font-size: 14.5px; color: var(--ink-soft); }
+
+  /* Chop etish */
+  @media print {
+    :root { --ground: #fff; --surface: #fff; }
+    .toc, .langs { display: none; }
+    .shell { display: block; padding: 0; }
+    section { break-inside: avoid; border-top: 1px solid #ccc; }
+    .doc { max-width: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+
+  html { scroll-behavior: smooth; }
+</style>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <div>
+      <span class="brand-tag">CleanWay</span>
+      <h1>
+        <span class="l-uz">Xodim qo'llanmasi</span>
+        <span class="l-ru">Руководство сотрудника</span>
+      </h1>
+      <p class="lede">
+        <span class="l-uz">Tizimni birinchi marta ochdingizmi? Bu qo'llanma kundalik ishingizni qadam-baqadam tushuntiradi — kassadan hisobotgacha.</span>
+        <span class="l-ru">Открыли систему впервые? Это руководство пошагово объясняет вашу ежедневную работу — от кассы до отчётов.</span>
+      </p>
+    </div>
+    <div class="langs" role="group" aria-label="Til / Язык">
+      <button type="button" data-set-lang="uz" aria-pressed="true">UZ</button>
+      <button type="button" data-set-lang="ru" aria-pressed="false">RU</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc" aria-label="Bo'limlar">
+    <span class="toc-label">
+      <span class="l-uz">Bo'limlar</span>
+      <span class="l-ru">Разделы</span>
+    </span>
+    <ol>
+      <li><a href="#intro"><span class="l-uz">Tizim nima qiladi</span><span class="l-ru">Что делает система</span></a></li>
+      <li><a href="#roles"><span class="l-uz">Kim nima qiladi</span><span class="l-ru">Кто что делает</span></a></li>
+      <li><a href="#setup"><span class="l-uz">Birinchi sozlash</span><span class="l-ru">Первая настройка</span></a></li>
+      <li><a href="#pos"><span class="l-uz">Kassa</span><span class="l-ru">Касса</span></a></li>
+      <li><a href="#flow"><span class="l-uz">Buyurtma yo'li</span><span class="l-ru">Путь заказа</span></a></li>
+      <li><a href="#money"><span class="l-uz">To'lov qabul qilish</span><span class="l-ru">Приём оплаты</span></a></li>
+      <li><a href="#fix"><span class="l-uz">Xatoni tuzatish</span><span class="l-ru">Исправление ошибки</span></a></li>
+      <li><a href="#catalog"><span class="l-uz">Xizmat va narx</span><span class="l-ru">Услуги и цены</span></a></li>
+      <li><a href="#reports"><span class="l-uz">Hisobotlar</span><span class="l-ru">Отчёты</span></a></li>
+      <li><a href="#telegram"><span class="l-uz">Telegram bot</span><span class="l-ru">Telegram-бот</span></a></li>
+      <li><a href="#faq"><span class="l-uz">Savol-javob</span><span class="l-ru">Вопросы</span></a></li>
+    </ol>
+  </nav>
+
+  <main class="doc">
+
+    <!-- ============================================ -->
+    <section id="intro">
+      <span class="kicker">
+        <span class="l-uz">Asos</span><span class="l-ru">Основа</span>
+      </span>
+      <h2>
+        <span class="l-uz">Tizim nima qiladi</span>
+        <span class="l-ru">Что делает система</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Bir jumlada: kiyim qabul qilinishidan pul olinishigacha bo'lgan yo'lni yozib boradi.</span>
+        <span class="l-ru">В одном предложении: фиксирует путь от приёма вещей до получения денег.</span>
+      </p>
+
+      <p>
+        <span class="l-uz">Mijoz kiyim topshiradi — siz uni tizimga kiritasiz va chek chiqarasiz. Kiyim tayyor bo'lganda mijozga xabar ketadi. Mijoz kelib pulini to'laydi va kiyimini oladi. Tizim shu yo'lning har bir qadamini yozib boradi: kim qabul qildi, qancha pul olindi, qaysi filialda.</span>
+        <span class="l-ru">Клиент сдаёт вещи — вы заводите заказ в систему и печатаете чек. Когда вещи готовы, клиенту уходит уведомление. Клиент приходит, платит и забирает вещи. Система фиксирует каждый шаг: кто принял, сколько денег получено, в каком филиале.</span>
+      </p>
+
+      <p>
+        <span class="l-uz">Tizim uch qavatli: <strong>firma</strong> (korxonangiz) → <strong>filiallar</strong> (do'konlaringiz) → <strong>buyurtmalar</strong>. Har bir buyurtma aniq bir filialga tegishli — shuning uchun hisobotlarni filial bo'yicha ajratib ko'rish mumkin.</span>
+        <span class="l-ru">Система трёхуровневая: <strong>фирма</strong> (ваше предприятие) → <strong>филиалы</strong> (ваши точки) → <strong>заказы</strong>. Каждый заказ принадлежит конкретному филиалу — поэтому отчёты можно смотреть в разрезе филиалов.</span>
+      </p>
+
+      <div class="note tip">
+        <span class="note-tag"><span class="l-uz">Maslahat</span><span class="l-ru">Совет</span></span>
+        <span class="l-uz">Tizimga telefondan ham kirish mumkin — brauzerda oching yoki Telegram bot orqali ishlang. Kompyuter shart emas.</span>
+        <span class="l-ru">В систему можно зайти и с телефона — откройте в браузере или работайте через Telegram-бот. Компьютер не обязателен.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="roles">
+      <span class="kicker">
+        <span class="l-uz">Rollar</span><span class="l-ru">Роли</span>
+      </span>
+      <h2>
+        <span class="l-uz">Kim nima qiladi</span>
+        <span class="l-ru">Кто что делает</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Yon menyuda faqat sizning rolingizga ruxsat berilgan bo'limlar chiqadi.</span>
+        <span class="l-ru">В боковом меню видны только разделы, разрешённые вашей роли.</span>
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="l-uz">Rol</span><span class="l-ru">Роль</span></th>
+              <th><span class="l-uz">Nima qila oladi</span><span class="l-ru">Что может делать</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="l-uz">Super admin</span><span class="l-ru">Супер админ</span></td>
+              <td>
+                <span class="l-uz">Hamma narsa: barcha filiallar, xizmatlar, narxlar, xodimlar va hisobotlar. Odatda bu firma egasi.</span>
+                <span class="l-ru">Всё: все филиалы, услуги, цены, сотрудники и отчёты. Обычно это владелец фирмы.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Filial menejeri</span><span class="l-ru">Менеджер филиала</span></td>
+              <td>
+                <span class="l-uz">O'ziga biriktirilgan filial: buyurtmalar, to'lovlar, xarajatlar, filial narxlari, xodimlar ro'yxati.</span>
+                <span class="l-ru">Свой филиал: заказы, платежи, расходы, цены филиала, список сотрудников.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Operator</span><span class="l-ru">Оператор</span></td>
+              <td>
+                <span class="l-uz">Kassada ishlaydi: buyurtma qabul qiladi, holatini o'zgartiradi, pul oladi. Hisobot va xarajatlarni ko'rmaydi.</span>
+                <span class="l-ru">Работает на кассе: принимает заказы, меняет статус, принимает оплату. Не видит отчёты и расходы.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Kuryer</span><span class="l-ru">Курьер</span></td>
+              <td>
+                <span class="l-uz">Faqat o'ziga berilgan yetkazish vazifalarini ko'radi va topshirilganini belgilaydi.</span>
+                <span class="l-ru">Видит только назначенные ему доставки и отмечает их выполненными.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note tip">
+        <span class="note-tag"><span class="l-uz">Muhim</span><span class="l-ru">Важно</span></span>
+        <span class="l-uz">Har bir xodim faqat <strong>o'ziga biriktirilgan filial</strong> buyurtmalarini ko'radi. Hamkasbingizda bor bo'lim sizda ko'rinmasa — bu xato emas, rol farqi.</span>
+        <span class="l-ru">Каждый сотрудник видит заказы только <strong>своего филиала</strong>. Если у коллеги есть раздел, которого нет у вас — это не ошибка, а разница ролей.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="setup">
+      <span class="kicker">
+        <span class="l-uz">Faqat egasi uchun</span><span class="l-ru">Только для владельца</span>
+      </span>
+      <h2>
+        <span class="l-uz">Birinchi sozlash</span>
+        <span class="l-ru">Первая настройка</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Kassani ochishdan oldin — taxminan 10 daqiqa.</span>
+        <span class="l-ru">Перед открытием кассы — примерно 10 минут.</span>
+      </p>
+
+      <p>
+        <span class="l-uz">Tizim <strong>bo'sh holda</strong> keladi — xizmatlar ro'yxati oldindan to'ldirilmagan. Katalogni yaratmasangiz kassada bosadigan tugma bo'lmaydi.</span>
+        <span class="l-ru">Система приходит <strong>пустой</strong> — список услуг заранее не заполнен. Без каталога на кассе не будет кнопок.</span>
+      </p>
+
+      <ol class="steps">
+        <li>
+          <span class="l-uz"><strong>Filial qo'shing.</strong> Manzil, telefon va ish vaqtini kiriting.</span>
+          <span class="l-ru"><strong>Добавьте филиал.</strong> Укажите адрес, телефон и часы работы.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Kategoriya yarating.</strong> Masalan: «Ustki kiyim», «Ko'ylak», «Gilam».</span>
+          <span class="l-ru"><strong>Создайте категории.</strong> Например: «Верхняя одежда», «Рубашки», «Ковры».</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Xizmatlarni qo'shing</strong> va asosiy narxini kiriting.</span>
+          <span class="l-ru"><strong>Добавьте услуги</strong> и укажите базовую цену.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Narxi o'zgaruvchan xizmatlarni «konstruktor» qiling.</strong> Bunday xizmat kassada har safar narx so'raydi — masalan gilam, kvadrat metriga qarab.</span>
+          <span class="l-ru"><strong>Отметьте услуги с переменной ценой как «конструктор».</strong> Такая услуга каждый раз спросит цену на кассе — например ковёр, по квадратуре.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Xodimlarni qo'shing</strong> va har birini o'z filialiga biriktiring.</span>
+          <span class="l-ru"><strong>Добавьте сотрудников</strong> и привяжите каждого к своему филиалу.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Sinov buyurtmasi oching</strong> — hammasi ishlayotganini tekshiring.</span>
+          <span class="l-ru"><strong>Создайте пробный заказ</strong> — убедитесь, что всё работает.</span>
+        </li>
+      </ol>
+
+      <div class="note warn">
+        <span class="note-tag"><span class="l-uz">Diqqat</span><span class="l-ru">Внимание</span></span>
+        <span class="l-uz">Xizmatning asosiy narxini keyinroq o'zgartirsangiz, <strong>filiallardagi mavjud narxlar avtomatik yangilanmaydi</strong>. Narxni hamma joyda o'zgartirish uchun har bir filial narxini alohida tahrirlang.</span>
+        <span class="l-ru">Если позже изменить базовую цену услуги, <strong>существующие цены в филиалах не обновятся автоматически</strong>. Чтобы изменить цену везде, отредактируйте цену каждого филиала отдельно.</span>
+      </div>
+
+      <div class="note tip">
+        <span class="note-tag"><span class="l-uz">Maslahat</span><span class="l-ru">Совет</span></span>
+        <span class="l-uz">Yangi filial ochsangiz, o'sha paytdagi barcha faol xizmatlar uchun narxlar avtomatik yaratiladi — qaytadan kiritish shart emas.</span>
+        <span class="l-ru">При открытии нового филиала цены для всех активных услуг создаются автоматически — вводить заново не нужно.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="pos">
+      <span class="kicker">
+        <span class="l-uz">Kundalik ish</span><span class="l-ru">Ежедневная работа</span>
+      </span>
+      <h2>
+        <span class="l-uz">Kassa: buyurtma qabul qilish</span>
+        <span class="l-ru">Касса: приём заказа</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Buyurtmalar → Yangi buyurtma. Kassa telefondan boshlanadi.</span>
+        <span class="l-ru">Заказы → Новый заказ. Касса начинается с телефона.</span>
+      </p>
+
+      <ol class="steps">
+        <li>
+          <span class="l-uz"><strong>Telefon raqamini kiriting.</strong> 12 ta raqam to'lganda (998 va 9 raqam) tizim mijozni avtomatik qidiradi.</span>
+          <span class="l-ru"><strong>Введите номер телефона.</strong> Когда наберётся 12 цифр (998 и 9 цифр), система автоматически найдёт клиента.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Mijozni tasdiqlang.</strong> Avval kelgan bo'lsa ismi va manzillari o'zi to'ladi. Yangi bo'lsa ismini kiriting.</span>
+          <span class="l-ru"><strong>Подтвердите клиента.</strong> Если он уже обращался — имя и адреса подставятся сами. Для нового введите имя.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Filial va topshirish turini tanlang:</strong> do'konda, olib ketish yoki yetkazib berish.</span>
+          <span class="l-ru"><strong>Выберите филиал и тип выдачи:</strong> в салоне, самовывоз или доставка.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Xizmat tugmalarini bosing.</strong> Konstruktor xizmat bosilganda narx oynasi ochiladi — narxni kiriting.</span>
+          <span class="l-ru"><strong>Нажимайте плитки услуг.</strong> При нажатии на услугу-конструктор откроется окно цены — введите цену.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Kerak bo'lsa narxni o'zgartiring</strong> — kelishilgan narx uchun qator narxini tahrirlang va izoh qoldiring.</span>
+          <span class="l-ru"><strong>При необходимости измените цену</strong> — для договорной цены отредактируйте строку и оставьте примечание.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Promo-kod bo'lsa kiriting</strong> — chegirma darhol hisoblanadi.</span>
+          <span class="l-ru"><strong>Введите промокод, если есть</strong> — скидка посчитается сразу.</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>To'lovni tanlang:</strong> «Keyin» (mijoz olib ketganda to'laydi) yoki «Hozir».</span>
+          <span class="l-ru"><strong>Выберите оплату:</strong> «Потом» (клиент платит при получении) или «Сейчас».</span>
+        </li>
+        <li>
+          <span class="l-uz"><strong>Saqlang.</strong> Chek avtomatik yangi oynada ochiladi va chop etishga tayyor bo'ladi.</span>
+          <span class="l-ru"><strong>Сохраните.</strong> Чек автоматически откроется в новой вкладке и будет готов к печати.</span>
+        </li>
+      </ol>
+
+      <div class="note warn">
+        <span class="note-tag"><span class="l-uz">Chek ochilmasa</span><span class="l-ru">Если чек не открылся</span></span>
+        <span class="l-uz">Brauzeringiz qalqib chiquvchi oynalarni bloklagan. Buyurtma sahifasidagi <strong>«Chek»</strong> tugmasidan qayta oching va bu sayt uchun oynalarga ruxsat bering.</span>
+        <span class="l-ru">Браузер заблокировал всплывающее окно. Откройте повторно кнопкой <strong>«Чек»</strong> на странице заказа и разрешите всплывающие окна для этого сайта.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="flow">
+      <span class="kicker">
+        <span class="l-uz">Uch bosqich</span><span class="l-ru">Три этапа</span>
+      </span>
+      <h2>
+        <span class="l-uz">Buyurtma yo'li</span>
+        <span class="l-ru">Путь заказа</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Buyurtma qabul qilinishi bilan «Ishlanmoqda» ga tushadi — alohida tugma bosish shart emas.</span>
+        <span class="l-ru">Заказ сразу после приёма попадает в «В работе» — отдельную кнопку нажимать не нужно.</span>
+      </p>
+
+      <div class="flow">
+        <span class="pill is-start"><span class="l-uz">Ishlanmoqda</span><span class="l-ru">В работе</span></span>
+        <span class="arrow">→</span>
+        <span class="pill is-mid"><span class="l-uz">Tayyor</span><span class="l-ru">Готов</span></span>
+        <span class="arrow">→</span>
+        <span class="pill is-end"><span class="l-uz">Topshirildi</span><span class="l-ru">Выдан</span></span>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="l-uz">Bosqich</span><span class="l-ru">Этап</span></th>
+              <th><span class="l-uz">Nima sodir bo'ladi</span><span class="l-ru">Что происходит</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="l-uz">Ishlanmoqda</span><span class="l-ru">В работе</span></td>
+              <td>
+                <span class="l-uz">Kiyim qabul qilindi, tozalanmoqda. Buyurtma yaratilganda avtomatik qo'yiladi.</span>
+                <span class="l-ru">Вещи приняты, идёт чистка. Ставится автоматически при создании заказа.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Tayyor</span><span class="l-ru">Готов</span></td>
+              <td>
+                <span class="l-uz">«Tayyor» bosilganda mijozga SMS va Telegram xabari ketadi — «buyurtmangiz tayyor».</span>
+                <span class="l-ru">При нажатии «Готов» клиенту уходит SMS и сообщение в Telegram — «ваш заказ готов».</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Topshirish</span><span class="l-ru">Выдача</span></td>
+              <td>
+                <span class="l-uz">Qolgan pul olinadi va buyurtma yopiladi — bitta harakatda.</span>
+                <span class="l-ru">Принимается остаток оплаты и заказ закрывается — одним действием.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Bekor qilingan</span><span class="l-ru">Отменён</span></td>
+              <td>
+                <span class="l-uz">Buyurtma amalga oshmadi. Tushum hisobotlaridan chiqib ketadi.</span>
+                <span class="l-ru">Заказ не состоялся. Выпадает из отчётов по выручке.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <span class="note-tag"><span class="l-uz">Qoida</span><span class="l-ru">Правило</span></span>
+        <span class="l-uz">Buyurtmani yopish uchun har doim <strong>«Topshirish»</strong> tugmasidan foydalaning — u pulni olib, buyurtmani bir vaqtda yopadi. Boshqa yo'l bilan yopsangiz pul olinmay qolishi va kassa hisobi noto'g'ri chiqishi mumkin.</span>
+        <span class="l-ru">Для закрытия заказа всегда пользуйтесь кнопкой <strong>«Выдача»</strong> — она одновременно принимает деньги и закрывает заказ. Если закрыть иначе, деньги могут остаться неполученными и касса сойдётся неверно.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="money">
+      <span class="kicker">
+        <span class="l-uz">Pul</span><span class="l-ru">Деньги</span>
+      </span>
+      <h2>
+        <span class="l-uz">To'lov qabul qilish</span>
+        <span class="l-ru">Приём оплаты</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Tizim har doim uchta raqamni ko'rsatadi: jami, to'langan va qoldiq.</span>
+        <span class="l-ru">Система всегда показывает три числа: всего, оплачено и остаток.</span>
+      </p>
+
+      <ol class="steps">
+        <li>
+          <span class="l-uz">Buyurtma sahifasida <strong>«To'lov qabul qilish»</strong> tugmasini bosing.</span>
+          <span class="l-ru">На странице заказа нажмите <strong>«Принять оплату»</strong>.</span>
+        </li>
+        <li>
+          <span class="l-uz">To'lov usulini tanlang: naqd, Click, Payme, Uzum yoki o'tkazma.</span>
+          <span class="l-ru">Выберите способ: наличные, Click, Payme, Uzum или перевод.</span>
+        </li>
+        <li>
+          <span class="l-uz">Mijoz bir necha usulda to'lasa <strong>«Qism qo'shish»</strong> bilan yana qator qo'shing — <strong>5 tagacha</strong> usul mumkin.</span>
+          <span class="l-ru">Если клиент платит несколькими способами, добавьте строку кнопкой <strong>«Добавить часть»</strong> — до <strong>5 способов</strong>.</span>
+        </li>
+        <li>
+          <span class="l-uz">Summani kiriting. Qoldiqdan ko'p summa kiritib bo'lmaydi.</span>
+          <span class="l-ru">Введите сумму. Больше остатка ввести нельзя.</span>
+        </li>
+      </ol>
+
+      <div class="note tip">
+        <span class="note-tag"><span class="l-uz">Qisman to'lov</span><span class="l-ru">Частичная оплата</span></span>
+        <span class="l-uz">Mijoz avans qoldirsa o'shani kiriting — qolgani topshirish paytida olinadi. Bekor qilingan buyurtmaga to'lov qabul qilinmaydi.</span>
+        <span class="l-ru">Если клиент оставил аванс, введите его — остаток примете при выдаче. На отменённый заказ оплата не принимается.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="fix">
+      <span class="kicker">
+        <span class="l-uz">Eng muhim bo'lim</span><span class="l-ru">Самый важный раздел</span>
+      </span>
+      <h2>
+        <span class="l-uz">Xatoni qanday tuzatish kerak</span>
+        <span class="l-ru">Как исправить ошибку</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Uchta tugma bor va ular butunlay boshqa narsa qiladi. Noto'g'risini bosish hisobotni buzadi.</span>
+        <span class="l-ru">Есть три кнопки, и они делают совершенно разные вещи. Нажать не ту — испортить отчёт.</span>
+      </p>
+
+      <div class="triad">
+        <div class="card sev-1">
+          <h3><span class="l-uz">To'lovni qaytarish</span><span class="l-ru">Возврат оплаты</span></h3>
+          <p>
+            <span class="l-uz">Pul noto'g'ri kiritilgan yoki mijozga qaytarilgan. Qarz qayta ochiladi, summa kassadan chiqadi — lekin yozuv tarixda qoladi. Buyurtmaning o'zi saqlanadi.</span>
+            <span class="l-ru">Деньги введены неверно или возвращены клиенту. Долг открывается заново, сумма уходит из кассы — но запись остаётся в истории. Сам заказ сохраняется.</span>
+          </p>
+          <span class="verdict"><span class="l-uz">Xavfsiz</span><span class="l-ru">Безопасно</span></span>
+        </div>
+
+        <div class="card sev-2">
+          <h3><span class="l-uz">Buyurtmani bekor qilish</span><span class="l-ru">Отмена заказа</span></h3>
+          <p>
+            <span class="l-uz">Mijoz voz kechdi yoki buyurtma amalga oshmadi. Buyurtma ro'yxatda qoladi, lekin tushum hisobotidan chiqadi.</span>
+            <span class="l-ru">Клиент отказался или заказ не состоялся. Заказ остаётся в списке, но выпадает из отчёта по выручке.</span>
+          </p>
+          <span class="verdict"><span class="l-uz">Tushumga ta'sir qiladi</span><span class="l-ru">Влияет на выручку</span></span>
+        </div>
+
+        <div class="card sev-3">
+          <h3><span class="l-uz">Buyurtmani o'chirish</span><span class="l-ru">Удаление заказа</span></h3>
+          <p>
+            <span class="l-uz">Butunlay xato kiritilgan buyurtma — masalan ikki marta kiritilgan. Buyurtma va uning to'lovlari butunlay yo'q bo'ladi.</span>
+            <span class="l-ru">Полностью ошибочный заказ — например заведён дважды. Заказ и его платежи исчезают полностью.</span>
+          </p>
+          <span class="verdict"><span class="l-uz">Qaytarib bo'lmaydi</span><span class="l-ru">Необратимо</span></span>
+        </div>
+      </div>
+
+      <div class="note warn">
+        <span class="note-tag"><span class="l-uz">Asosiy qoida</span><span class="l-ru">Главное правило</span></span>
+        <span class="l-uz">Noto'g'ri to'lovni tuzatish uchun buyurtmani <strong>o'chirmang</strong> — «To'lovni qaytarish» dan foydalaning. O'chirish tarixni ham yo'q qiladi va keyin nima bo'lganini tekshirib bo'lmaydi.</span>
+        <span class="l-ru">Чтобы исправить неверную оплату, <strong>не удаляйте</strong> заказ — используйте «Возврат оплаты». Удаление стирает и историю, после него нельзя разобраться, что произошло.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="catalog">
+      <span class="kicker">
+        <span class="l-uz">Katalog</span><span class="l-ru">Каталог</span>
+      </span>
+      <h2>
+        <span class="l-uz">Xizmatlar va narxlar</span>
+        <span class="l-ru">Услуги и цены</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Kassadagi tugmalar tartibi katalogdagi tartibga qarab chiqadi.</span>
+        <span class="l-ru">Порядок кнопок на кассе повторяет порядок в каталоге.</span>
+      </p>
+
+      <p>
+        <span class="l-uz">Katalog ikki qavatli: kategoriyalar va ular ichidagi xizmatlar. Eng ko'p ishlatiladigan xizmatlarni yuqoriga qo'ying — kassada tezroq topiladi.</span>
+        <span class="l-ru">Каталог двухуровневый: категории и услуги внутри них. Самые частые услуги ставьте выше — на кассе их быстрее найти.</span>
+      </p>
+
+      <p>
+        <span class="l-uz">Har bir filial uchun alohida narx qo'yish mumkin. Muddatli chegirma ham bor — belgilangan sanalarda narx avtomatik tushadi.</span>
+        <span class="l-ru">Для каждого филиала можно задать отдельную цену. Есть и срочная скидка — в указанные даты цена снижается автоматически.</span>
+      </p>
+
+      <div class="note tip">
+        <span class="note-tag"><span class="l-uz">Xarajatlar</span><span class="l-ru">Расходы</span></span>
+        <span class="l-uz">Ijara, oylik, materiallar va boshqa chiqimlarni <strong>Xarajatlar</strong> bo'limiga kiriting — ular sof foydani hisoblashda ishlatiladi. O'tgan sanalarni ham kiritish mumkin.</span>
+        <span class="l-ru">Аренду, зарплату, материалы и прочие затраты вносите в раздел <strong>Расходы</strong> — они используются для расчёта чистой прибыли. Можно вносить и прошедшие даты.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="reports">
+      <span class="kicker">
+        <span class="l-uz">Faqat egasi uchun</span><span class="l-ru">Только для владельца</span>
+      </span>
+      <h2>
+        <span class="l-uz">Hisobotlarni to'g'ri o'qish</span>
+        <span class="l-ru">Как правильно читать отчёты</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">«Tushum» va «Kassa» bir xil raqam emas — bu eng ko'p chalkashtiriladigan joy.</span>
+        <span class="l-ru">«Выручка» и «Касса» — это не одно и то же, и здесь чаще всего путаются.</span>
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="l-uz">Ko'rsatkich</span><span class="l-ru">Показатель</span></th>
+              <th><span class="l-uz">Nimani bildiradi</span><span class="l-ru">Что означает</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="l-uz">Tushum</span><span class="l-ru">Выручка</span></td>
+              <td>
+                <span class="l-uz">Mijozlarga yozilgan jami summa — ular qancha to'lashi kerak. Pul hali kelmagan bo'lishi mumkin.</span>
+                <span class="l-ru">Общая сумма, выставленная клиентам — сколько они должны заплатить. Деньги могли ещё не поступить.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Kassa</span><span class="l-ru">Касса</span></td>
+              <td>
+                <span class="l-uz">Haqiqatan qo'lga kirgan pul, to'lov usullari bo'yicha ajratilgan. Qarzdorlik bu yerga kirmaydi.</span>
+                <span class="l-ru">Реально полученные деньги, с разбивкой по способам оплаты. Задолженность сюда не входит.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Xarajat</span><span class="l-ru">Расходы</span></td>
+              <td>
+                <span class="l-uz">Xarajatlar bo'limiga kiritgan chiqimlaringiz.</span>
+                <span class="l-ru">Затраты, внесённые вами в разделе Расходы.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Sof foyda</span><span class="l-ru">Чистая прибыль</span></td>
+              <td>
+                <span class="l-uz">Tushum minus xarajat.</span>
+                <span class="l-ru">Выручка минус расходы.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note tip">
+        <span class="note-tag"><span class="l-uz">Amaliy maslahat</span><span class="l-ru">Практический совет</span></span>
+        <span class="l-uz">Agar <strong>Tushum katta-yu Kassa kichik</strong> bo'lsa — demak ko'p buyurtma to'lanmagan. Buyurtmalar ro'yxatidan qoldiqli buyurtmalarni topib mijozlarga eslatma qiling.</span>
+        <span class="l-ru">Если <strong>выручка большая, а касса маленькая</strong> — значит много неоплаченных заказов. Найдите заказы с остатком в списке и напомните клиентам.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="telegram">
+      <span class="kicker">
+        <span class="l-uz">Ikkinchi eshik</span><span class="l-ru">Вторая дверь</span>
+      </span>
+      <h2>
+        <span class="l-uz">Telegram bot</span>
+        <span class="l-ru">Telegram-бот</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Kompyutersiz ishlash uchun — botni ochib telefon raqamingizni ulashing.</span>
+        <span class="l-ru">Для работы без компьютера — откройте бота и поделитесь номером телефона.</span>
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="l-uz">Kim</span><span class="l-ru">Кто</span></th>
+              <th><span class="l-uz">Botda nima qila oladi</span><span class="l-ru">Что может в боте</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="l-uz">Xodim</span><span class="l-ru">Сотрудник</span></td>
+              <td>
+                <span class="l-uz">Parolsiz kirish kodi olish, chek raqami bo'yicha buyurtmani topish va holatini o'zgartirish.</span>
+                <span class="l-ru">Получить код входа без пароля, найти заказ по номеру чека и изменить его статус.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Mijoz</span><span class="l-ru">Клиент</span></td>
+              <td>
+                <span class="l-uz">O'z buyurtmalarini ko'rish va holat o'zgarganda avtomatik xabar olish.</span>
+                <span class="l-ru">Смотреть свои заказы и получать автоуведомления при смене статуса.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Firma egasi</span><span class="l-ru">Владелец</span></td>
+              <td>
+                <span class="l-uz">Bugungi tushum hisoboti va yangi buyurtma / to'lov haqida jonli bildirishnomalar.</span>
+                <span class="l-ru">Отчёт по сегодняшней выручке и живые уведомления о новых заказах и платежах.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <span class="note-tag"><span class="l-uz">Xavfsizlik</span><span class="l-ru">Безопасность</span></span>
+        <span class="l-uz">Kirish kodi <strong>5 daqiqa</strong> amal qiladi va faqat bir marta ishlaydi. Kodni hech kimga bermang — u sizning hisobingizga to'liq kirish beradi.</span>
+        <span class="l-ru">Код входа действует <strong>5 минут</strong> и срабатывает один раз. Никому не передавайте код — он даёт полный доступ к вашему аккаунту.</span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="faq">
+      <span class="kicker">
+        <span class="l-uz">Savol-javob</span><span class="l-ru">Вопросы</span>
+      </span>
+      <h2>
+        <span class="l-uz">Birinchi kunlarda ko'p so'raladigan savollar</span>
+        <span class="l-ru">Частые вопросы первых дней</span>
+      </h2>
+      <p class="sub">
+        <span class="l-uz">Ko'pchilik «tizim ishlamayapti» deb o'ylagan holatlar aslida sozlama masalasi.</span>
+        <span class="l-ru">Большинство ситуаций «система не работает» на деле вопрос настройки.</span>
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="l-uz">Savol</span><span class="l-ru">Вопрос</span></th>
+              <th><span class="l-uz">Javob</span><span class="l-ru">Ответ</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="l-uz">Kassada birorta tugma yo'q</span><span class="l-ru">На кассе нет кнопок</span></td>
+              <td>
+                <span class="l-uz">Katalog hali to'ldirilmagan. Super admin Xizmatlar bo'limida kategoriya va xizmat qo'shishi kerak.</span>
+                <span class="l-ru">Каталог ещё не заполнен. Супер админ должен добавить категорию и услуги в разделе Услуги.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Buyurtmalar ro'yxati bo'sh</span><span class="l-ru">Список заказов пуст</span></td>
+              <td>
+                <span class="l-uz">Sizga biriktirilgan filialda hali buyurtma yo'q. Boshqa filial buyurtmalari sizga ko'rinmaydi.</span>
+                <span class="l-ru">В привязанном к вам филиале пока нет заказов. Заказы других филиалов вам не видны.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Mijozga xabar bormadi</span><span class="l-ru">Клиенту не пришло уведомление</span></td>
+              <td>
+                <span class="l-uz">SMS «Tayyor» bosilganda yuboriladi. Mijoz raqami to'g'ri kiritilganini tekshiring.</span>
+                <span class="l-ru">SMS отправляется при нажатии «Готов». Проверьте правильность номера клиента.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Narxni o'zgartirdim, kassada eskisi</span><span class="l-ru">Изменил цену, на кассе старая</span></td>
+              <td>
+                <span class="l-uz">Xizmatning asosiy narxi emas, <strong>filial narxini</strong> o'zgartirish kerak — Filiallar bo'limidan.</span>
+                <span class="l-ru">Менять нужно не базовую цену услуги, а <strong>цену филиала</strong> — в разделе Филиалы.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Parolimni unutdim</span><span class="l-ru">Забыл пароль</span></td>
+              <td>
+                <span class="l-uz">Telegram bot orqali kirish kodini oling yoki super admindan parolni yangilashni so'rang.</span>
+                <span class="l-ru">Получите код входа через Telegram-бота или попросите супер админа сбросить пароль.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Xodim tizimga kira olmayapti</span><span class="l-ru">Сотрудник не может войти</span></td>
+              <td>
+                <span class="l-uz">Xodim faolligini, telefon raqami to'g'riligini va filial biriktirilganini tekshiring.</span>
+                <span class="l-ru">Проверьте активность сотрудника, правильность номера и привязку к филиалу.</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="l-uz">Sinov muddati tugadi</span><span class="l-ru">Пробный период закончился</span></td>
+              <td>
+                <span class="l-uz">Ma'lumotlar joyida — ko'rish mumkin, lekin yozish to'xtaydi. Platforma administratori bilan Telegram orqali bog'laning.</span>
+                <span class="l-ru">Данные на месте — просмотр доступен, но запись останавливается. Свяжитесь с администратором платформы через Telegram.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="closer">
+      <h2>
+        <span class="l-uz">Savolingiz qoldimi?</span>
+        <span class="l-ru">Остались вопросы?</span>
+      </h2>
+      <p>
+        <span class="l-uz">CRM ichida ham <strong>Yordam</strong> bo'limi bor — u sizning rolingizga moslashadi va shu qo'llanmaning qisqartirilgan nusxasini ko'rsatadi. Texnik savollar uchun platforma administratori bilan Telegram orqali bog'laning.</span>
+        <span class="l-ru">Внутри CRM тоже есть раздел <strong>Помощь</strong> — он подстраивается под вашу роль и показывает сокращённую версию этого руководства. По техническим вопросам свяжитесь с администратором платформы через Telegram.</span>
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var KEY = 'cleanway-guide-lang';
+
+    function apply(lang) {
+      root.setAttribute('data-guide-lang', lang);
+      root.setAttribute('lang', lang === 'ru' ? 'ru' : 'uz');
+      document.querySelectorAll('[data-set-lang]').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-set-lang') === lang));
+      });
+      try { localStorage.setItem(KEY, lang); } catch (e) {}
+    }
+
+    var saved = 'uz';
+    try { saved = localStorage.getItem(KEY) || 'uz'; } catch (e) {}
+    apply(saved === 'ru' ? 'ru' : 'uz');
+
+    document.querySelectorAll('[data-set-lang]').forEach(function (b) {
+      b.addEventListener('click', function () { apply(b.getAttribute('data-set-lang')); });
+    });
+  })();
+</script>
