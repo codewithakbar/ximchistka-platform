@@ -17,39 +17,85 @@ export type SendOptions = {
     | { inline_keyboard: TgInlineButton[][] }
     | TgReplyKeyboard
     | { remove_keyboard: true };
+  /** Aniq bot tokeni; berilmasa faol kontekst yoki birinchi token */
+  token?: string;
+};
+
+type CallOpts = {
+  timeoutMs?: number;
+  silent?: boolean;
+  token?: string;
 };
 
 /**
  * Telegram Bot API bilan past darajadagi ishlash: xabar yuborish/tahrirlash
  * va bog'langan hisoblarga bildirishnoma tarqatish. Bot suhbat mantiqi
  * alohida — telegram-bot.service.ts da.
+ *
+ * Bir nechta bot tokeni qo'llab-quvvatlanadi (TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_TOKEN_2).
  */
 @Injectable()
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);
   private botUsername: string | null = null;
+  /** Polling/handler ichida joriy bot tokeni */
+  private activeToken: string | null = null;
 
   constructor(private prisma: PrismaService) {}
 
+  /** Barcha sozlangan bot tokenlari (takrorlarsiz) */
+  getTokens(): string[] {
+    const raw = [
+      process.env.TELEGRAM_BOT_TOKEN,
+      process.env.TELEGRAM_BOT_TOKEN_2,
+      ...(process.env.TELEGRAM_BOT_TOKENS ?? '').split(','),
+    ];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const t of raw) {
+      const token = (t ?? '').trim();
+      if (!token || seen.has(token)) continue;
+      seen.add(token);
+      out.push(token);
+    }
+    return out;
+  }
+
   get token(): string | null {
-    return process.env.TELEGRAM_BOT_TOKEN || null;
+    return this.activeToken ?? this.getTokens()[0] ?? null;
   }
 
   isConfigured() {
-    return Boolean(this.token);
+    return this.getTokens().length > 0;
+  }
+
+  /** Handler/polling uchun token kontekstini o'rnatadi */
+  async runWithToken<T>(token: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.activeToken;
+    this.activeToken = token;
+    try {
+      return await fn();
+    } finally {
+      this.activeToken = prev;
+    }
+  }
+
+  private resolveToken(explicit?: string): string | null {
+    return explicit || this.token;
   }
 
   /** Bot API metodini chaqirish. Xato bo'lsa null qaytaradi (log bilan). */
   async call<T = unknown>(
     method: string,
     payload: Record<string, unknown>,
-    opts: { timeoutMs?: number; silent?: boolean } = {},
+    opts: CallOpts = {},
   ): Promise<T | null> {
-    if (!this.token) return null;
+    const token = this.resolveToken(opts.token);
+    if (!token) return null;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? 15_000);
     try {
-      const res = await fetch(`${API_BASE}/bot${this.token}/${method}`, {
+      const res = await fetch(`${API_BASE}/bot${token}/${method}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -73,14 +119,47 @@ export class TelegramService {
     }
   }
 
+  /**
+   * Xabarni yuboradi. Token berilmasa: faol kontekst → aks holda barcha botlar
+   * bo'yicha ketma-ket urinadi (foydalanuvchi qaysi botga yozgan bo'lsa, o'sha ishlaydi).
+   */
   async sendMessage(chatId: string, html: string, opts: SendOptions = {}) {
-    return this.call<{ message_id: number }>('sendMessage', {
+    const payload = {
       chat_id: chatId,
       text: html,
       parse_mode: 'HTML',
       disable_web_page_preview: true,
       ...(opts.replyMarkup ? { reply_markup: opts.replyMarkup } : {}),
-    });
+    };
+
+    if (opts.token || this.activeToken) {
+      return this.call<{ message_id: number }>('sendMessage', payload, {
+        token: opts.token,
+        silent: true,
+      });
+    }
+
+    for (const token of this.getTokens()) {
+      const result = await this.call<{ message_id: number }>('sendMessage', payload, {
+        token,
+        silent: true,
+      });
+      if (result) return result;
+    }
+    this.logger.warn(`Telegram sendMessage muvaffaqiyatsiz (chat ${chatId})`);
+    return null;
+  }
+
+  /** Barcha botlar orqali bir xil xabarni yuboradi (admin broadcast) */
+  async sendMessageAll(chatId: string, html: string, opts: SendOptions = {}) {
+    const tokens = this.getTokens();
+    if (!tokens.length) return { sent: 0 };
+    const results = await Promise.all(
+      tokens.map((token) =>
+        this.sendMessage(chatId, html, { ...opts, token }),
+      ),
+    );
+    return { sent: results.filter(Boolean).length };
   }
 
   async editMessage(chatId: string, messageId: number, html: string, opts: SendOptions = {}) {
@@ -91,21 +170,22 @@ export class TelegramService {
       parse_mode: 'HTML',
       disable_web_page_preview: true,
       ...(opts.replyMarkup ? { reply_markup: opts.replyMarkup } : {}),
-    });
+    }, { token: opts.token, silent: true });
   }
 
-  async answerCallback(callbackId: string, text?: string) {
+  async answerCallback(callbackId: string, text?: string, token?: string) {
     return this.call('answerCallbackQuery', {
       callback_query_id: callbackId,
       ...(text ? { text } : {}),
-    });
+    }, { token, silent: true });
   }
 
-  /** Bot username (login sahifasida ko'rsatish uchun, keshlangan) */
+  /** Bot username (login sahifasida ko'rsatish uchun, keshlangan — birinchi bot) */
   async getBotUsername(): Promise<string | null> {
     if (!this.isConfigured()) return null;
     if (this.botUsername) return this.botUsername;
-    const me = await this.call<{ username?: string }>('getMe', {});
+    const primary = this.getTokens()[0];
+    const me = await this.call<{ username?: string }>('getMe', {}, { token: primary });
     this.botUsername = me?.username ?? null;
     return this.botUsername;
   }
@@ -137,7 +217,6 @@ export class TelegramService {
     username?: string;
     firstName?: string;
   }) {
-    // Bitta foydalanuvchiga bitta Telegram: eski bog'lanish bo'lsa bo'shatamiz
     await this.prisma.telegramAccount.updateMany({
       where: { userId: data.userId, telegramId: { not: data.telegramId } },
       data: { userId: null },
@@ -181,13 +260,11 @@ export class TelegramService {
     });
   }
 
-  /** CRM ga kirish uchun 6 xonali bir martalik kod (5 daqiqa amal qiladi) */
   async createLoginCode(userId: string): Promise<string> {
     const row = await this.createLoginCodeRow(userId);
     return row.code;
   }
 
-  /** Kod yozuvi (id bilan — yuborilmasa o'chirish uchun) */
   async createLoginCodeRow(userId: string) {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     return this.prisma.telegramLoginCode.create({
@@ -204,7 +281,6 @@ export class TelegramService {
     await this.prisma.telegramLoginCode.delete({ where: { id } }).catch(() => {});
   }
 
-  /** Oxirgi kod so'ralgan vaqt (spam oldini olish uchun) */
   async lastLoginCodeAt(userId: string): Promise<Date | null> {
     const last = await this.prisma.telegramLoginCode.findFirst({
       where: { userId },
@@ -218,7 +294,6 @@ export class TelegramService {
   /* Bildirishnomalar                                                  */
   /* ---------------------------------------------------------------- */
 
-  /** Mijozga buyurtma holati o'zgargani haqida xabar (bog'langan bo'lsa) */
   async notifyCustomerOrderStatus(order: {
     orderNumber: string;
     status: OrderStatus;
@@ -241,7 +316,6 @@ export class TelegramService {
     }
   }
 
-  /** Tashkilot egalariga (super_admin, bog'langan, yoqilgan) xabar */
   async notifyOrgAdmins(organizationId: string, html: string) {
     try {
       const accounts = await this.prisma.telegramAccount.findMany({
@@ -261,7 +335,6 @@ export class TelegramService {
     }
   }
 
-  /** Egalar uchun tushum voqeasi formati */
   adminEventHtml(event: {
     title: string;
     message: string;

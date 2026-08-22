@@ -46,34 +46,44 @@ export class NotificationsService {
   }
 
   async sendTelegram(message: string) {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const tokens = [
+      process.env.TELEGRAM_BOT_TOKEN,
+      process.env.TELEGRAM_BOT_TOKEN_2,
+      ...(process.env.TELEGRAM_BOT_TOKENS ?? '').split(','),
+    ]
+      .map((t) => (t ?? '').trim())
+      .filter(Boolean);
+    const unique = [...new Set(tokens)];
     const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
-    if (!token || !chatId) {
+    if (!unique.length || !chatId) {
       this.logger.warn('Telegram sozlanmagan (TELEGRAM_BOT_TOKEN / TELEGRAM_ADMIN_CHAT_ID)');
       return { sent: false };
     }
 
-    try {
-      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.text();
-        this.logger.error(`Telegram xatolik: ${err}`);
-        return { sent: false };
+    let anySent = false;
+    for (const token of unique) {
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          this.logger.error(`Telegram xatolik: ${err}`);
+          continue;
+        }
+        anySent = true;
+      } catch (err) {
+        this.logger.error('Telegram yuborishda xatolik', err);
       }
-      return { sent: true };
-    } catch (err) {
-      this.logger.error('Telegram yuborishda xatolik', err);
-      return { sent: false };
     }
+    return { sent: anySent };
   }
 
   async notifyTrialSignup(data: {

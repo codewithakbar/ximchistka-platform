@@ -73,7 +73,7 @@ type StaffCtx = {
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramBotService.name);
   private running = false;
-  private offset = 0;
+  private offsets = new Map<string, number>();
 
   constructor(
     private telegram: TelegramService,
@@ -83,7 +83,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (!this.telegram.isConfigured()) {
+    const tokens = this.telegram.getTokens();
+    if (!tokens.length) {
       this.logger.log('TELEGRAM_BOT_TOKEN sozlanmagan — bot ishga tushmadi');
       return;
     }
@@ -92,8 +93,11 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     this.running = true;
-    void this.pollLoop();
-    this.logger.log('Telegram bot long-polling rejimida ishga tushdi');
+    for (const token of tokens) {
+      this.offsets.set(token, 0);
+      void this.pollLoop(token);
+    }
+    this.logger.log(`Telegram bot long-polling: ${tokens.length} ta bot`);
   }
 
   onModuleDestroy() {
@@ -104,46 +108,47 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   /* Long polling                                                      */
   /* ---------------------------------------------------------------- */
 
-  private async pollLoop() {
-    // Polling ishlashi uchun webhook o'chirilgan bo'lishi kerak
-    await this.telegram.call('deleteWebhook', {}, { silent: true });
-
-    // Bot menyusidagi komandalar
-    await this.telegram.call(
-      'setMyCommands',
-      {
-        commands: [
-          { command: 'start', description: 'Boshlash / hisobni ulash' },
-          { command: 'help', description: 'Yordam' },
-          { command: 'unlink', description: 'Hisobni uzish' },
-        ],
-      },
-      { silent: true },
-    );
+  private async pollLoop(token: string) {
+    await this.telegram.runWithToken(token, async () => {
+      await this.telegram.call('deleteWebhook', {}, { silent: true });
+      await this.telegram.call(
+        'setMyCommands',
+        {
+          commands: [
+            { command: 'start', description: 'Boshlash / hisobni ulash' },
+            { command: 'help', description: 'Yordam' },
+            { command: 'unlink', description: 'Hisobni uzish' },
+          ],
+        },
+        { silent: true },
+      );
+    });
 
     while (this.running) {
-      const updates = await this.telegram.call<TgUpdate[]>(
-        'getUpdates',
-        {
-          offset: this.offset,
-          timeout: 25,
-          allowed_updates: ['message', 'callback_query'],
-        },
-        { timeoutMs: 35_000, silent: true },
+      const offset = this.offsets.get(token) ?? 0;
+      const updates = await this.telegram.runWithToken(token, () =>
+        this.telegram.call<TgUpdate[]>(
+          'getUpdates',
+          {
+            offset,
+            timeout: 25,
+            allowed_updates: ['message', 'callback_query'],
+          },
+          { timeoutMs: 35_000, silent: true },
+        ),
       );
 
       if (updates === null) {
-        // Tarmoq xatosi yoki 409 (boshqa instans) — biroz kutamiz
         await this.sleep(3000);
         continue;
       }
 
       for (const update of updates) {
-        this.offset = Math.max(this.offset, update.update_id + 1);
+        this.offsets.set(token, update.update_id + 1);
         try {
-          await this.handleUpdate(update);
+          await this.telegram.runWithToken(token, () => this.handleUpdate(update));
         } catch (err) {
-          this.logger.warn(`Update qayta ishlanmadi: ${String(err)}`);
+          this.logger.warn(`Telegram update xato: ${String(err)}`);
         }
       }
     }
