@@ -49,6 +49,24 @@ class TelegramVerifyDto {
   code!: string;
 }
 
+class PasswordResetRequestDto {
+  @IsString()
+  phone!: string;
+}
+
+class PasswordResetConfirmDto {
+  @IsString()
+  phone!: string;
+
+  @IsString()
+  @MinLength(4)
+  code!: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword!: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
@@ -92,6 +110,20 @@ export class AuthController {
   @Post('telegram/verify')
   telegramVerify(@Body() dto: TelegramVerifyDto) {
     return this.auth.verifyTelegramLogin(dto.phone, dto.code);
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
+  @Public()
+  @Post('password-reset/request')
+  passwordResetRequest(@Body() dto: PasswordResetRequestDto) {
+    return this.auth.requestPasswordReset(dto.phone);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 600_000 } })
+  @Public()
+  @Post('password-reset/confirm')
+  passwordResetConfirm(@Body() dto: PasswordResetConfirmDto) {
+    return this.auth.confirmPasswordReset(dto.phone, dto.code, dto.newPassword);
   }
 
   @Public()

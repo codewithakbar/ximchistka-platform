@@ -20,7 +20,12 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'password' | 'telegram'>('password');
+  const [mode, setMode] = useState<'password' | 'telegram' | 'reset'>('password');
+  // Parolni tiklash
+  const [rsCode, setRsCode] = useState('');
+  const [rsPassword, setRsPassword] = useState('');
+  const [rsSent, setRsSent] = useState(false);
+  const [rsSending, setRsSending] = useState(false);
   const [tgCode, setTgCode] = useState('');
   const [tgCodeSent, setTgCodeSent] = useState(false);
   const [tgSending, setTgSending] = useState(false);
@@ -144,6 +149,77 @@ export default function LoginPage() {
     }
   }
 
+  /**
+   * Telefon o'zgarsa, oldingi raqamga yuborilgan kod endi to'g'ri kelmaydi —
+   * "yuborildi" belgisini olib tashlaymiz, aks holda foydalanuvchi eski kodni
+   * yangi raqam bilan yuborib, tushunarsiz xato oladi.
+   */
+  function onPhoneChange(next: string) {
+    setPhone(next);
+    setTgCodeSent(false);
+    setRsSent(false);
+  }
+
+  /** Rejim almashganda oldingi rejimning kiritilganlarini tozalaymiz */
+  function switchMode(next: 'password' | 'telegram' | 'reset') {
+    setMode(next);
+    setPassword('');
+    setTgCode('');
+    setTgCodeSent(false);
+    setRsCode('');
+    setRsPassword('');
+    setRsSent(false);
+  }
+
+  /** Tiklash kodini so'rash */
+  async function requestResetCode() {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 12) {
+      toast.error(t('orders.create.toastPhoneIncomplete'));
+      return;
+    }
+    setRsSending(true);
+    try {
+      await api('/auth/password-reset/request', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+      setRsSent(true);
+      toast.success(t('login.reset.codeSent'));
+    } catch (err) {
+      toast.error(humanizeError(err));
+    } finally {
+      setRsSending(false);
+    }
+  }
+
+  /** Kod bilan yangi parolni o'rnatish */
+  async function onResetSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (rsCode.trim().length < 4) {
+      toast.error(t('login.tg.enterCode'));
+      return;
+    }
+    if (rsPassword.length < 6) {
+      toast.error(t('login.reset.tooShort'));
+      return;
+    }
+    setLoading(true);
+    try {
+      await api('/auth/password-reset/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ phone, code: rsCode.trim(), newPassword: rsPassword }),
+      });
+      toast.success(t('login.reset.done'));
+      // Yangi parol bilan kirish uchun oddiy rejimga qaytamiz
+      switchMode('password');
+    } catch (err) {
+      toast.error(humanizeError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex">
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary to-blue-700 text-white p-12 flex-col justify-between relative overflow-hidden">
@@ -196,9 +272,9 @@ export default function LoginPage() {
             <div className="mb-5 flex rounded-lg border border-border p-1 bg-card">
               <button
                 type="button"
-                onClick={() => setMode('password')}
+                onClick={() => switchMode('password')}
                 className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-colors ${
-                  mode === 'password'
+                  mode !== 'telegram'
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
@@ -208,7 +284,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('telegram')}
+                onClick={() => switchMode('telegram')}
                 className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-colors ${
                   mode === 'telegram'
                     ? 'bg-primary text-primary-foreground'
@@ -222,7 +298,13 @@ export default function LoginPage() {
           )}
 
           <form
-            onSubmit={mode === 'telegram' ? onTelegramSubmit : onSubmit}
+            onSubmit={
+              mode === 'telegram'
+                ? onTelegramSubmit
+                : mode === 'reset'
+                  ? onResetSubmit
+                  : onSubmit
+            }
             className="space-y-4"
             autoComplete="off"
             noValidate
@@ -234,13 +316,13 @@ export default function LoginPage() {
                 <PhoneInput
                   className="pl-10"
                   value={phone}
-                  onChange={setPhone}
+                  onChange={onPhoneChange}
                   placeholder="+998 90 123 45 67"
                 />
               </div>
             </div>
 
-            {mode === 'password' ? (
+            {mode === 'password' && (
               <div>
                 <Label>{t('login.password')}</Label>
                 <div className="relative">
@@ -254,7 +336,19 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-            ) : (
+            )}
+
+            {mode === 'password' && botUsername && (
+              <button
+                type="button"
+                onClick={() => switchMode('reset')}
+                className="text-xs text-primary hover:underline"
+              >
+                {t('login.reset.forgot')}
+              </button>
+            )}
+
+            {mode === 'telegram' && (
               <>
                 <div>
                   <div className="flex items-center justify-between">
@@ -304,13 +398,74 @@ export default function LoginPage() {
               </>
             )}
 
+            {mode === 'reset' && (
+              <>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label>{t('login.tg.code')}</Label>
+                    <button
+                      type="button"
+                      onClick={requestResetCode}
+                      disabled={rsSending}
+                      className="text-xs text-primary hover:underline disabled:opacity-50"
+                    >
+                      {rsSending
+                        ? t('login.tg.sending')
+                        : rsSent
+                          ? t('login.tg.resend')
+                          : t('login.tg.sendCode')}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-10 tracking-[0.3em] font-semibold"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={rsCode}
+                      onChange={(e) => setRsCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••••"
+                    />
+                  </div>
+                  {rsSent && (
+                    <p className="mt-1.5 text-xs text-emerald-600">
+                      {t('login.reset.codeSent')}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label>{t('login.reset.newPassword')}</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-10"
+                      type="password"
+                      value={rsPassword}
+                      onChange={(e) => setRsPassword(e.target.value)}
+                      autoComplete="new-password"
+                      placeholder={t('login.reset.min6')}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => switchMode('password')}
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  {t('login.reset.back')}
+                </button>
+              </>
+            )}
+
             <Button
               type="submit"
               loading={loading}
               size="lg"
               className="w-full"
             >
-              {t('login.submit')}
+              {mode === 'reset' ? t('login.reset.submit') : t('login.submit')}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </form>

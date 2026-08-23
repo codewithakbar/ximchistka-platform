@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { OrganizationPlan, UserRole } from '@prisma/client';
+import { OrganizationPlan, TelegramCodePurpose, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TelegramService } from '../telegram/telegram.service';
@@ -133,51 +133,205 @@ export class AuthService {
       throw invalid();
     }
 
-    // Brute-force himoyasi: oxirgi 5 daqiqada noto'g'ri urinishlar ko'p bo'lsa,
-    // barcha faol kodlarni kuydiramiz (900k fazoni sindirishga imkon bermaymiz)
+    await this.consumeTelegramCode(
+      user.id,
+      code,
+      TelegramCodePurpose.login,
+      invalid,
+    );
+
+    await this.assertOrganizationActive(user);
+    return this.issueTokens(user);
+  }
+
+  /**
+   * Bir martalik kodni tekshirib, ishlatilgan deb belgilaydi.
+   *
+   * Kod maqsadi bo'yicha qat'iy ajratiladi — kirish uchun berilgan kod
+   * parolni tiklashga yaramaydi. Brute-force himoyasi ham har bir maqsad
+   * uchun alohida hisoblanadi.
+   */
+  private async consumeTelegramCode(
+    userId: string,
+    code: string,
+    purpose: TelegramCodePurpose,
+    invalid: () => Error,
+  ) {
+    // Urinishni AVVAL yozamiz, keyin sanaymiz — shunda har bir so'rov o'zini
+    // ham hisoblaydi va bir vaqtda kelgan so'rovlar cheklovni chetlab o'ta
+    // olmaydi. Urinish yozuvi `attempt: true` bilan belgilanadi, shuning
+    // uchun u kod yuborish oralig'iga ta'sir qilmaydi.
+    await this.prisma.telegramLoginCode.create({
+      data: {
+        userId,
+        purpose,
+        attempt: true,
+        code: 'x',
+        used: true,
+        expiresAt: new Date(),
+      },
+    });
+
     const since = new Date(Date.now() - TELEGRAM_CODE_WINDOW_MS);
     const recentAttempts = await this.prisma.telegramLoginCode.count({
-      where: { userId: user.id, createdAt: { gt: since } },
+      where: { userId, purpose, attempt: true, createdAt: { gt: since } },
     });
     if (recentAttempts > TELEGRAM_CODE_MAX_ATTEMPTS) {
-      await this.prisma.telegramLoginCode.updateMany({
-        where: { userId: user.id, used: false },
-        data: { used: true },
-      });
+      // Yuborilgan kodni bekor QILMAYMIZ: aks holda begona odam faqat telefon
+      // raqamini bilib, qurbonning kodini kuydirib yuborishi mumkin edi.
+      // Kod baribir 5 daqiqada o'zi tugaydi.
       throw new UnauthorizedException(
-        'Juda ko\'p urinish. Botdan yangi kod oling.',
+        'Juda ko\'p urinish. Bir necha daqiqadan so\'ng qayta urinib ko\'ring.',
       );
     }
 
     const row = await this.prisma.telegramLoginCode.findFirst({
       where: {
-        userId: user.id,
+        userId,
+        purpose,
+        attempt: false,
         code: code.trim(),
         used: false,
         expiresAt: { gt: new Date() },
       },
       orderBy: { createdAt: 'desc' },
     });
-    if (!row) {
-      // Noto'g'ri urinishni ham hisobga olamiz (kelgusi urinishlar cheklovi uchun)
-      await this.prisma.telegramLoginCode.create({
-        data: {
-          userId: user.id,
-          code: 'x',
-          used: true,
-          expiresAt: new Date(),
-        },
-      });
-      throw invalid();
-    }
+    if (!row) throw invalid();
 
     await this.prisma.telegramLoginCode.update({
       where: { id: row.id },
       data: { used: true },
     });
+  }
 
+  /* ---------------------------------------------------------------- */
+  /* Parolni tiklash (Telegram orqali)                                 */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * "Parolni unutdingizmi" — bog'langan Telegramga tiklash kodi yuboradi.
+   * Faqat parol bilan ishlaydigan xodimlar uchun: mijozlar OTP bilan kiradi,
+   * platforma admin esa CRM dan foydalanmaydi.
+   */
+  async requestPasswordReset(phone: string) {
+    if (!this.telegram.isConfigured()) {
+      throw new BadRequestException('Telegram bot sozlanmagan');
+    }
+
+    const normalized = this.normalizePhone(phone);
+    const user = await this.prisma.user.findUnique({
+      where: { phone: normalized },
+      include: { organization: true },
+    });
+    if (!user || !this.isResettable(user)) {
+      throw new BadRequestException('Bu raqam bilan xodim topilmadi');
+    }
     await this.assertOrganizationActive(user);
-    return this.issueTokens(user);
+
+    const account = await this.telegram.findAccountByUserId(user.id);
+    const botUsername = await this.telegram.getBotUsername();
+    if (!account) {
+      throw new BadRequestException(
+        `Telegram ulanmagan. @${botUsername ?? 'bot'} ga /start yuborib, telefon raqamingizni ulang`,
+      );
+    }
+
+    // Spam himoyasi: bitta foydalanuvchiga 60 soniyada bitta tiklash kodi
+    const lastAt = await this.telegram.lastLoginCodeAt(
+      user.id,
+      TelegramCodePurpose.password_reset,
+    );
+    if (lastAt && Date.now() - lastAt.getTime() < TELEGRAM_CODE_COOLDOWN_MS) {
+      const wait = Math.ceil(
+        (TELEGRAM_CODE_COOLDOWN_MS - (Date.now() - lastAt.getTime())) / 1000,
+      );
+      throw new BadRequestException(`Yangi kod so'rash uchun ${wait} soniya kuting`);
+    }
+
+    const created = await this.telegram.createLoginCodeRow(
+      user.id,
+      TelegramCodePurpose.password_reset,
+    );
+    const sent = await this.telegram.sendMessage(
+      account.chatId,
+      '🔑 <b>Parolni tiklash kodi:</b>\n\n' +
+        `<code>${created.code}</code>\n\n` +
+        'Kod <b>5 daqiqa</b> amal qiladi.\n' +
+        'Agar siz so\'ramagan bo\'lsangiz — hech kimga bermang va e\'tiborsiz qoldiring.',
+    );
+    if (!sent) {
+      // Yuborilmagan kod cooldown/urinish hisobini band qilmasligi kerak
+      await this.telegram.deleteLoginCode(created.id);
+      throw new BadRequestException(
+        'Telegramga yuborib bo\'lmadi — botni bloklagan bo\'lishingiz mumkin',
+      );
+    }
+
+    return { message: 'Kod Telegramga yuborildi' };
+  }
+
+  /** Tiklash kodi bilan yangi parol o'rnatish */
+  async confirmPasswordReset(phone: string, code: string, newPassword: string) {
+    if (newPassword.length < 6) {
+      throw new BadRequestException(
+        'Yangi parol kamida 6 belgidan iborat bo\'lishi kerak',
+      );
+    }
+
+    const normalized = this.normalizePhone(phone);
+    const user = await this.prisma.user.findUnique({
+      where: { phone: normalized },
+      include: { organization: true },
+    });
+    // Enumeration oracle bo'lmasligi uchun har doim bir xil xabar
+    const invalid = () => new UnauthorizedException('Telefon yoki kod noto\'g\'ri');
+    if (!user || !this.isResettable(user)) throw invalid();
+
+    await this.consumeTelegramCode(
+      user.id,
+      code,
+      TelegramCodePurpose.password_reset,
+      invalid,
+    );
+
+    // Kod to'g'ri chiqqach tashkilot holatini ham tekshiramiz — to'xtatilgan
+    // firma xodimiga yangi parol yozishning ma'nosi yo'q
+    await this.assertOrganizationActive(user);
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    // Yangilash tokenlarini o'chiramiz — sessiyalar endi uzaytirilmaydi.
+    // Allaqachon berilgan kirish tokeni o'z muddati tugagunicha (JWT_EXPIRES_IN,
+    // standart 15 daqiqa) amal qilishda davom etadi.
+    await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+    // Qolgan yuborilgan kodlar ishlatilmasin (urinish yozuvlariga tegmaymiz)
+    await this.prisma.telegramLoginCode.updateMany({
+      where: { userId: user.id, attempt: false, used: false },
+      data: { used: true },
+    });
+
+    return { message: 'Parol yangilandi. Endi yangi parol bilan kiring.' };
+  }
+
+  /**
+   * Parolni tiklash faqat parol bilan ishlaydigan faol xodimlar uchun.
+   * Mijoz OTP bilan kiradi, platforma admin esa CRM dan foydalanmaydi.
+   */
+  private isResettable(user: {
+    isActive: boolean;
+    role: UserRole;
+    passwordHash: string | null;
+  }) {
+    return (
+      user.isActive &&
+      Boolean(user.passwordHash) &&
+      user.role !== UserRole.customer &&
+      user.role !== UserRole.platform_admin
+    );
   }
 
   async requestOtp(phone: string) {

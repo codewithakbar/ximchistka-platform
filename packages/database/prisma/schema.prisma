@@ -23,6 +23,14 @@ enum OrganizationPlan {
   suspended
 }
 
+/// Telegram orqali yuborilgan bir martalik kod nima uchun berilgan.
+/// Kirish kodi bilan parolni almashtirib bo'lmasligi kerak — aks holda
+/// qo'lga tushgan kod hisobni butunlay egallashga aylanadi.
+enum TelegramCodePurpose {
+  login
+  password_reset
+}
+
 enum OrderStatus {
   draft
   submitted
@@ -407,6 +415,10 @@ model TelegramLoginCode {
   id        String   @id @default(cuid())
   userId    String
   code      String
+  purpose   TelegramCodePurpose @default(login)
+  /// true — bu yuborilgan kod emas, tekshirish urinishi yozuvi.
+  /// Urinishlar kod yuborish oralig'iga ta'sir qilmasligi kerak.
+  attempt   Boolean @default(false)
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())

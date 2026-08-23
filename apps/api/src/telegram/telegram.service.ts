@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OrderStatus, UserRole } from '@prisma/client';
+import { randomInt } from 'crypto';
+import { OrderStatus, TelegramCodePurpose, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { customerStatusNotification, escapeHtml, fmtPrice } from './telegram-format';
 
@@ -272,12 +273,20 @@ export class TelegramService {
     return row.code;
   }
 
-  async createLoginCodeRow(userId: string) {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+  /**
+   * Bir martalik kod yozuvi. `purpose` majburiy ajratuvchi: kirish uchun
+   * berilgan kod parolni almashtirishga yaramaydi va aksincha.
+   */
+  async createLoginCodeRow(
+    userId: string,
+    purpose: TelegramCodePurpose = TelegramCodePurpose.login,
+  ) {
+    const code = String(randomInt(100000, 1000000));
     return this.prisma.telegramLoginCode.create({
       data: {
         userId,
         code,
+        purpose,
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       },
       select: { id: true, code: true },
@@ -288,9 +297,19 @@ export class TelegramService {
     await this.prisma.telegramLoginCode.delete({ where: { id } }).catch(() => {});
   }
 
-  async lastLoginCodeAt(userId: string): Promise<Date | null> {
+  /**
+   * Oxirgi kod HAQIQATAN yuborilgan vaqt — maqsad bo'yicha alohida.
+   *
+   * `attempt: false` sharti muhim: tekshirish urinishlari ham shu jadvalga
+   * yoziladi, ularni hisobga olsak, begona odam faqat telefon raqamini bilib
+   * turib qurbonning "yangi kod so'rash" imkonini doimiy yopib qo'ya olardi.
+   */
+  async lastLoginCodeAt(
+    userId: string,
+    purpose: TelegramCodePurpose = TelegramCodePurpose.login,
+  ): Promise<Date | null> {
     const last = await this.prisma.telegramLoginCode.findFirst({
-      where: { userId },
+      where: { userId, purpose, attempt: false },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     });
