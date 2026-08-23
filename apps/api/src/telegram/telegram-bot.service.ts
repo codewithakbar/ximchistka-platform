@@ -26,6 +26,15 @@ import {
   statusLine,
 } from './telegram-format';
 
+/**
+ * Merchant panel manzili. Funksiya sifatida — modul yuklanishida o'qilsa
+ * ConfigModule hali .env ni process.env ga ko'chirmagan bo'ladi va sozlangan
+ * qiymat e'tiborsiz qolardi.
+ */
+function platformPanelUrl() {
+  return process.env.MERCHANT_URL ?? 'https://cleanway.4mi.uz/platform';
+}
+
 /* Klaviatura tugmalari (matn bo'yicha marshrutlash) */
 const BTN_MY_ORDERS = '📦 Buyurtmalarim';
 const BTN_LOGIN_CODE = '🔑 Kirish kodi';
@@ -239,9 +248,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         await this.sendLoginCode(account, chatId);
         return;
       case BTN_TODAY:
-        if (role === UserRole.super_admin) {
-          await this.sendTodayReport(account, chatId);
-        }
+        // Rol tekshiruvi sendTodayReport ichida — u super_admin bo'lmasa
+        // yordam matnini yuboradi, tugma jimgina o'lik qolmaydi
+        await this.sendTodayReport(account, chatId);
         return;
       case BTN_SEARCH:
         if (this.isStaff(role)) {
@@ -388,7 +397,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           '\n• 🔑 CRM ga kodsiz kirish'
         );
       case UserRole.platform_admin:
-        return '\nPlatforma admini sifatida 🔑 kirish kodidan foydalanishingiz mumkin.';
+        return `\nPlatforma paneli: ${platformPanelUrl()}`;
       default:
         return (
           org +
@@ -457,7 +466,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       return { keyboard: [[BTN_MY_ORDERS], [BTN_HELP]], resize_keyboard: true };
     }
     if (role === UserRole.platform_admin) {
-      return { keyboard: [[BTN_LOGIN_CODE], [BTN_HELP]], resize_keyboard: true };
+      // Kirish kodi platforma adminga ishlamaydi — u merchant panelga parol
+      // bilan kiradi. Tugmani bermaymiz, aks holda boshi berk yo'l bo'ladi.
+      return { keyboard: [[BTN_HELP]], resize_keyboard: true };
     }
     if (role === UserRole.super_admin) {
       return {
@@ -479,7 +490,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     if (role === UserRole.platform_admin) {
       return (
         'ℹ️ <b>Yordam</b>\n\n' +
-        `${BTN_LOGIN_CODE} — platforma paneliga parolsiz kirish kodi\n\n` +
+        `Platforma paneli: ${platformPanelUrl()}\n` +
+        'Panelga telefon va parol bilan kiriladi.\n\n' +
         '/unlink — hisobni uzish'
       );
     }
@@ -509,6 +521,17 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const user = account.user!;
     if (user.role === UserRole.customer) {
       await this.telegram.sendMessage(chatId, this.helpText(user.role));
+      return;
+    }
+    // Telegram klaviaturasi mijoz tomonida saqlanib qoladi, shuning uchun eski
+    // tugma hali bosilishi mumkin. Kod bermaymiz — u baribir tasdiqlanmaydi.
+    if (user.role === UserRole.platform_admin) {
+      await this.telegram.sendMessage(
+        chatId,
+        'Platforma paneliga parol bilan kiriladi:\n' +
+          `${platformPanelUrl()}`,
+        { replyMarkup: this.keyboardFor(user.role) },
+      );
       return;
     }
     const created = await this.telegram.createLoginCodeRow(user.id);

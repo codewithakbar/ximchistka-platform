@@ -29,6 +29,12 @@ export class AuthService {
     private telegram: TelegramService,
   ) {}
 
+  /**
+   * Xodim va platforma admin kirishi. Merchant panel ham shu endpointdan
+   * foydalanadi, shuning uchun platforma adminni bu yerda rad etib bo'lmaydi —
+   * aks holda u hech qayerga kira olmaydi. CRM o'zi platforma adminni tanib
+   * olib, merchant panelga yo'naltiradi (login sahifasi va AppShell).
+   */
   async staffLogin(phone: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { phone },
@@ -36,11 +42,6 @@ export class AuthService {
     });
     if (!user || !user.passwordHash || user.role === UserRole.customer) {
       throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');
-    }
-    if (user.role === UserRole.platform_admin) {
-      throw new UnauthorizedException(
-        'Platforma admin CRM ga kira olmaydi. Admin panelni ishlating: cleanway.4mi.uz/platform',
-      );
     }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');

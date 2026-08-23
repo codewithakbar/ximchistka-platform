@@ -248,6 +248,8 @@ export const uzExtra2: Record<string, string> = {
   'expenses.cat.other': 'Boshqa',
   'nav./expenses': 'Xarajatlar',
   'nav./help': 'Yordam',
+  'login.platformAdmin':
+    "Platforma admin uchun alohida panel bor — o'sha yerga o'tkazyapmiz",
   'reports.expenses': 'Xarajatlar',
   'reports.netProfit': 'Sof foyda',
   'orderDetail.deleteOrder': "Buyurtmani o'chirish",
@@ -551,6 +553,8 @@ export const ruExtra2: Record<string, string> = {
   'expenses.cat.other': 'Другое',
   'nav./expenses': 'Расходы',
   'nav./help': 'Помощь',
+  'login.platformAdmin':
+    'Для платформенного админа есть отдельная панель — переводим вас туда',
   'reports.expenses': 'Расходы',
   'reports.netProfit': 'Чистая прибыль',
   'orderDetail.deleteOrder': 'Удалить заказ',

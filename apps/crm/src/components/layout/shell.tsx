@@ -10,9 +10,8 @@ import { canAccessRoute } from '@/lib/roles';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { PLATFORM_DASHBOARD_URL } from '@/lib/platform';
 
-const PLATFORM_URL =
-  process.env.NEXT_PUBLIC_MERCHANT_URL ?? 'https://cleanway.4mi.uz/platform';
 
 export function AppShell({
   title,
@@ -70,7 +69,7 @@ export function AppShell({
       // Platforma admin CRM marshrutlariga kira olmaydi — admin panelga yo'naltiramiz
       if (user?.role === 'platform_admin') {
         clearAuth();
-        window.location.href = `${PLATFORM_URL.replace(/\/$/, '')}/dashboard`;
+        window.location.href = PLATFORM_DASHBOARD_URL;
         return;
       }
 

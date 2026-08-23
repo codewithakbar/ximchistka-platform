@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Phone, Lock, ArrowRight, Send, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, saveAuth } from '@/lib/api';
+import { PLATFORM_DASHBOARD_URL } from '@/lib/platform';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -38,6 +39,13 @@ export default function LoginPage() {
   };
 
   async function finishLogin(data: LoginResponse) {
+    // Platforma adminning tashkiloti yo'q — CRM unga ishlamaydi. Sessiyani
+    // saqlamasdan merchant panelga yuboramiz.
+    if (data.user.role === 'platform_admin') {
+      toast.info(t('login.platformAdmin'));
+      window.location.href = PLATFORM_DASHBOARD_URL;
+      return;
+    }
     saveAuth(data);
       try {
         const profile = await api<{
