@@ -1,0 +1,562 @@
+<title>CleanWay Audit Dosyesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --paper:      #f7f6f3;
+    --card:       #ffffff;
+    --card-alt:   #f0eeea;
+    --ink:        #1a1c20;
+    --ink-soft:   #55595f;
+    --ink-faint:  #8a8f96;
+    --rule:       #ddd9d3;
+    --rule-soft:  #ebe8e3;
+
+    --crit:       #a4262c;
+    --crit-bg:    #fbeceb;
+    --high:       #9a5a06;
+    --high-bg:    #fdf1e0;
+    --med:        #1b5cae;
+    --med-bg:     #e8f0fb;
+    --low:        #5c636d;
+    --low-bg:     #eeeff1;
+
+    --ok:         #1d6b52;
+    --ok-bg:      #e6f3ee;
+    --ok-line:    #b3ddcd;
+
+    --shadow: 0 1px 2px rgba(26,28,32,.05), 0 10px 30px -18px rgba(26,28,32,.3);
+
+    --display: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #131417; --card: #1b1d21; --card-alt: #212429;
+      --ink: #e9eaec; --ink-soft: #a8adb4; --ink-faint: #767c84;
+      --rule: #2f333a; --rule-soft: #24272c;
+      --crit: #f08a86; --crit-bg: #2c1618;
+      --high: #e0a95e; --high-bg: #2a2011;
+      --med: #7db0ea; --med-bg: #142334;
+      --low: #a0a7b0; --low-bg: #22252a;
+      --ok: #6cc9a5; --ok-bg: #10261f; --ok-line: #22483a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #131417; --card: #1b1d21; --card-alt: #212429;
+    --ink: #e9eaec; --ink-soft: #a8adb4; --ink-faint: #767c84;
+    --rule: #2f333a; --rule-soft: #24272c;
+    --crit: #f08a86; --crit-bg: #2c1618;
+    --high: #e0a95e; --high-bg: #2a2011;
+    --med: #7db0ea; --med-bg: #142334;
+    --low: #a0a7b0; --low-bg: #22252a;
+    --ok: #6cc9a5; --ok-bg: #10261f; --ok-line: #22483a;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+  p { margin: 0; }
+  code { font-family: var(--mono); font-size: .86em; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 22px 90px; }
+
+  /* Sarlavha */
+  header { border-bottom: 2px solid var(--ink); margin-bottom: 30px; padding: 34px 0 18px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--crit); margin-bottom: 12px;
+  }
+  header h1 { font-size: clamp(30px, 5.2vw, 46px); font-weight: 800; line-height: 1.05; }
+  header .sub { color: var(--ink-soft); margin-top: 12px; max-width: 60ch; font-size: 15.5px; }
+
+  /* Raqamlar bandi */
+  .tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 26px 0 34px; }
+  .tally div {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tally b { font-family: var(--display); font-size: 30px; font-weight: 800; display: block; line-height: 1; }
+  .tally span {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-top: 7px;
+  }
+  .t-crit b { color: var(--crit); } .t-high b { color: var(--high); }
+  .t-med b { color: var(--med); }   .t-low b { color: var(--low); }
+  @media (max-width: 640px) { .tally { grid-template-columns: repeat(2, 1fr); } }
+
+  .verdict {
+    background: var(--card); border: 1px solid var(--rule); border-left: 4px solid var(--crit);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 34px; box-shadow: var(--shadow);
+  }
+  .verdict h2 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { color: var(--ink-soft); font-size: 15px; }
+  .verdict p + p { margin-top: 12px; }
+
+  h2.section {
+    font-size: 13px; font-weight: 700; font-family: var(--mono);
+    letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint);
+    border-top: 1px solid var(--rule); padding-top: 16px; margin: 44px 0 20px;
+  }
+
+  /* Tekshirilgan — natijalar */
+  .checks { display: grid; gap: 8px; }
+  .check {
+    display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: baseline;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 9px; padding: 11px 14px;
+    font-size: 14.5px;
+  }
+  .check .mk { font-weight: 700; }
+  .check.pass .mk { color: var(--ok); }
+  .check.fail .mk { color: var(--crit); }
+  .check .res { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  .check.fail .res { color: var(--crit); }
+
+  /* Kritik kartalar */
+  .card {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 12px;
+    padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow);
+    border-left: 4px solid var(--crit);
+  }
+  .card.sev-high { border-left-color: var(--high); }
+  .card-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+  .rank {
+    font-family: var(--display); font-size: 22px; font-weight: 800;
+    color: var(--ink-faint); line-height: 1; padding-top: 2px;
+  }
+  .card h3 { font-size: 18px; font-weight: 700; line-height: 1.25; margin-bottom: 9px; }
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: .12em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;
+    margin-right: 8px;
+  }
+  .chip-critical { background: var(--crit-bg); color: var(--crit); }
+  .chip-high { background: var(--high-bg); color: var(--high); }
+  .loc { color: var(--ink-faint); font-size: 11.5px; word-break: break-all; }
+
+  dl { margin: 0; display: grid; gap: 3px; }
+  dt {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-faint); margin-top: 12px;
+  }
+  dt:first-child { margin-top: 0; }
+  dd { margin: 0; color: var(--ink-soft); font-size: 14.8px; line-height: 1.62; }
+  dd b { color: var(--ink); font-weight: 600; }
+  dd code { background: var(--card-alt); padding: 1px 5px; border-radius: 4px; }
+
+  /* Qolgan defektlar jadvali */
+  .tw { border: 1px solid var(--rule); border-radius: 11px; overflow: hidden; background: var(--card); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  tr.group td {
+    background: var(--card-alt); font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint);
+    padding: 8px 14px; font-weight: 500;
+  }
+  td.num { font-family: var(--mono); color: var(--ink-faint); width: 34px; font-size: 12px; }
+  td code { color: var(--ink-faint); font-size: 11px; word-break: break-all; }
+  td:last-child { width: 33%; }
+  @media (max-width: 720px) {
+    td:last-child { display: none; }
+  }
+
+  .sound {
+    background: var(--ok-bg); border: 1px solid var(--ok-line); border-radius: 11px;
+    padding: 18px 22px; margin-top: 16px;
+  }
+  .sound h3 { font-size: 15px; font-weight: 700; color: var(--ok); margin-bottom: 10px; }
+  .sound ul { margin: 0; padding-left: 20px; color: var(--ink-soft); font-size: 14.5px; }
+  .sound li { margin-bottom: 5px; }
+
+  .note {
+    font-size: 13.5px; color: var(--ink-faint); margin-top: 30px;
+    border-top: 1px solid var(--rule); padding-top: 16px;
+  }
+
+  @media print {
+    :root { --paper: #fff; --card: #fff; }
+    .card, .tw, .verdict { break-inside: avoid; box-shadow: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CleanWay · To'liq audit</div>
+    <h1>Mahsulot auditi<br>dosyesi</h1>
+    <p class="sub">
+      Butun platforma — API, CRM, mijoz ilovasi, merchant panel, Telegram bot va ma'lumotlar bazasi —
+      har bir rol va oqim bo'yicha tekshirildi. Har bir topilma alohida qarshi-tekshiruvdan o'tkazildi;
+      tasdiqlanmagan da'volar bu ro'yxatga kirmadi.
+    </p>
+  </header>
+
+  <div class="tally">
+    <div class="t-crit"><b>12</b><span>Kritik</span></div>
+    <div class="t-high"><b>26</b><span>Yuqori</span></div>
+    <div class="t-med"><b>21</b><span>O'rta</span></div>
+    <div class="t-low"><b>11</b><span>Past</span></div>
+  </div>
+
+  <div class="verdict">
+    <h2>Qisqacha xulosa</h2>
+    <p>
+      <b>Hammasi to'g'ri ketganda tizim ishlaydi; noto'g'ri ketganda esa jimgina pul yo'qotadi.</b>
+      Uchta muammo qolganini ikkinchi darajaga tushiradi: ishlab chiqarish o'rnatish skripti SMS'ni
+      «mock» rejimida qoldiradi, ya'ni har qanday tasdiqlash kodi <code>123456</code> va API uni
+      ochiq qaytaradi; mijoz OTP oqimi rolni umuman tekshirmaydi, ya'ni o'sha kod xodim, ega va
+      platforma admin tokenini beradi; va firma egasi hujjatlashtirilgan API orqali o'ziga platforma
+      admini yaratib olishi mumkin.
+    </p>
+    <p>
+      Ular ostida pul qatlami mustahkam emas: topshirish qancha kam to'lansa ham buyurtmani yopadi,
+      buyurtmani o'chirish uning to'lovlarini ham yo'q qiladi, bekor qilish va qaytarish pulni
+      qarama-qarshi tomonlarga «yo'qotadi», kuryer yetkazishi umuman pul olmaydi, va oylik hisobot
+      oy chegarasidan o'tgan har bir buyurtmani ikki marta sanaydi.
+    </p>
+    <p>
+      Ikkita funksiya esa butunlay o'lik: ikkinchi filial chek raqamini chiqara olmay qolishi mumkin,
+      mijoz veb-ilovasidagi buyurtma sahifasi esa xizmat tanlash bosqichida qulaydi.
+    </p>
+  </div>
+
+  <h2 class="section">Jonli sinov natijalari</h2>
+  <div class="checks">
+    <div class="check pass"><span class="mk">✓</span><span>25 ta himoyalangan endpoint tokensiz chaqirildi</span><span class="res">hammasi 401</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>Login brute-force cheklovi</span><span class="res">10 → 429</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>Begona domendan CORS so'rovi</span><span class="res">rad etildi</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>6 MB so'rov tanasi</span><span class="res">413</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>Ommaviy kuzatuv — summa va mijoz ma'lumoti</span><span class="res">oshkor emas</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>Ommaviy /branches — boshqa firma filiallari</span><span class="res">bo'sh</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>i18n to'liqligi (664 kalit, uz va ru)</span><span class="res">yetishmaydigan yo'q</span></div>
+    <div class="check pass"><span class="mk">✓</span><span>Bazada: yakunlangan-to'lanmagan, ortiqcha to'lov, bekor-pulli</span><span class="res">topilmadi</span></div>
+    <div class="check fail"><span class="mk">✗</span><span>Xodim raqamiga OTP so'rovi — kod javobda qaytdimi</span><span class="res">devCode: 123456</span></div>
+    <div class="check fail"><span class="mk">✗</span><span>Anonim ro'yxatdan o'tishda demoDays: 36500</span><span class="res">100 yil berildi</span></div>
+    <div class="check fail"><span class="mk">✗</span><span>Mijoz ilovasi narx javobi shakli va kod mosligi</span><span class="res">TypeError</span></div>
+  </div>
+
+  <h2 class="section">Kritik — birinchi navbatda</h2>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">01</span>
+        <div>
+          <h3>Ishlab chiqarishda SMS «mock» rejimida — har qanday OTP kodi 123456 va API uni ochiq qaytaradi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/auth/auth.service.ts:341</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>deploy/setup.sh</code> ishlab chiqarish <code>.env</code> iga <b>SMS_PROVIDER="mock"</b> yozadi. Shunda tasdiqlash kodi doim <b>123456</b> bo'ladi va ochiq, autentifikatsiyasiz endpoint uni javobda <code>devCode</code> sifatida qaytaradi. Haqiqiy SMS umuman yuborilmaydi, lekin jurnalda «yuborildi» deb turadi.</dd>
+        <dt>Zarari</dt><dd>Platformadagi har bir hisob uchun autentifikatsiya amalda o'chirilgan. Telefon raqamini bilish — o'sha odam bo'lish uchun yetarli.</dd>
+        <dt>Tuzatish</dt><dd><code>setup.sh</code> da <code>SMS_PROVIDER=eskiz</code> qiling va <code>NODE_ENV=production</code> bo'lganda <code>devCode</code> qaytarishni butunlay taqiqlang.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">02</span>
+        <div>
+          <h3>Mijoz OTP orqali kirishi xodim va platforma admin tokenini beradi — rol umuman tekshirilmaydi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/auth/auth.service.ts:359</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>verifyOtp()</code> telefon bo'yicha foydalanuvchini topadi va bazadagi <b>qanday rol bo'lsa, o'shani</b> tokenga yozadi. <code>staffLogin</code> mijozlarni rad etadi, <code>verifyTelegramLogin</code> mijoz va platforma adminni rad etadi — OTP yo'li esa <b>hech kimni filtrlamaydi</b>.</dd>
+        <dt>Zarari</dt><dd>Mijozlar uchun mo'ljallangan kirish kanali har bir xodim hisobiga va SaaS operator paneliga orqa eshik: firmalarni to'xtatish, demo uzaytirish, har bir raqobatchining buyurtma va tushumini ko'rish.</dd>
+        <dt>Tuzatish</dt><dd><code>verifyOtp</code> ichida <code>user.role !== 'customer'</code> bo'lsa <code>Unauthorized</code> tashlang — <code>staffLogin</code> dagi himoyani takrorlang.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">03</span>
+        <div>
+          <h3>«Topshirish» qoldiq to'lanmagan bo'lsa ham buyurtmani yakunlaydi — hatto umuman pulsiz</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/payments/payments.service.ts:161</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>handover()</code> to'lov qismlari yuborilgan bo'lsagina yozadi, so'ng <b>shartsiz</b> buyurtmani «yakunlangan» qiladi. <code>record()</code> ortiqcha to'lovni rad etadi, lekin <b>kam to'lovni hech qachon</b>. Bo'sh tana bilan yuborilgan so'rov mahsulotni nol so'm bilan topshiradi va qarz hech qayerda qayd etilmaydi.</dd>
+        <dt>Zarari</dt><dd>Kassada izsiz pul yo'qotish. Hisobot buni yashiradi: tushum to'liq summani sanaydi, sof foyda olinmagan pul miqdoricha oshib ketadi, kassa esa shuncha kam chiqadi.</dd>
+        <dt>Tuzatish</dt><dd><code>handover()</code> da qismlar yozilgach qoldiqni hisoblang va nol bo'lmasa xato tashlang (yoki aniq «qarzga topshirish» belgisini talab qiling).</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">04</span>
+        <div>
+          <h3>Kuryer yetkazishi buyurtmani pulsiz, qoidasiz va xabarsiz yakunlaydi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/courier/courier.service.ts:203</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>complete()</code> faqat kuryer o'sha yetkazishga egaligini tekshiradi, so'ng to'g'ridan-to'g'ri <code>status: completed</code> yozadi. Holat o'tishlari jadvaliga umuman qaramaydi (bekor qilingan buyurtma qayta «yakunlangan» bo'ladi), to'lovlarga qaramaydi (yetkazishdagi naqd pul qayd etilmaydi) va SMS ham, egaga bildirishnoma ham yubormaydi.</dd>
+        <dt>Zarari</dt><dd>Yetkazilgan buyurtmalar egaga tushum xabarlarida ko'rinmaydi, Telegramsiz mijozlar xabar olmaydi, yetkazishdagi naqd pul tizim uchun ko'rinmas va qaysi kuryerda ekani qayd etilmaydi.</dd>
+        <dt>Tuzatish</dt><dd>Kuryer yakunlashini kassadagi bir xil kod orqali o'tkazing: holatni tekshiring, <code>payments.handover</code> ni chaqiring va bildirishnomalarni yuboring.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">05</span>
+        <div>
+          <h3>Buyurtmani o'chirish uning to'lovlarini ham butunlay o'chiradi — yopilgan kunning kassasi o'zgaradi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/orders/orders.service.ts:405</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>deleteOrder()</code> mavjud to'lovlarni umuman tekshirmaydi, <code>Payment.order</code> esa <code>onDelete: Cascade</code> — ya'ni har bir to'langan yozuv buyurtma bilan birga yo'q qilinadi. Sxemada audit jadvali ham, yumshoq o'chirish ham yo'q, shuning uchun pul mavjud bo'lganini hech nima qayd etmaydi.</dd>
+        <dt>Zarari</dt><dd>Kassaga sanab olingan pul allaqachon yopilgan hisobotdan orqaga qarab yo'qoladi. Filial menejeri o'zi olgan naqd pulning izini bitta tugma bilan o'chirib tashlashi mumkin.</dd>
+        <dt>Tuzatish</dt><dd>To'langan to'lov bo'lsa o'chirishni rad eting va qattiq o'chirish o'rniga «arxivlangan» belgisi + audit yozuvini qo'ying.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-high">
+      <div class="card-head">
+        <span class="rank">06</span>
+        <div>
+          <h3>To'langan buyurtmani bekor qilish pulni kassada qoldiradi, tushumni esa nolga tushiradi</h3>
+          <span class="chip chip-high">Yuqori</span>
+          <code class="loc">apps/api/src/orders/orders.service.ts:331</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>updateStatus()</code> faqat holat o'tishini tekshiradi — to'lovlarga qaramaydi va pul qaytarishni so'ramaydi. Keyin tushum o'sha buyurtma uchun 0 bo'ladi, kassa esa uning to'langan yozuvlarini sanashda davom etadi.</dd>
+        <dt>Zarari</dt><dd>Kassa va tushum har bir bekor qilingan-lekin-to'langan buyurtma summasicha farq qiladi. Mijozga qaytarilishi kerak bo'lgan pul kassada turadi va uni hech nima kuzatmaydi.</dd>
+        <dt>Tuzatish</dt><dd>Bekor qilishda <code>paidAmount &gt; 0</code> bo'lsa qaytarishni majburiy qiling va bekor qilingan buyurtma to'lovlarini kassadan chiqaring.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-high">
+      <div class="card-head">
+        <span class="rank">07</span>
+        <div>
+          <h3>Pul qaytarish faqat yozuv holatini o'zgartiradi — chiqim yozuvi yo'q va o'tgan kunni qayta yozadi</h3>
+          <span class="chip chip-high">Yuqori</span>
+          <code class="loc">apps/api/src/payments/payments.service.ts:200</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>refund()</code> mavjud to'lovni «qaytarilgan» qiladi, xolos — teskari yozuv yo'q, qaytarish sanasi yo'q. Kassa esa to'lovlarni <b>asl</b> <code>createdAt</code> bo'yicha oladi, ya'ni sentyabrda qilingan qaytarish avgustning allaqachon yopilgan kassasini kamaytiradi.</dd>
+        <dt>Zarari</dt><dd>Yopilgan davr hisoboti keyinchalik o'zgaradi va qaytarishlar tuzilmaviy ravishda hisobga olinmaydi. Tushum qaytarilgan sotuvni hali ham «ishlangan» deb sanaydi.</dd>
+        <dt>Tuzatish</dt><dd>Asl yozuvni o'zgartirish o'rniga qaytarish paytiga sanalgan alohida teskari yozuv yarating.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-high">
+      <div class="card-head">
+        <span class="rank">08</span>
+        <div>
+          <h3>Hisobotda tushum ikki marta sanaladi — bir oyda ochilib, keyingisida yakunlangan buyurtma ikkalasiga ham kiradi</h3>
+          <span class="chip chip-high">Yuqori</span>
+          <code class="loc">apps/api/src/reports/reports.service.ts:37</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd>Davr tanlash sharti «<code>createdAt</code> oraliqda <b>YOKI</b> (yakunlangan <b>VA</b> <code>updatedAt</code> oraliqda)». Yakunlash <code>updatedAt</code> ni yangilagani uchun 30-iyunda ochilib 2-iyulda yakunlangan buyurtma ikkala shartga ham mos keladi va to'liq summasi iyunga ham, iyulga ham tushadi.</dd>
+        <dt>Zarari</dt><dd>48 soatlik ishlov beradigan do'kon uchun oyning oxirgi ikki kunida olingan deyarli har bir buyurtma ikki marta sanaladi. Oylik tushum, o'rtacha chek — hammasi shishiradi.</dd>
+        <dt>Tuzatish</dt><dd>Bitta asosni tanlang (yaratilgan sana yoki yakunlangan sana) va uni hisobotning hamma joyida bir xil ishlating.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">09</span>
+        <div>
+          <h3>Firma egasi o'ziga platforma admini yaratib, butun SaaS'ni egallashi mumkin</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/users/users.service.ts:48</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>createStaff()</code> faqat <code>super_admin</code> va <code>customer</code> ni rad etadi. <b><code>platform_admin</code> esa o'tib ketadi</b> — uch rol cheklovi faqat CRM interfeysida, serverda emas.</dd>
+        <dt>Zarari</dt><dd>Har qanday mijoz — hatto 3 kunlik sinovdagi ham — bitta API chaqiruvi bilan to'liq SaaS operator huquqiga ko'tariladi: raqobatchilarning buyurtma, tushum va mijoz ro'yxatini o'qish, ularni to'xtatish.</dd>
+        <dt>Tuzatish</dt><dd>Serverda ruxsat etilgan rollarni oq ro'yxat qiling: faqat <code>branch_manager</code>, <code>operator</code>, <code>courier</code>.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">10</span>
+        <div>
+          <h3>Xodimni boshqa firmaning filialiga biriktirish mumkin, buyurtma doirasida esa tashkilot filtri yo'q</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/users/users.service.ts:70</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>createStaff</code> yuborilgan <code>branchIds</code> ni tekshirmasdan yozadi — qo'shni <code>updateStaffBranches</code> esa aynan shu tekshiruvni qiladi. Begona filial ID sini olish oson, chunki <code>GET /branches?organizationSlug=…</code> ommaviy.</dd>
+        <dt>Zarari</dt><dd>Ikkita oddiy API chaqiruvi raqobatchining butun buyurtma daftarini, mijoz ismlari, telefonlari, manzillari va summalarini o'zi yaratgan sinov hisobiga jonli uzatadi.</dd>
+        <dt>Tuzatish</dt><dd><code>createStaff</code> da <code>branchIds</code> ni tashkilotga tegishliligini tekshiring va buyurtma doirasiga <code>organizationId</code> shartini qo'shing.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">11</span>
+        <div>
+          <h3>Telefon bo'yicha mijoz qidiruvi platformadagi istalgan mijozni uy manzillari bilan qaytaradi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/customers/customers.service.ts:17</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>lookupByPhone</code> tenant shartisiz global qidiruv qiladi va ism, profil ID va <b>to'liq manzillar ro'yxatini</b> qaytaradi. Qo'shni <code>search()</code> va <code>getById()</code> esa mijoz sizdan buyurtma bergan bo'lishini talab qiladi.</dd>
+        <dt>Zarari</dt><dd>Istalgan firmadagi istalgan kassir — jumladan har kim o'zi ochadigan bepul sinov hisobi — telefon raqamlarini terib, butun platforma mijozlarining ismi va uy manzilini yig'ib olishi mumkin.</dd>
+        <dt>Tuzatish</dt><dd><code>lookupByPhone</code> ni <code>search()</code> kabi buyurtma doirasi bilan cheklang.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">12</span>
+        <div>
+          <h3>Buyurtma narxlash platformadagi istalgan xizmat ID sini qabul qiladi va asosiy narxga qaytadi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/orders/orders.service.ts:590</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd><code>priceItems</code> xizmatlarni tashkilot filtrisiz va <code>isActive</code> filtrisiz yuklaydi. Filial narx qoidasi topilmasa (begona xizmat, faolsizlantirilgan xizmat yoki o'ylab topilgan <code>itemType</code>) qatorni jimgina <code>basePrice</code> bo'yicha narxlaydi.</dd>
+        <dt>Zarari</dt><dd>Mijoz egasi sozlagan barcha filial narxlarini chetlab o'tib, asosiy narxda hisob olishi mumkin; buyurtmaga boshqa firmaning xizmat nomi tushib qolishi ham mumkin.</dd>
+        <dt>Tuzatish</dt><dd><code>priceItems</code> da xizmatlarni buyurtma filialining tashkiloti va <code>isActive</code> bo'yicha filtrlang, mos kelmagan ID ga xato tashlang.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">13</span>
+        <div>
+          <h3>Ikkinchi filial chek raqamini umuman chiqara olmay qolishi mumkin</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/api/src/orders/orders.service.ts:715</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd>Chek hisoblagichi har filialda alohida, lekin prefiks tashkilotnikiga qaytadi va filial yaratish formasida prefiks maydoni yo'q. Shuning uchun birinchidan keyingi har bir filial <code>XC-0001</code> dan boshlaydi — u esa allaqachon band. Generator 30 ta raqamni sinab ko'radi va «Chek raqami yaratilmadi» deb to'xtaydi.</dd>
+        <dt>Zarari</dt><dd>Yangi ochilgan do'kon <b>bitta ham chek yoza olmaydi</b>, va xato matni hech qayerga yo'naltirmaydi. 30 tadan kam buyurtma bo'lsa «ishlaydi», lekin ikki do'konning chek raqamlari aralashib ketadi.</dd>
+        <dt>Tuzatish</dt><dd>Filial yaratishda prefiks maydonini qo'shing va hisoblagichni mavjud eng katta raqamdan boshlang.</dd>
+      </dl>
+    </article>
+
+    <article class="card sev-critical">
+      <div class="card-head">
+        <span class="rank">14</span>
+        <div>
+          <h3>Mijoz veb-ilovasida buyurtma sahifasi xizmat tanlash bosqichida qulaydi</h3>
+          <span class="chip chip-critical">Kritik</span>
+          <code class="loc">apps/client-web/src/app/order/new/page.tsx:187</code>
+        </div>
+      </div>
+      <dl>
+        <dt>Nima bo'ladi</dt><dd>Sahifa <code>p.service.category.name</code> ni o'qiydi, API esa xizmat obyektini <code>categoryName</code> tekis maydoni bilan quradi — <code>category</code> obyekti umuman yo'q. Birinchi narx kartasi <code>TypeError</code> tashlaydi va sahifa xato ekraniga almashadi. <b>Jonli API javobi bilan tasdiqlandi.</b></dd>
+        <dt>Zarari</dt><dd>Onlayn o'z-o'ziga xizmat buyurtmasi har bir mijoz uchun butunlay o'lik — sehrgar filial tanlashdan nariga o'ta olmaydi. Bu mahsulot sotiladigan asosiy funksiya.</dd>
+        <dt>Tuzatish</dt><dd>Render va tipni <code>p.service.categoryName</code> ga o'zgartiring — bir qatorlik tuzatish.</dd>
+      </dl>
+    </article>
+
+  <h2 class="section">Qolgan defektlar — yuqoridagi 14 tadan tashqari</h2>
+  <div class="tw">
+    <table>
+      <tbody>
+<tr class="group"><td colspan="3">Kritik — 1 ta</td></tr>
+<tr><td class="num">15</td><td>SMS yuborishda vaqt chegarasi yo'q — CRM va Telegram bot butunlay muzlab qolishi mumkin</td><td><code>apps/api/src/notifications/eskiz.client.ts:45</code></td></tr>
+<tr class="group"><td colspan="3">Yuqori — 23 ta</td></tr>
+<tr><td class="num">16</td><td>Yuborilmagan SMS hech kim o'qimaydigan jadvalga yoziladi, xato e'tiborsiz qoladi</td><td><code>apps/api/src/notifications/notifications.service.ts:14</code></td></tr>
+<tr><td class="num">17</td><td>Buyurtmani tahrirlash faolsizlantirilgan xizmat qatorlarini jimgina o'chiradi</td><td><code>apps/crm/src/components/orders/edit-order-dialog.tsx:108</code></td></tr>
+<tr><td class="num">18</td><td>«Asosiy narx»ni o'zgartirish hech kimga ta'sir qilmaydi — hech kim bu narxda to'lamaydi</td><td><code>apps/api/src/services/services.service.ts:294</code></td></tr>
+<tr><td class="num">19</td><td>Filial narxi maydoni tushunarsiz kiritilganda jimgina 0 saqlaydi</td><td><code>apps/crm/src/components/services/branch-prices-panel.tsx:123</code></td></tr>
+<tr><td class="num">20</td><td>To'lov webhook buyurtma holati va qoldig'ini qayta tekshirmasdan pulni «to'langan» qiladi</td><td><code>apps/api/src/payments/payments.service.ts:317</code></td></tr>
+<tr><td class="num">21</td><td>«Hozir to'lash»da summa tozalansa — to'lanmagan buyurtma yaratiladi, lekin «muvaffaqiyatli» deb chiqadi</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:431</code></td></tr>
+<tr><td class="num">22</td><td>Filial almashtirilganda narx o'zgartirishlari qolib ketadi — keyingi buyurtma eski filial narxida</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:116</code></td></tr>
+<tr><td class="num">23</td><td>Kechikkan mijoz qidiruvi to'g'irlangan raqamni bosib ketadi — buyurtma boshqa odamga biriktiriladi</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:326</code></td></tr>
+<tr><td class="num">24</td><td>Kassada buyurtma yaratish mijoz ismini butun platformada, boshqa firmalarda ham o'zgartiradi</td><td><code>apps/api/src/orders/orders.service.ts:230</code></td></tr>
+<tr><td class="num">25</td><td>Xodimni faolsizlantirish, o'chirish yoki bloklash imkoni yo'q</td><td><code>apps/api/src/users/users.controller.ts:28</code></td></tr>
+<tr><td class="num">26</td><td>Realtime ulanish faqat ulanish paytida tekshiriladi, keyin hech qachon qayta tekshirilmaydi</td><td><code>apps/api/src/orders/orders.gateway.ts:39</code></td></tr>
+<tr><td class="num">27</td><td>/auth/refresh foydalanuvchi va tashkilotni qayta tekshirmaydi — CRM yarim kirgan holatda osilib qoladi</td><td><code>apps/api/src/auth/auth.service.ts:394</code></td></tr>
+<tr><td class="num">28</td><td>Filialsiz xodim butun firma buyurtmalarini ko'radi — filial o'chirilsa shu holat yuzaga keladi</td><td><code>apps/api/src/branches/tenant-scope.ts:25</code></td></tr>
+<tr><td class="num">29</td><td>Demo muddati tugagan firma mijoz buyurtmalarini qabul qilishda davom etadi, lekin ularni ishlab bo'lmaydi</td><td><code>apps/api/src/orders/orders.service.ts:258</code></td></tr>
+<tr><td class="num">30</td><td>Kuryer tayinlash boshqa firmaning yetkazishini ham qabul qiladi va holat qoidasini chetlab o'tadi</td><td><code>apps/api/src/courier/courier.service.ts:161</code></td></tr>
+<tr><td class="num">31</td><td>Kuryer o'z ko'rish doirasidagi istalgan buyurtma holatini o'zgartira oladi, bekor qilish ham</td><td><code>apps/api/src/orders/orders.controller.ts:139</code></td></tr>
+<tr><td class="num">32</td><td>Telegram holat tugmalari bir bosishda ishlaydi — bitta noto'g'ri bosish to'langan buyurtmani butunlay bekor qiladi</td><td><code>apps/api/src/telegram/telegram-bot.service.ts:692</code></td></tr>
+<tr><td class="num">33</td><td>Mijoz ilovasi bitta firma slug'iga qattiq bog'langan — topilmasa oq ekran</td><td><code>apps/client-web/src/app/order/new/page.tsx:59</code></td></tr>
+<tr><td class="num">34</td><td>Ommaviy ro'yxatdan o'tishda sinov muddatini mijozning o'zi tanlaydi</td><td><code>apps/api/src/public/public.controller.ts:18</code></td></tr>
+<tr><td class="num">35</td><td>Firma yaratish oynasida egaga parol sifatida «admin123» oldindan yozilgan</td><td><code>apps/merchant/src/components/organizations/create-organization-dialog.tsx:35</code></td></tr>
+<tr><td class="num">36</td><td>«Demo +14 kun» to'lovchi mijozni jimgina demo holatiga tushiradi</td><td><code>apps/api/src/platform/platform.service.ts:470</code></td></tr>
+<tr><td class="num">37</td><td>«To'xtatish» butun firmani darhol o'chiradi — tasdiq so'ralmaydi</td><td><code>apps/merchant/src/app/organizations/[id]/page.tsx:208</code></td></tr>
+<tr><td class="num">38</td><td>Paroli yo'qolgan firma egasini tiklashning hech qanday yo'li yo'q</td><td><code>apps/api/src/platform/platform.controller.ts:42</code></td></tr>
+<tr class="group"><td colspan="3">O'rta — 21 ta</td></tr>
+<tr><td class="num">39</td><td>Buyurtmalar ro'yxati jimgina faqat oxirgi 20 tasini ko'rsatadi (CRM va mijoz ilovasida)</td><td><code>apps/crm/src/app/orders/page.tsx:89</code></td></tr>
+<tr><td class="num">40</td><td>Kassa narxlari sahifa ochilgandagi nusxa — server qayta hisoblaydi, farq chiqsa to'lov rad etiladi</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:127</code></td></tr>
+<tr><td class="num">41</td><td>Faolsizlantirilgan filialga ham buyurtma qabul qilinadi va kassada ko'rinaverdi</td><td><code>apps/api/src/orders/orders.service.ts:258</code></td></tr>
+<tr><td class="num">42</td><td>Yetkazib berish va olib ketish buyurtmalarini manzilsiz yaratish mumkin</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:746</code></td></tr>
+<tr><td class="num">43</td><td>CSV eksport tirnoqsiz, tarjimasiz va tafsilot qatorlari o'z jamiga to'g'ri kelmaydi</td><td><code>apps/api/src/reports/reports.service.ts:402</code></td></tr>
+<tr><td class="num">44</td><td>CSV yuklab olish jimgina ishlamaydi — tugma hech narsa qilmaydi, xato ham chiqmaydi</td><td><code>apps/crm/src/app/reports/page.tsx:102</code></td></tr>
+<tr><td class="num">45</td><td>Hisobot kunlari UTC, dashboard «bugun»i server vaqti, interfeys brauzer vaqti — uchtasi mos emas</td><td><code>apps/api/src/reports/reports.service.ts:17</code></td></tr>
+<tr><td class="num">46</td><td>Filial moliyasida «To'langan» va kassa bloki ikki xil asosda hisoblanadi</td><td><code>apps/api/src/reports/reports.service.ts:262</code></td></tr>
+<tr><td class="num">47</td><td>initiate() so'rovni rad etishdan oldin kutilayotgan to'lov yozadi — «Kutilmoqda» arvoh pul</td><td><code>apps/api/src/payments/payments.service.ts:266</code></td></tr>
+<tr><td class="num">48</td><td>To'lovni yozish qulflanmagan — ikki kassir bir buyurtmani ortiqcha to'lay oladi</td><td><code>apps/api/src/payments/payments.service.ts:92</code></td></tr>
+<tr><td class="num">49</td><td>Chegirma va promo-kodlar oxirgi kuni soat 05:00 da tugaydi; promo-kodni tahrirlab bo'lmaydi</td><td><code>packages/shared/src/index.ts:110</code></td></tr>
+<tr><td class="num">50</td><td>O'sha paytda faolsiz bo'lgan xizmat va filiallar uchun narx qoidalari umuman yaratilmaydi</td><td><code>apps/api/src/services/services.service.ts:216</code></td></tr>
+<tr><td class="num">51</td><td>Ommaviy kuzatuv jadvali ikki tomonlama noto'g'ri ko'rsatadi</td><td><code>apps/client-web/src/app/track/page.tsx:33</code></td></tr>
+<tr><td class="num">52</td><td>Ommaviy /branches butun filial yozuvini, jumladan chek raqami hisoblagichini qaytaradi</td><td><code>apps/api/src/branches/branches.service.ts:36</code></td></tr>
+<tr><td class="num">53</td><td>Telegram getUpdates xatolari o'chirilgan — bekor qilingan token yoki ikkinchi bot botni ko'rinmas o'ldiradi</td><td><code>apps/api/src/telegram/telegram-bot.service.ts:136</code></td></tr>
+<tr><td class="num">54</td><td>Ishlamaydigan Telegram tugmalari: ega bo'lmaganlar uchun 📊, rol o'zgargach 🔎 va 🔔</td><td><code>apps/api/src/telegram/telegram-bot.service.ts:703</code></td></tr>
+<tr><td class="num">56</td><td>Mijoz buyurtma xulosasida qatorlar to'liq narxda, jami esa chegirmali narxda</td><td><code>apps/client-web/src/app/order/new/page.tsx:251</code></td></tr>
+<tr><td class="num">57</td><td>OTP so'rovi bo'sh yoki chala telefon raqamini qabul qiladi va «muvaffaqiyatli» deydi</td><td><code>apps/api/src/auth/auth.controller.ts:16</code></td></tr>
+<tr><td class="num">58</td><td>Mijoz veb-ilovasidan chiqish (logout) imkoni yo'q</td><td><code>apps/client-web/src/lib/api.ts:102</code></td></tr>
+<tr><td class="num">62</td><td>Mavjud email bilan xodim qo'shilsa — xom, inglizcha 500 xatosi chiqadi</td><td><code>apps/api/src/users/users.service.ts:53</code></td></tr>
+<tr><td class="num">63</td><td>Yangi xodim ma'lumotlari kartasi http://localhost:3000/login manzilini beradi va yarim tarjimasiz</td><td><code>apps/crm/src/components/staff/add-staff-dialog.tsx:116</code></td></tr>
+<tr class="group"><td colspan="3">Past — 11 ta</td></tr>
+<tr><td class="num">55</td><td>SMS, Telegram va CRM bir xil holatni uch xil o'zbekcha nom bilan ataydi</td><td><code>apps/api/src/telegram/telegram-format.ts:22</code></td></tr>
+<tr><td class="num">59</td><td>Bosh sahifadagi «Faol buyurtmalar» yakunlangan va bekor qilinganlarni ham ko'rsatadi</td><td><code>apps/client-web/src/app/home/page.tsx:59</code></td></tr>
+<tr><td class="num">60</td><td>Qayta hisoblash muvaffaqiyatsiz bo'lsa, qo'llanilgan promo-kod savatdan jimgina yo'qoladi</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:239</code></td></tr>
+<tr><td class="num">61</td><td>Chek window.open bilan ikki so'rovdan keyin ochiladi — ochilgani tekshirilmaydi</td><td><code>apps/crm/src/components/orders/create-order-pos.tsx:492</code></td></tr>
+<tr><td class="num">64</td><td>So'rov muvaffaqiyatsiz bo'lsa merchant panel abadiy yuklanish skeletini ko'rsatadi</td><td><code>apps/merchant/src/app/dashboard/page.tsx:50</code></td></tr>
+<tr><td class="num">65</td><td>Firma yaratish oynasi oldingi firmaning filial manzili va admin ma'lumotlarini saqlab qoladi</td><td><code>apps/merchant/src/components/organizations/create-organization-dialog.tsx:64</code></td></tr>
+<tr><td class="num">66</td><td>Faolsiz qo'shimcha filialni umuman o'chirib bo'lmaydi</td><td><code>apps/api/src/branches/branches.service.ts:179</code></td></tr>
+<tr><td class="num">67</td><td>Sozlamalarda emailni tozalash hech narsa qilmaydi, lekin «saqlandi» deydi</td><td><code>apps/crm/src/app/settings/page.tsx:202</code></td></tr>
+<tr><td class="num">68</td><td>Narxlar manfiy va kasr sonlarni qabul qiladi — kasr son tarjimasiz 500 beradi</td><td><code>apps/api/src/services/services.controller.ts:40</code></td></tr>
+<tr><td class="num">69</td><td>Ro'yxatdan o'tish sahifasida qattiq yozilgan o'zbekcha matnlar tarjima qilingan forma ichida aralashib ketadi</td><td><code>apps/crm/src/app/signup/page.tsx:66</code></td></tr>
+<tr><td class="num">70</td><td>Service worker birinchi ishga tushganda sahifani majburan qayta yuklaydi — yozilayotgan matn yo'qoladi</td><td><code>apps/client-web/src/components/pwa-register.tsx:17</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sound">
+    <h3>Tekshirilib, sog'lom deb topilgani</h3>
+    <ul>
+      <li>Parollar hamma joyda bcrypt bilan; ochiq parol saqlanmaydi va jurnalga tushmaydi.</li>
+      <li>Har bir so'rovda token qayta tekshiriladi — faolsiz foydalanuvchi va to'xtatilgan firma rad etiladi.</li>
+      <li>Holat o'tishlari jadvalining o'zi to'g'ri, kassa va to'lov yo'llari uni to'g'ri qo'llaydi.</li>
+      <li>Ortiqcha to'lov rad etiladi; bekor qilingan buyurtmaga to'lov qabul qilinmaydi.</li>
+      <li>To'lov webhook imzosi to'g'ri tekshiriladi; kalit yo'q bo'lsa ishlab chiqarishda rad etiladi.</li>
+      <li>Ishlatilgan xizmatni o'chirishga yo'l qo'yilmaydi — faolsizlantirish taklif qilinadi.</li>
+      <li>Kirish, OTP va ro'yxatdan o'tish endpointlarida rate-limit o'rnatilgan va ishlaydi.</li>
+      <li>Telegram orqali kirish mijoz va platforma adminni to'g'ri rad etadi.</li>
+    </ul>
+  </div>
+
+  <p class="note">
+    Metodika: har bir soha bo'yicha mustaqil auditor kodni o'qidi, so'ng alohida tekshiruvchi
+    har bir topilmani <i>rad etishga</i> urinib ko'rdi. Faqat kodda aniq izi ko'rsatilgan
+    topilmalar qoldi. Uchta eng jiddiy topilma bundan tashqari jonli tizimda ham tasdiqlandi.
+  </p>
+</div>
