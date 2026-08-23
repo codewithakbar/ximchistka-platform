@@ -3,6 +3,16 @@ import * as bcrypt from 'bcryptjs';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * Firma egasi yarata oladigan rollar. Ega o'zi kabi super_admin ham,
+ * platformani boshqaradigan platform_admin ham yarata olmaydi.
+ */
+const CREATABLE_STAFF_ROLES: UserRole[] = [
+  UserRole.branch_manager,
+  UserRole.operator,
+  UserRole.courier,
+];
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -45,7 +55,11 @@ export class UsersService {
     branchIds?: string[];
     avatarUrl?: string;
   }) {
-    if (data.role === UserRole.super_admin || data.role === UserRole.customer) {
+    // Oq ro'yxat, qora ro'yxat emas: ilgari faqat super_admin va customer
+    // taqiqlangan edi, ya'ni firma egasi o'ziga platform_admin yaratib,
+    // butun platformani egallashi mumkin edi. Yangi rol qo'shilsa ham
+    // bu ro'yxat uni avtomatik yopiq qoldiradi.
+    if (!CREATABLE_STAFF_ROLES.includes(data.role)) {
       throw new BadRequestException('Bu rol yaratib bo\'lmaydi');
     }
 

@@ -1,8 +1,13 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { OrganizationPlan, TelegramCodePurpose, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -21,6 +26,8 @@ const TELEGRAM_CODE_MAX_ATTEMPTS = 8;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
@@ -335,10 +342,27 @@ export class AuthService {
   }
 
   async requestOtp(phone: string) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isMock = process.env.SMS_PROVIDER === 'mock';
+
+    // Mock rejimda kod qat'iy '123456' va javobda qaytariladi — bu faqat
+    // ishlab chiqish uchun. Ishlab chiqarishda bu autentifikatsiyani butunlay
+    // ochib qo'yardi, shuning uchun jimgina ishlashdan ko'ra to'xtaganimiz
+    // xavfsizroq: xato darhol ko'zga tashlanadi va sozlash majburlanadi.
+    if (isProduction && isMock) {
+      this.logger.error(
+        'SMS_PROVIDER=mock ishlab chiqarishda aniqlandi — OTP o\'chirildi. ' +
+          'SMS_PROVIDER=eskiz qiling va ESKIZ_* kalitlarini to\'ldiring.',
+      );
+      throw new BadRequestException(
+        'SMS xizmati sozlanmagan. Administrator bilan bog\'laning.',
+      );
+    }
+
     const normalized = this.normalizePhone(phone);
     await this.assertOtpCooldown(normalized);
 
-    const code = process.env.SMS_PROVIDER === 'mock' ? '123456' : this.generateOtp();
+    const code = isMock ? '123456' : this.generateOtp();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     await this.prisma.otpCode.create({
@@ -352,7 +376,8 @@ export class AuthService {
 
     return {
       message: 'OTP yuborildi',
-      ...(process.env.SMS_PROVIDER === 'mock' ? { devCode: code } : {}),
+      // Kodni javobda faqat ishlab chiqishda qaytaramiz
+      ...(isMock && !isProduction ? { devCode: code } : {}),
     };
   }
 
@@ -372,6 +397,17 @@ export class AuthService {
     await this.prisma.otpCode.update({ where: { id: otp.id }, data: { used: true } });
 
     let user = await this.prisma.user.findUnique({ where: { phone: normalized } });
+
+    // SMS kodi faqat mijoz hisobiga kirish uchun. Xodim yoki platforma admin
+    // raqamiga token bersak, mijoz ilovasi butun CRM va SaaS paneliga orqa
+    // eshikka aylanadi — staffLogin va Telegram kirishida bu himoya bor edi,
+    // bu yerda esa yo'q edi.
+    if (user && user.role !== UserRole.customer) {
+      throw new UnauthorizedException(
+        'Bu raqam xodim hisobiga tegishli. CRM ga parol yoki Telegram orqali kiring.',
+      );
+    }
+
     if (!user) {
       user = await this.prisma.user.create({
         data: {
@@ -509,6 +545,8 @@ export class AuthService {
   }
 
   private generateOtp() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    // Math.random() kriptografik emas — SMS kodi hisobga kirish huquqini
+    // beradi, shuning uchun taxmin qilib bo'lmaydigan manba kerak
+    return String(randomInt(100000, 1000000));
   }
 }

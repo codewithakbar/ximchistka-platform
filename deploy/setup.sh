@@ -43,7 +43,12 @@ JWT_SECRET="${JWT_SECRET}"
 JWT_REFRESH_SECRET="${JWT_REFRESH}"
 JWT_EXPIRES_IN="15m"
 JWT_REFRESH_EXPIRES_IN="7d"
-SMS_PROVIDER="mock"
+# DIQQAT: "mock" da tasdiqlash kodi doim 123456 bo'ladi — ishlab chiqarishda
+# ishlatilmasin. API NODE_ENV=production va mock birga bo'lsa OTP ni to'xtatadi.
+SMS_PROVIDER="eskiz"
+ESKIZ_EMAIL=""
+ESKIZ_PASSWORD=""
+ESKIZ_FROM="4546"
 API_PORT=3001
 CORS_ORIGINS="https://${DOMAIN},https://${CRM_DOMAIN},https://${ADMIN_DOMAIN}"
 NEXT_PUBLIC_CLIENT_WEB_URL="https://${DOMAIN}"
